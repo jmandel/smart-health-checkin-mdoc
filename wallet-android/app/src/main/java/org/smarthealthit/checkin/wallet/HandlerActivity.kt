@@ -267,12 +267,18 @@ class HandlerActivity : ComponentActivity() {
         smartJson: JSONObject,
         readerAuth: ReaderAuthVerification,
     ) {
-        val request = SmartRequestAdapter.build(
-            verifierOrigin = origin,
-            nonce = "", // TODO: pull from EncryptionInfo when wired
-            smartRequest = smartJson,
-            readerAuth = readerAuth,
-        )
+        val request = runCatching {
+            SmartRequestAdapter.build(
+                verifierOrigin = origin,
+                nonce = "", // TODO: pull from EncryptionInfo when wired
+                smartRequest = smartJson,
+                readerAuth = readerAuth,
+            )
+        }.onFailure { Log.e(TAG, "SMART request validation failed", it) }
+            .getOrElse {
+                screenState = ScreenState.Error(it.message ?: it::class.java.simpleName)
+                return
+            }
         verifiedRequest = request
         selectedItems.clear()
         questionnaireAnswers.clear()

@@ -1,0 +1,62 @@
+{
+  "theme": "Chronic migraine 3-month look-back",
+  "palette": {
+    "ink": "#1f2937",
+    "muted": "#64748b",
+    "softLine": "#e2e8f0",
+    "bgTint": "#f8fafc",
+    "coolAccent": "#0ea5e9",
+    "coolAccentAlt": "#14b8a6",
+    "warmAccent": "#f97316",
+    "warmAccentAlt": "#f59e0b",
+    "alert": "#ef4444"
+  },
+  "fontStack": "-apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+  "graphs": [
+    {
+      "slug": "migraine-days-bar",
+      "file": "migraine-days-bar.svg",
+      "viewBox": "0 0 600 240",
+      "byteCount": 4426,
+      "base64ByteCount": 5904,
+      "summary": "Twelve weekly bars of migraine days/week with a teal-to-coral color ramp and a 3.4 d/wk weekly average annotation."
+    },
+    {
+      "slug": "severity-trend",
+      "file": "severity-trend.svg",
+      "viewBox": "0 0 600 200",
+      "byteCount": 3983,
+      "base64ByteCount": 5312,
+      "summary": "90-day daily severity (0–10) sparkline with a faint dashed threshold at 7 and red dots highlighting the five severe spikes."
+    },
+    {
+      "slug": "acute-meds-heatmap",
+      "file": "acute-meds-heatmap.svg",
+      "viewBox": "0 0 600 240",
+      "byteCount": 10329,
+      "base64ByteCount": 13772,
+      "summary": "13 weeks × 7 days calendar heatmap of acute-medication days (26 of 91); pale cells = none, amber cells = taken; legend plus monthly breakdown vs 10 d/mo limit."
+    },
+    {
+      "slug": "trigger-pareto",
+      "file": "trigger-pareto.svg",
+      "viewBox": "0 0 600 220",
+      "byteCount": 2934,
+      "base64ByteCount": 3912,
+      "summary": "Horizontal Pareto of five self-logged triggers (Sleep loss, Stress, Skipped meal, Caffeine change, Hormonal) with descending blue tint."
+    },
+    {
+      "slug": "function-donut",
+      "file": "function-donut.svg",
+      "viewBox": "0 0 600 220",
+      "byteCount": 2727,
+      "base64ByteCount": 3636,
+      "summary": "Two-tone donut showing 71% of the last 90 days were fully functional, with a side breakdown legend and 90-day trend delta."
+    }
+  ],
+  "totals": {
+    "fileCount": 5,
+    "rawBytes": 24399,
+    "base64Bytes": 32536
+  }
+}

@@ -1,0 +1,7 @@
+JWS source:        https://spec.smarthealth.cards/examples/example-03-d-jws.txt
+SHC wrapper:       https://spec.smarthealth.cards/examples/example-03-e-file.smart-health-card
+Expanded payload:  https://spec.smarthealth.cards/examples/example-03-b-jws-payload-expanded.json
+Fetched: 2026-05-01
+
+License: SMART Health Cards Implementation Guide examples (HL7 Cross-Project
+Material License; effectively CC0 for synthetic examples).

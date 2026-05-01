@@ -3,6 +3,7 @@ package org.smarthealthit.checkin.wallet
 import java.io.File
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -65,6 +66,66 @@ class DemoWalletStoreTest {
         assertTrue(questionnaireResponse.toString().contains("\"code\":\"somewhat-better\""))
         assertTrue(questionnaireResponse.toString().contains("Medication-use pattern may be worth reviewing"))
         assertEquals(4, response.getJSONArray("requestStatus").length())
+    }
+
+    @Test
+    fun responseFactoryEmitsSmartHealthCardWithoutOuterFhirVersionWhenPreferred() {
+        val request = verifiedRequestWithSingleClinicalItem(
+            acceptedMediaTypes = listOf("application/smart-health-card", "application/fhir+json"),
+        )
+
+        val response = SmartCheckinResponseFactory.build(
+            request = request,
+            selectedItems = mapOf("clinical" to true),
+            questionnaireAnswers = emptyMap(),
+            walletStore = store,
+        )
+
+        val artifact = response.getJSONArray("artifacts").getJSONObject(0)
+        assertEquals("application/smart-health-card", artifact.getString("mediaType"))
+        assertFalse(artifact.has("fhirVersion"))
+        assertTrue(
+            artifact.getJSONObject("value")
+                .getJSONArray("verifiableCredential")
+                .getString(0)
+                .isNotBlank(),
+        )
+    }
+
+    @Test
+    fun responseFactoryRejectsBlankRequestId() {
+        val failure = runCatching {
+            SmartCheckinResponseFactory.build(
+                request = verifiedRequestWithSingleClinicalItem(requestId = ""),
+                selectedItems = mapOf("clinical" to true),
+                questionnaireAnswers = emptyMap(),
+                walletStore = store,
+            )
+        }.exceptionOrNull()
+
+        assertTrue(failure?.message?.contains("SMART request id") == true)
+    }
+
+    @Test
+    fun prefillsWellbeingSummaryMarkdown() {
+        val questionnaire = JSONObject(
+            """{"resourceType":"Questionnaire","url":"https://example.org/q","version":"1","item":[{"linkId":"wellbeing","text":"How have you been?","type":"text"}]}""",
+        )
+        val item = RequestItem(
+            id = "intake",
+            title = "Intake",
+            subtitle = "Patient-authored summary",
+            kind = RequestKind.Questionnaire,
+            meta = JSONObject().put("questionnaire", questionnaire),
+        )
+
+        val prefills = store.prefillQuestionnaireAnswers(listOf(item))
+
+        assertTrue(
+            prefills.getValue(smartQuestionnaireAnswerKey("intake", "wellbeing"))
+                .toString()
+                .contains("How I've been since the last visit"),
+        )
     }
 
     @Test
@@ -149,6 +210,35 @@ class DemoWalletStoreTest {
                     subtitle = "Form answers requested by the verifier.",
                     kind = RequestKind.Questionnaire,
                     meta = JSONObject().put("questionnaire", questionnaire),
+                ),
+            ),
+        )
+    }
+
+    private fun verifiedRequestWithSingleClinicalItem(
+        requestId: String = "demo-request",
+        acceptedMediaTypes: List<String> = listOf("application/fhir+json"),
+    ): VerifiedRequest {
+        return VerifiedRequest(
+            requestId = requestId,
+            verifierOrigin = "https://clinic.example",
+            clientId = "",
+            requestUri = "",
+            responseUri = "",
+            state = "",
+            nonce = "",
+            completion = "dc-api",
+            clientMetadata = JSONObject(),
+            dcqlQuery = JSONObject(),
+            rawSmartRequestJson = "{}",
+            items = listOf(
+                RequestItem(
+                    id = "clinical",
+                    title = "Clinical History",
+                    subtitle = "Patient summary.",
+                    kind = RequestKind.Clinical,
+                    meta = JSONObject(),
+                    acceptedMediaTypes = acceptedMediaTypes,
                 ),
             ),
         )

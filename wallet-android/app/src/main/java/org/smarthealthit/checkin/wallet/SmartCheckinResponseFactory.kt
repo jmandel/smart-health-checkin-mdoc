@@ -10,6 +10,7 @@ internal object SmartCheckinResponseFactory {
         questionnaireAnswers: Map<String, Any>,
         walletStore: SmartHealthWalletStore,
     ): JSONObject {
+        require(request.requestId.isNotBlank()) { "SMART request id is required" }
         val artifacts = JSONArray()
         val requestStatus = JSONArray()
 
@@ -36,14 +37,18 @@ internal object SmartCheckinResponseFactory {
                     return@forEach
                 }
 
-                artifacts.put(
-                    JSONObject()
-                        .put("id", artifactId)
-                        .put("mediaType", artifact.mediaType)
-                        .put("fhirVersion", artifact.fhirVersion)
-                        .put("fulfills", JSONArray().put(item.id))
-                        .put("value", artifact.value),
-                )
+                val artifactJson = JSONObject()
+                    .put("id", artifactId)
+                    .put("mediaType", artifact.mediaType)
+                    .put("fulfills", JSONArray().put(item.id))
+                    .put("value", artifact.value)
+                if (artifact.mediaType == "application/fhir+json") {
+                    require(artifact.fhirVersion.isNotBlank()) {
+                        "FHIR JSON artifact $artifactId must declare fhirVersion"
+                    }
+                    artifactJson.put("fhirVersion", artifact.fhirVersion)
+                }
+                artifacts.put(artifactJson)
                 requestStatus.put(
                     JSONObject()
                         .put("item", item.id)
@@ -54,7 +59,7 @@ internal object SmartCheckinResponseFactory {
         return JSONObject()
             .put("type", "smart-health-checkin-response")
             .put("version", "1")
-            .put("requestId", request.requestId.ifBlank { "smart-health-checkin-request" })
+            .put("requestId", request.requestId)
             .put("artifacts", artifacts)
             .put("requestStatus", requestStatus)
     }

@@ -80,8 +80,7 @@ repo. Network access required.
    - retrieves the `ProviderGetCredentialRequest`,
    - finds the `org-iso-mdoc` option,
    - base64-decodes `data.deviceRequest`,
-   - CBOR-walks to `ItemsRequest.requestInfo` and currently reads the prototype
-     `smart_health_checkin` key,
+   - CBOR-walks to `ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]`,
    - fetches any `questionnaireUrl` resources and hydrates a `VerifiedRequest`
      for the existing Compose consent UI,
    - seeds canned questionnaire answers from `DemoWalletStore` by

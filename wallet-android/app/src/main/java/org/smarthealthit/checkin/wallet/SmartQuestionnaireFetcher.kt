@@ -62,8 +62,15 @@ internal object SmartQuestionnaireFetcher {
         return questionnaire
     }
 
+    internal fun canonicalUrlForFetch(canonical: String): String {
+        val rawUrl = canonical.substringBefore('|')
+        require(rawUrl.isNotBlank()) { "Questionnaire canonical URL is blank" }
+        return rawUrl
+    }
+
     private fun fetchQuestionnaire(rawUrl: String): JSONObject {
-        val url = URL(rawUrl)
+        val fetchUrl = canonicalUrlForFetch(rawUrl)
+        val url = URL(fetchUrl)
         require(url.protocol == "https" || url.protocol == "http") {
             "Unsupported questionnaireUrl scheme: ${url.protocol}"
         }

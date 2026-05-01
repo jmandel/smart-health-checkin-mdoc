@@ -22,6 +22,7 @@ import {
   SMART_RESPONSE_ELEMENT_ID,
   SMART_REQUEST_INFO_KEY,
   openWalletResponse,
+  validateResponseAgainstRequest,
   validateSmartCheckinRequest,
   validateSmartCheckinResponse,
   verifyReaderAuthSignature,
@@ -97,6 +98,65 @@ describe("fallback dynamic SMART Check-in element", () => {
       }).ok,
     ).toBe(true);
     expect(validateSmartCheckinResponse({ version: "1", artifacts: [], requestStatus: [] }).ok).toBe(false);
+  });
+
+  test("validates SMART Health Card response artifacts", async () => {
+    const shc = await Bun.file("../fixtures/sample-shc/samples/spec-example-00/credential.json").json();
+    const response = {
+      type: "smart-health-checkin-response",
+      version: "1",
+      requestId: "test-patient-request",
+      artifacts: [
+        {
+          id: "a1",
+          mediaType: "application/smart-health-card",
+          fulfills: ["patient"],
+          value: shc,
+        },
+      ],
+      requestStatus: [{ item: "patient", status: "fulfilled" }],
+    };
+
+    expect(validateSmartCheckinResponse(response).ok).toBe(true);
+    expect(validateResponseAgainstRequest(PATIENT_REQUEST, response).ok).toBe(true);
+    expect(
+      validateSmartCheckinResponse({
+        ...response,
+        artifacts: [{ ...response.artifacts[0], fhirVersion: "4.0.1" }],
+      }).ok,
+    ).toBe(false);
+  });
+
+  test("validates response references against request items", () => {
+    const validResponse = {
+      type: "smart-health-checkin-response",
+      version: "1",
+      requestId: "test-patient-request",
+      artifacts: [
+        {
+          id: "a1",
+          mediaType: "application/fhir+json",
+          fhirVersion: "4.0.1",
+          fulfills: ["patient"],
+          value: { resourceType: "Patient" },
+        },
+      ],
+      requestStatus: [{ item: "patient", status: "fulfilled" }],
+    };
+
+    expect(validateResponseAgainstRequest(PATIENT_REQUEST, validResponse).ok).toBe(true);
+    expect(
+      validateResponseAgainstRequest(PATIENT_REQUEST, {
+        ...validResponse,
+        artifacts: [{ ...validResponse.artifacts[0], fulfills: ["missing"] }],
+      }).ok,
+    ).toBe(false);
+    expect(
+      validateResponseAgainstRequest(PATIENT_REQUEST, {
+        ...validResponse,
+        requestStatus: [],
+      }).ok,
+    ).toBe(false);
   });
 
   test("constants match the active direct mdoc mapping", () => {
@@ -378,6 +438,9 @@ describe("org-iso-mdoc response wrapper", () => {
     const smartResponse = element.smartHealthCheckinResponse.value;
     const validation = validateSmartCheckinResponse(smartResponse);
     if (!validation.ok) throw new Error(validation.error);
+    const pairedRequest = await Bun.file("../fixtures/dcapi-requests/real-chrome-android-smart-checkin/smart-request.json").json();
+    const pairedValidation = validateResponseAgainstRequest(pairedRequest, smartResponse);
+    if (!pairedValidation.ok) throw new Error(pairedValidation.error);
     expect(smartResponse.artifacts.length).toBe(4);
     expect(smartResponse.requestStatus.map((status) => status.item).sort()).toEqual([
       "insurance",

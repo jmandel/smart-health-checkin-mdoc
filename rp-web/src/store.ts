@@ -18,6 +18,11 @@ const INTAKE_QUESTIONNAIRE = {
   status: "active",
   item: [
     {
+      linkId: "wellbeing",
+      text: "How have you been feeling since your last visit?",
+      type: "text",
+    },
+    {
       linkId: "headache",
       text: "Are you experiencing a headache today?",
       type: "boolean",

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Headache summary SVG preview</title>
+  <style>
+    :root {
+      --ink: #1f2937;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --bg: #f8fafc;
+    }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink);
+      font: 14px -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
+    header { padding: 20px 24px; border-bottom: 1px solid var(--line); background: #fff; }
+    header h1 { margin: 0 0 4px; font-size: 18px; }
+    header p  { margin: 0; color: var(--muted); }
+    main { padding: 24px; }
+    .row { display: grid; grid-template-columns: 600px 300px 200px 120px; gap: 24px;
+      align-items: start; padding: 20px 0; border-bottom: 1px dashed var(--line); }
+    .row:last-child { border-bottom: 0; }
+    .label { grid-column: 1 / -1; color: var(--muted); font-weight: 600;
+      letter-spacing: 0.02em; text-transform: uppercase; font-size: 11px;
+      margin-bottom: 4px; }
+    .cell { background: #fff; border: 1px solid var(--line); border-radius: 8px;
+      padding: 8px; box-sizing: border-box; }
+    .cell .w { color: var(--muted); font-size: 11px; margin-bottom: 6px; }
+    .cell img { display: block; width: 100%; height: auto; }
+    .col-600 { width: 600px; }
+    .col-300 { width: 300px; }
+    .col-200 { width: 200px; }
+    .col-120 { width: 120px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Headache summary SVGs · multi-zoom preview</h1>
+    <p>Each row shows the same SVG rendered at 600 px, 300 px, 200 px and 120 px wide. The 200 px column is the legibility bar.</p>
+  </header>
+  <main id="grid"></main>
+  <script>
+    const slugs = [
+      ["migraine-days-bar",   "Migraine days per week"],
+      ["severity-trend",      "Daily severity 0–10"],
+      ["acute-meds-heatmap",  "Acute medication calendar"],
+      ["trigger-pareto",      "Top reported triggers"],
+      ["function-donut",      "Days fully functional"],
+    ];
+    const widths = [600, 300, 200, 120];
+    const grid = document.getElementById("grid");
+    for (const [slug, label] of slugs) {
+      const row = document.createElement("section");
+      row.className = "row";
+      const head = document.createElement("div");
+      head.className = "label";
+      head.textContent = label + "  ·  " + slug + ".svg";
+      row.appendChild(head);
+      for (const w of widths) {
+        const cell = document.createElement("div");
+        cell.className = "cell col-" + w;
+        cell.style.width = w + "px";
+        const tag = document.createElement("div");
+        tag.className = "w";
+        tag.textContent = w + " px";
+        const img = document.createElement("img");
+        img.src = slug + ".svg";
+        img.alt = label;
+        cell.appendChild(tag);
+        cell.appendChild(img);
+        row.appendChild(cell);
+      }
+      grid.appendChild(row);
+    }
+  </script>
+</body>
+</html>

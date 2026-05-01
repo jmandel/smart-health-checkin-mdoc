@@ -1,0 +1,45 @@
+{
+  "generated": "2026-05-01T18:11:40.166Z",
+  "samples": [
+    {
+      "slug": "spec-example-00",
+      "issuer": "spec-smarthealth-cards-issuer",
+      "iss": "https://spec.smarthealth.cards/examples/issuer",
+      "kid": "3Kfdg-XwP-7gXyywtUfUADwBumDOPKMQx-iELL11W9s",
+      "alg": "ES256",
+      "summary": "1×Patient, 3×Immunization",
+      "payloadBytes": 1374,
+      "verified": true
+    },
+    {
+      "slug": "spec-example-01",
+      "issuer": "spec-smarthealth-cards-issuer",
+      "iss": "https://spec.smarthealth.cards/examples/issuer",
+      "kid": "EBKOr72QQDcTBUuVzAzkfBTGew0ZA16GuWty64nS-sw",
+      "alg": "ES256",
+      "summary": "1×Patient, 3×Immunization",
+      "payloadBytes": 1354,
+      "verified": true
+    },
+    {
+      "slug": "spec-example-02",
+      "issuer": "spec-smarthealth-cards-issuer",
+      "iss": "https://spec.smarthealth.cards/examples/issuer",
+      "kid": "3Kfdg-XwP-7gXyywtUfUADwBumDOPKMQx-iELL11W9s",
+      "alg": "ES256",
+      "summary": "1×DiagnosticReport, 3×Specimen, 51×Observation",
+      "payloadBytes": 30178,
+      "verified": true
+    },
+    {
+      "slug": "spec-example-03",
+      "issuer": "spec-smarthealth-cards-issuer",
+      "iss": "https://spec.smarthealth.cards/examples/issuer",
+      "kid": "3Kfdg-XwP-7gXyywtUfUADwBumDOPKMQx-iELL11W9s",
+      "alg": "ES256",
+      "summary": "1×Patient, 2×Immunization",
+      "payloadBytes": 1068,
+      "verified": true
+    }
+  ]
+}

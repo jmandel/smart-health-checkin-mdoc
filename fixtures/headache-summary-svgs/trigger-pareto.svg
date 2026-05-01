@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 220" role="img" aria-labelledby="t d">
+  <title id="t">Self-logged migraine triggers</title>
+  <desc id="d">Horizontal Pareto chart of the top five self-logged migraine triggers over the last 90 days. Sleep loss leads, followed by stress, skipped meal, caffeine change, and hormonal.</desc>
+  <style>
+    .ttl{font:600 14px -apple-system,BlinkMacSystemFont,system-ui,sans-serif;fill:#1f2937}
+    .sub{font:500 12px -apple-system,BlinkMacSystemFont,system-ui,sans-serif;fill:#64748b}
+    .lbl{font:500 12px -apple-system,BlinkMacSystemFont,system-ui,sans-serif;fill:#1f2937}
+    .val{font:600 12px -apple-system,BlinkMacSystemFont,system-ui,sans-serif;fill:#475569}
+    .ax{font:500 11px -apple-system,BlinkMacSystemFont,system-ui,sans-serif;fill:#94a3b8}
+  </style>
+  <rect x="0" y="0" width="600" height="220" fill="#ffffff"/>
+  <text class="ttl" x="24" y="26">Top reported triggers</text>
+  <text class="sub" x="24" y="44">Self-logged · last 90 days</text>
+
+  <!-- bar geometry: label gutter to x=160, bar starts x=160, max width 380 (to x=540), bar height 18, gap 12 -->
+  <!-- counts: SleepLoss 22 (max), Stress 18, SkippedMeal 12, Caffeine 9, Hormonal 6 ; scale: 22 -> 380px -->
+  <!-- y positions for 5 rows starting at y=76 step 28 -->
+
+  <!-- row 1 -->
+  <text class="lbl" x="152" y="90" text-anchor="end">Sleep loss</text>
+  <rect x="160" y="76" width="380" height="18" rx="3" fill="#0ea5e9"/>
+  <text class="val" x="546" y="90">22</text>
+
+  <!-- row 2 stress 18 -> 18/22*380 = 311 -->
+  <text class="lbl" x="152" y="118" text-anchor="end">Stress</text>
+  <rect x="160" y="104" width="311" height="18" rx="3" fill="#38bdf8"/>
+  <text class="val" x="477" y="118">18</text>
+
+  <!-- row 3 skipped meal 12 -> 207 -->
+  <text class="lbl" x="152" y="146" text-anchor="end">Skipped meal</text>
+  <rect x="160" y="132" width="207" height="18" rx="3" fill="#7dd3fc"/>
+  <text class="val" x="373" y="146">12</text>
+
+  <!-- row 4 caffeine 9 -> 156 -->
+  <text class="lbl" x="152" y="174" text-anchor="end">Caffeine change</text>
+  <rect x="160" y="160" width="156" height="18" rx="3" fill="#bae6fd"/>
+  <text class="val" x="322" y="174">9</text>
+
+  <!-- row 5 hormonal 6 -> 104 -->
+  <text class="lbl" x="152" y="202" text-anchor="end">Hormonal</text>
+  <rect x="160" y="188" width="104" height="18" rx="3" fill="#e0f2fe"/>
+  <text class="val" x="270" y="202">6</text>
+
+  <!-- baseline -->
+  <line x1="160" y1="70" x2="160" y2="212" stroke="#e2e8f0" stroke-width="1"/>
+
+  <!-- subtle scale tick at 0/10/20 -->
+  <g class="ax">
+    <text x="160" y="64" text-anchor="middle">0</text>
+    <text x="332.7" y="64" text-anchor="middle">10</text>
+    <text x="505.5" y="64" text-anchor="middle">20</text>
+  </g>
+  <line x1="332.7" y1="68" x2="332.7" y2="208" stroke="#f1f5f9" stroke-width="1"/>
+  <line x1="505.5" y1="68" x2="505.5" y2="208" stroke="#f1f5f9" stroke-width="1"/>
+</svg>

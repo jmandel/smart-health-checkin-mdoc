@@ -1,9 +1,7 @@
 package org.smarthealthit.checkin.wallet
 
 import android.content.res.AssetManager
-import java.io.BufferedReader
 import java.io.InputStream
-import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
 import org.json.JSONObject
 
@@ -35,6 +33,9 @@ internal class DemoWalletStore(
         private const val PLAN_FIXTURE = "sbc-insurance-plan.json"
         private const val MIGRAINE_QUESTIONNAIRE_FIXTURE = "migraine-questionnaire.json"
         private const val MIGRAINE_ANSWERS_FIXTURE = "migraine-autofill-values.json"
+        private const val HEADACHE_SUMMARY_FIXTURE = "headache-summary.md"
+        private const val SMART_HEALTH_CARD_FIXTURE = "smart-health-card.json"
+        private const val WELLBEING_LINK_ID = "wellbeing"
 
         fun fromAssets(assets: AssetManager): DemoWalletStore {
             return DemoWalletStore { path ->
@@ -43,15 +44,7 @@ internal class DemoWalletStore(
         }
 
         private fun readUtf8(input: InputStream): String {
-            val builder = StringBuilder()
-            BufferedReader(InputStreamReader(input, StandardCharsets.UTF_8)).use { reader ->
-                var line = reader.readLine()
-                while (line != null) {
-                    builder.append(line)
-                    line = reader.readLine()
-                }
-            }
-            return builder.toString()
+            return input.use { it.readBytes().toString(StandardCharsets.UTF_8) }
         }
     }
 
@@ -59,7 +52,27 @@ internal class DemoWalletStore(
         loadCannedQuestionnaireAnswers()
     }
 
+    private val headacheSummaryMarkdown: String by lazy {
+        readAssetText("$DEMO_DATA_ROOT/$HEADACHE_SUMMARY_FIXTURE")
+    }
+
+    private val smartHealthCard: JSONObject by lazy {
+        readDemoJson(SMART_HEALTH_CARD_FIXTURE)
+    }
+
     override fun resolveArtifact(item: RequestItem, questionnaireAnswers: Map<String, Any>): SmartHealthWalletArtifact {
+        val mediaType = item.acceptedMediaTypes.firstOrNull { mediaType ->
+            mediaType == "application/fhir+json" ||
+                (mediaType == "application/smart-health-card" && item.kind == RequestKind.Clinical)
+        } ?: "application/fhir+json"
+
+        if (mediaType == "application/smart-health-card") {
+            return SmartHealthWalletArtifact(
+                mediaType = mediaType,
+                value = smartHealthCard,
+            )
+        }
+
         val data = when (item.kind) {
             RequestKind.Coverage -> readDemoJson(COVERAGE_FIXTURE)
             RequestKind.Plan -> readDemoJson(PLAN_FIXTURE)
@@ -101,8 +114,11 @@ internal class DemoWalletStore(
             val linkId = item.optString("linkId")
             if (linkId.isNotBlank() && item.optString("type") !in setOf("group", "display")) {
                 val key = QuestionnaireAnswerKey(questionnaireUrl, questionnaireVersion, linkId)
-                cannedQuestionnaireAnswers[key]?.let { value ->
-                    out[smartQuestionnaireAnswerKey(credentialId, linkId)] = jsonValue(value) ?: JSONObject.NULL
+                val canned = cannedQuestionnaireAnswers[key]
+                if (canned != null) {
+                    out[smartQuestionnaireAnswerKey(credentialId, linkId)] = jsonValue(canned) ?: JSONObject.NULL
+                } else if (linkId == WELLBEING_LINK_ID) {
+                    out[smartQuestionnaireAnswerKey(credentialId, linkId)] = headacheSummaryMarkdown
                 }
             }
             collectPrefills(

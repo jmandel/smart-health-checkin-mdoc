@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 240" role="img" aria-labelledby="t d">
+  <title id="t">Migraine days per week</title>
+  <desc id="d">Bar chart of migraine days per week over the last 12 weeks. Weekly average 3.4 days. Color ramps from teal at low counts to coral at high counts.</desc>
+  <style>
+    .ink{fill:#1f2937}
+    .muted{fill:#64748b}
+    .axis{stroke:#e2e8f0;stroke-width:1}
+    .ref{stroke:#cbd5e1;stroke-width:1;stroke-dasharray:3 3}
+    .lbl{font:500 12px -apple-system,BlinkMacSystemFont,system-ui,sans-serif}
+    .val{font:600 11px -apple-system,BlinkMacSystemFont,system-ui,sans-serif;fill:#475569}
+    .ttl{font:600 14px -apple-system,BlinkMacSystemFont,system-ui,sans-serif;fill:#1f2937}
+    .sub{font:500 12px -apple-system,BlinkMacSystemFont,system-ui,sans-serif;fill:#64748b}
+    .avg{font:600 12px -apple-system,BlinkMacSystemFont,system-ui,sans-serif;fill:#0f766e}
+  </style>
+  <rect x="0" y="0" width="600" height="240" fill="#ffffff"/>
+  <text class="ttl" x="24" y="28">Migraine days / week</text>
+  <text class="sub" x="24" y="46">Last 12 weeks</text>
+  <text class="avg" x="576" y="28" text-anchor="end">Avg 3.4 days/wk</text>
+
+  <!-- y-axis ticks: 0,2,4,6 -->
+  <g class="muted" font-family="-apple-system,BlinkMacSystemFont,system-ui,sans-serif" font-size="11">
+    <text x="40" y="80" text-anchor="end">6</text>
+    <text x="40" y="120" text-anchor="end">4</text>
+    <text x="40" y="160" text-anchor="end">2</text>
+    <text x="40" y="200" text-anchor="end">0</text>
+  </g>
+  <!-- baseline -->
+  <line class="axis" x1="48" y1="200" x2="584" y2="200"/>
+  <!-- ref line at 4 -->
+  <line class="ref" x1="48" y1="120" x2="584" y2="120"/>
+  <text class="muted" x="584" y="116" text-anchor="end" font-family="-apple-system,BlinkMacSystemFont,system-ui,sans-serif" font-size="10">4 d</text>
+
+  <!-- bars: 12 weeks, values 2,3,4,2,5,6,3,4,5,3,2,2 -->
+  <!-- bar geometry: x start 56, width per slot ~44, bar width 32, gap 12 -->
+  <g>
+    <!-- w1 v=2 -->
+    <rect x="56"  y="160" width="32" height="40" rx="3" fill="#14b8a6"/>
+    <text class="val" x="72"  y="154" text-anchor="middle">2</text>
+    <!-- w2 v=3 -->
+    <rect x="100" y="140" width="32" height="60" rx="3" fill="#2dd4bf"/>
+    <text class="val" x="116" y="134" text-anchor="middle">3</text>
+    <!-- w3 v=4 -->
+    <rect x="144" y="120" width="32" height="80" rx="3" fill="#fbbf77"/>
+    <text class="val" x="160" y="114" text-anchor="middle">4</text>
+    <!-- w4 v=2 -->
+    <rect x="188" y="160" width="32" height="40" rx="3" fill="#14b8a6"/>
+    <text class="val" x="204" y="154" text-anchor="middle">2</text>
+    <!-- w5 v=5 -->
+    <rect x="232" y="100" width="32" height="100" rx="3" fill="#fb923c"/>
+    <text class="val" x="248" y="94" text-anchor="middle">5</text>
+    <!-- w6 v=6 -->
+    <rect x="276" y="80"  width="32" height="120" rx="3" fill="#f97316"/>
+    <text class="val" x="292" y="74" text-anchor="middle">6</text>
+    <!-- w7 v=3 -->
+    <rect x="320" y="140" width="32" height="60" rx="3" fill="#2dd4bf"/>
+    <text class="val" x="336" y="134" text-anchor="middle">3</text>
+    <!-- w8 v=4 -->
+    <rect x="364" y="120" width="32" height="80" rx="3" fill="#fbbf77"/>
+    <text class="val" x="380" y="114" text-anchor="middle">4</text>
+    <!-- w9 v=5 -->
+    <rect x="408" y="100" width="32" height="100" rx="3" fill="#fb923c"/>
+    <text class="val" x="424" y="94" text-anchor="middle">5</text>
+    <!-- w10 v=3 -->
+    <rect x="452" y="140" width="32" height="60" rx="3" fill="#2dd4bf"/>
+    <text class="val" x="468" y="134" text-anchor="middle">3</text>
+    <!-- w11 v=2 -->
+    <rect x="496" y="160" width="32" height="40" rx="3" fill="#14b8a6"/>
+    <text class="val" x="512" y="154" text-anchor="middle">2</text>
+    <!-- w12 v=2 -->
+    <rect x="540" y="160" width="32" height="40" rx="3" fill="#14b8a6"/>
+    <text class="val" x="556" y="154" text-anchor="middle">2</text>
+  </g>
+
+  <!-- x-axis labels: every 2 weeks -->
+  <g class="muted" font-family="-apple-system,BlinkMacSystemFont,system-ui,sans-serif" font-size="11">
+    <text x="72"  y="220" text-anchor="middle">w1</text>
+    <text x="160" y="220" text-anchor="middle">w3</text>
+    <text x="248" y="220" text-anchor="middle">w5</text>
+    <text x="336" y="220" text-anchor="middle">w7</text>
+    <text x="424" y="220" text-anchor="middle">w9</text>
+    <text x="512" y="220" text-anchor="middle">w11</text>
+  </g>
+</svg>

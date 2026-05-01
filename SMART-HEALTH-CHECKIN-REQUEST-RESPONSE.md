@@ -455,15 +455,11 @@ export interface FhirProfileCollectionRefObject {
  *   - application/fhir+json
  *       Raw FHIR JSON. The response artifact must declare fhirVersion.
  *
- *   - application/smart-health-link
- *       SMART Health Link or similar retrievable package.
- *
  * Other media types may be used by extension.
  */
 export type SmartHealthCheckinAcceptedMediaType =
   | "application/smart-health-card"
   | "application/fhir+json"
-  | "application/smart-health-link"
   | (string & {});
 
 /**
@@ -676,7 +672,6 @@ export type SmartHealthCheckinItemStatusCode =
 export type SmartHealthCheckinArtifact =
   | SmartHealthCardArtifact
   | FhirJsonArtifact
-  | SmartHealthLinkArtifact
   | GenericArtifact;
 
 /**
@@ -757,15 +752,6 @@ export interface FhirJsonArtifact extends SmartHealthCheckinArtifactBase {
 }
 
 /**
- * SMART Health Link or similar retrievable package.
- */
-export interface SmartHealthLinkArtifact extends SmartHealthCheckinArtifactBase {
-  mediaType: "application/smart-health-link";
-
-  url: string;
-}
-
-/**
  * Generic extension artifact.
  */
 export type GenericArtifact =
@@ -828,7 +814,7 @@ A SMART Health Card artifact has:
 
 The artifact does not list profiles. Verifiers inspect the signed SHC payload.
 
-The artifact does not need an outer `fhirVersion`. Verifiers inspect each signed health-card credential, where the FHIR version is part of the signed payload.
+The artifact must not carry an outer `fhirVersion`. Verifiers inspect each signed health-card credential, where the FHIR version is part of the signed payload.
 
 ### Raw FHIR JSON artifacts
 
@@ -1125,7 +1111,7 @@ export const exampleResponse: SmartHealthCheckinResponse = {
 
 9. `application/smart-health-card` artifact values SHALL be JSON objects with a `verifiableCredential` array containing one or more SMART Health Card JWS strings.
 
-10. `application/smart-health-card` artifacts SHALL NOT rely on an outer `fhirVersion`; verifiers SHALL inspect each signed credential payload for its FHIR version.
+10. `application/smart-health-card` artifacts SHALL NOT carry an outer `fhirVersion`; verifiers SHALL inspect each signed credential payload for its FHIR version.
 
 11. `application/fhir+json` artifacts SHALL include `fhirVersion`.
 
@@ -1192,5 +1178,3 @@ This mirrors the useful part of SMART Health Cards — an explicit FHIR version 
 ## 12. Open questions
 
 1. Should the protocol define a maximum response size or leave this to transport/profile constraints?
-
-2. Should `application/smart-health-link` artifacts be inline URLs only, or should they support the full SMART Health Links manifest body?

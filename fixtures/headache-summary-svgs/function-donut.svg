@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 220" role="img" aria-labelledby="t d">
+  <title id="t">Days fully functional</title>
+  <desc id="d">Donut chart showing 71 percent of the last 90 days were rated by the patient as fully functional, that is no significant headache impact. The remaining 29 percent had partial or full impairment.</desc>
+  <style>
+    .ttl{font:600 14px -apple-system,BlinkMacSystemFont,system-ui,sans-serif;fill:#1f2937}
+    .sub{font:500 12px -apple-system,BlinkMacSystemFont,system-ui,sans-serif;fill:#64748b}
+    .pct{font:700 44px -apple-system,BlinkMacSystemFont,system-ui,sans-serif;fill:#0f766e}
+    .pctsub{font:600 12px -apple-system,BlinkMacSystemFont,system-ui,sans-serif;fill:#64748b}
+    .key{font:500 12px -apple-system,BlinkMacSystemFont,system-ui,sans-serif;fill:#1f2937}
+    .keyv{font:600 12px -apple-system,BlinkMacSystemFont,system-ui,sans-serif;fill:#475569}
+  </style>
+  <rect x="0" y="0" width="600" height="220" fill="#ffffff"/>
+  <text class="ttl" x="24" y="26">Days fully functional</text>
+  <text class="sub" x="24" y="44">No or minimal headache impact · last 90 days</text>
+
+  <!-- donut, centered at (130,130), outer r=64, inner r=44 (stroke approach) -->
+  <!-- background ring -->
+  <circle cx="130" cy="130" r="54" fill="none" stroke="#e2e8f0" stroke-width="20"/>
+
+  <!-- progress arc 71% -->
+  <!-- using stroke-dasharray on a circle: circumference = 2*pi*54 = 339.29 -->
+  <!-- 71% = 240.89, gap = 98.40 -->
+  <circle cx="130" cy="130" r="54" fill="none"
+          stroke="#14b8a6" stroke-width="20" stroke-linecap="round"
+          stroke-dasharray="240.89 98.40"
+          transform="rotate(-90 130 130)"/>
+
+  <!-- center text -->
+  <text class="pct" x="130" y="138" text-anchor="middle">71%</text>
+  <text class="pctsub" x="130" y="158" text-anchor="middle">64 of 90 days</text>
+
+  <!-- legend / breakdown -->
+  <g transform="translate(260,80)">
+    <circle cx="6" cy="6" r="6" fill="#14b8a6"/>
+    <text class="key" x="22" y="10">Fully functional</text>
+    <text class="keyv" x="300" y="10" text-anchor="end">64 d · 71%</text>
+
+    <circle cx="6" cy="36" r="6" fill="#fb923c"/>
+    <text class="key" x="22" y="40">Partially impaired</text>
+    <text class="keyv" x="300" y="40" text-anchor="end">19 d · 21%</text>
+
+    <circle cx="6" cy="66" r="6" fill="#ef4444"/>
+    <text class="key" x="22" y="70">Bedridden / missed work</text>
+    <text class="keyv" x="300" y="70" text-anchor="end">7 d · 8%</text>
+
+    <line x1="0" y1="92" x2="300" y2="92" stroke="#e2e8f0" stroke-width="1"/>
+    <text class="key" x="0" y="112">Trend vs prior 90 d</text>
+    <text class="keyv" x="300" y="112" text-anchor="end" fill="#0f766e">+6 pp</text>
+  </g>
+</svg>

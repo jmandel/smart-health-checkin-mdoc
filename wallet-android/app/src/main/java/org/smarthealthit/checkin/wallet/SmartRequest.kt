@@ -15,8 +15,13 @@ internal object SmartRequestAdapter {
         smartRequest: JSONObject,
         readerAuth: ReaderAuthVerification = ReaderAuthVerification.ABSENT,
     ): VerifiedRequest {
+        require(smartRequest.optString("type") == "smart-health-checkin-request") {
+            "type must be \"smart-health-checkin-request\""
+        }
+        require(smartRequest.optString("version") == "1") { "version must be \"1\"" }
+        val requestId = requiredString(smartRequest, "id")
         return VerifiedRequest(
-            requestId = smartRequest.optString("id").ifBlank { "smart-health-checkin-request" },
+            requestId = requestId,
             verifierOrigin = verifierOrigin,
             clientId = "",
             requestUri = "",
@@ -33,24 +38,20 @@ internal object SmartRequestAdapter {
     }
 
     private fun parseItems(requestsArray: JSONArray?): List<RequestItem> {
-        if (requestsArray == null) return emptyList()
+        require(requestsArray != null) { "items must be an array" }
         val out = ArrayList<RequestItem>(requestsArray.length())
+        val ids = LinkedHashSet<String>()
         for (i in 0 until requestsArray.length()) {
-            val item = requestsArray.optJSONObject(i) ?: continue
-            val id = item.optString("id").ifBlank { "item-${i + 1}" }
-            val content = item.optJSONObject("content") ?: JSONObject()
-            val accept = stringList(item.optJSONArray("accept")).ifEmpty { listOf("application/fhir+json") }
+            val item = requestsArray.optJSONObject(i) ?: error("items[$i] must be an object")
+            val id = requiredString(item, "items[$i].id")
+            require(ids.add(id)) { "items[$i].id is duplicated" }
+            requiredString(item, "items[$i].title")
+            val content = item.optJSONObject("content") ?: error("items[$i].content must be an object")
+            val accept = requiredStringArray(item.optJSONArray("accept"), "items[$i].accept")
             out += when (content.optString("kind")) {
                 "questionnaire" -> parseQuestionnaireItem(id, item, content, accept)
                 "fhir.resources" -> parseFhirResourcesItem(id, item, content, accept)
-                else -> RequestItem(
-                    id = id,
-                    title = item.optString("title").ifBlank { id },
-                    subtitle = item.optString("summary").ifBlank { "Requested artifact." },
-                    kind = RequestKind.Unknown,
-                    meta = JSONObject(item.toString()),
-                    acceptedMediaTypes = accept,
-                )
+                else -> error("items[$i].content.kind must be fhir.resources or questionnaire")
             }
         }
         return out
@@ -66,6 +67,9 @@ internal object SmartRequestAdapter {
         val questionnaire = content.opt("questionnaire")
         val resource = questionnaireResource(questionnaire)
         val canonical = questionnaireCanonical(questionnaire, resource)
+        require(resource != null || !canonical.isNullOrBlank()) {
+            "questionnaire content must include a canonical or Questionnaire resource"
+        }
         if (resource != null) meta.put("questionnaire", resource)
         if (!canonical.isNullOrBlank()) {
             meta.put("questionnaireCanonical", canonical)
@@ -91,18 +95,13 @@ internal object SmartRequestAdapter {
         content: JSONObject,
         accept: List<String>,
     ): RequestItem {
-        val selector = buildString {
-            append(id)
-            append(' ')
-            append(stringList(content.optJSONArray("profiles")).joinToString(" "))
-            append(' ')
-            append(stringList(content.optJSONArray("resourceTypes")).joinToString(" "))
-            append(' ')
-            append(content.opt("profilesFrom")?.toString().orEmpty())
-        }.lowercase()
+        val profiles = stringList(content.optJSONArray("profiles")).map { it.lowercase() }.toSet()
+        val resourceTypes = stringList(content.optJSONArray("resourceTypes")).map { it.lowercase() }.toSet()
+        val profileCollections = profilesFromCanonicals(content.opt("profilesFrom"))
         val summary = item.optString("summary")
         return when {
-            "coverage" in selector -> RequestItem(
+            profiles.any { it.endsWith("/structuredefinition/c4dic-coverage") } ||
+                "coverage" in resourceTypes -> RequestItem(
                 id = id,
                 title = item.optString("title").ifBlank { "Digital Insurance Card" },
                 subtitle = summary.ifBlank { "Member coverage and payer details." },
@@ -110,7 +109,10 @@ internal object SmartRequestAdapter {
                 meta = JSONObject(item.toString()),
                 acceptedMediaTypes = accept,
             )
-            "insuranceplan" in selector || "sbc" in selector -> RequestItem(
+            profiles.any {
+                it.endsWith("/structuredefinition/c4dic-insuranceplan") ||
+                    it.endsWith("/structuredefinition/sbc-insurance-plan")
+            } || "insuranceplan" in resourceTypes -> RequestItem(
                 id = id,
                 title = item.optString("title").ifBlank { "Plan Benefits Summary" },
                 subtitle = summary.ifBlank { "Benefits, cost sharing, and plan limits." },
@@ -118,9 +120,15 @@ internal object SmartRequestAdapter {
                 meta = JSONObject(item.toString()),
                 acceptedMediaTypes = accept,
             )
-            "patient" in selector || "ips" in selector || "bundle" in selector ||
-                "immunization" in selector || "condition" in selector ||
-                "allergyintolerance" in selector -> RequestItem(
+            profiles.any {
+                it.endsWith("/structuredefinition/us-core-patient") ||
+                    it.endsWith("/structuredefinition/bundle-uv-ips")
+            } || profileCollections.any {
+                it == "http://hl7.org/fhir/us/core" ||
+                    it == "http://hl7.org/fhir/uv/ips"
+            } || resourceTypes.any {
+                it in setOf("patient", "bundle", "immunization", "condition", "allergyintolerance", "diagnosticreport", "observation")
+            } -> RequestItem(
                 id = id,
                 title = item.optString("title").ifBlank { "Clinical History" },
                 subtitle = summary.ifBlank { "Patient summary, conditions, medications, and allergies." },
@@ -137,6 +145,24 @@ internal object SmartRequestAdapter {
                 acceptedMediaTypes = accept,
             )
         }
+    }
+
+    private fun profilesFromCanonicals(value: Any?): Set<String> {
+        val out = LinkedHashSet<String>()
+        fun addOne(v: Any?) {
+            when (v) {
+                is String -> if (v.isNotBlank()) out += v.substringBefore('|').lowercase()
+                is JSONObject -> {
+                    val canonical = v.optString("canonical")
+                    if (canonical.isNotBlank()) out += canonical.substringBefore('|').lowercase()
+                }
+                is JSONArray -> {
+                    for (i in 0 until v.length()) addOne(v.opt(i))
+                }
+            }
+        }
+        addOne(value)
+        return out
     }
 
     private fun questionnaireResource(value: Any?): JSONObject? {
@@ -171,6 +197,23 @@ internal object SmartRequestAdapter {
         val out = ArrayList<String>(array.length())
         for (i in 0 until array.length()) {
             array.optString(i).takeIf { it.isNotBlank() }?.let(out::add)
+        }
+        return out
+    }
+
+    private fun requiredString(obj: JSONObject, path: String): String {
+        val value = obj.opt(path.substringAfterLast('.'))
+        require(value is String && value.isNotBlank()) { "$path missing or not a string" }
+        return value
+    }
+
+    private fun requiredStringArray(array: JSONArray?, path: String): List<String> {
+        require(array != null && array.length() > 0) { "$path must be a non-empty string array" }
+        val out = ArrayList<String>(array.length())
+        for (i in 0 until array.length()) {
+            val value = array.opt(i)
+            require(value is String && value.isNotBlank()) { "$path[$i] must be a non-empty string" }
+            out += value
         }
         return out
     }

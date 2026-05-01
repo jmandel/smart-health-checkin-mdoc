@@ -1,0 +1,18 @@
+JWKS source: https://spec.smarthealth.cards/examples/issuer/.well-known/jwks.json
+Fetched: 2026-05-01
+Issuer iss claim: https://spec.smarthealth.cards/examples/issuer
+
+This is the canonical synthetic example issuer used by the SMART Health Cards
+specification site (https://spec.smarthealth.cards/examples/). The keys
+published here sign all of the example-NN-d-jws.txt vectors hosted at the
+same site.
+
+The JWKS contains two ES256 (P-256) keys:
+  - kid 3Kfdg-XwP-7gXyywtUfUADwBumDOPKMQx-iELL11W9s : signs example-00..02
+  - kid EBKOr72QQDcTBUuVzAzkfBTGew0ZA16GuWty64nS-sw : signs example-03
+    (also carries an x5c chain demonstrating the optional X.509 binding)
+
+License / use restrictions: published as part of the SMART Health Cards
+implementation guide. The IG itself is published under the HL7
+Cross-Project Material License (CC0-equivalent for examples). The keys are
+synthetic and have no association with any real patient or issuer.

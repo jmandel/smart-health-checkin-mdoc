@@ -136,6 +136,23 @@ export function ResourceCard({
   }
 
   const obj = resource as AnyObject;
+  const verifiableCredential = obj.verifiableCredential;
+  if (Array.isArray(verifiableCredential)) {
+    return (
+      <div className="resource-card">
+        <div className="resource-type">SMART Health Card</div>
+        <div className="resource-fields">
+          <Field label="Credentials" value={verifiableCredential.length} />
+          {verifiableCredential.slice(0, 3).map((credential, index) => {
+            const value = String(credential);
+            const truncated = value.length > 140 ? `${value.slice(0, 140)}...` : value;
+            return <Field key={index} label={`JWS ${index + 1}`} value={truncated} />;
+          })}
+        </div>
+      </div>
+    );
+  }
+
   const resourceType = obj.resourceType as string | undefined;
 
   if (resourceType === "Coverage") {

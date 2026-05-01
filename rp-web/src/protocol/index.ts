@@ -15,7 +15,6 @@ export type FhirResourceType = string;
 export type SmartHealthCheckinAcceptedMediaType =
   | "application/smart-health-card"
   | "application/fhir+json"
-  | "application/smart-health-link"
   | (string & {});
 
 export type FhirProfileCollectionRef =
@@ -83,10 +82,6 @@ export type SmartArtifact =
       mediaType: "application/fhir+json";
       fhirVersion: FhirVersion;
       value: unknown;
-    })
-  | (SmartArtifactBase & {
-      mediaType: "application/smart-health-link";
-      url: string;
     })
   | (SmartArtifactBase & {
       value?: unknown;
@@ -1182,8 +1177,8 @@ export function validateSmartCheckinResponse(
     if (!nonEmptyString(artifact.mediaType)) {
       return { ok: false, error: `artifacts[${i}].mediaType missing or not a string` };
     }
-    if (!stringArray(artifact.fulfills)) {
-      return { ok: false, error: `artifacts[${i}].fulfills must be an array of strings` };
+    if (!stringArray(artifact.fulfills) || artifact.fulfills.length === 0) {
+      return { ok: false, error: `artifacts[${i}].fulfills must be a non-empty array of strings` };
     }
     const artifactError = validateArtifact(artifact, `artifacts[${i}]`);
     if (artifactError) return { ok: false, error: artifactError };
@@ -1211,6 +1206,9 @@ export function validateSmartCheckinResponse(
 
 function validateArtifact(artifact: Record<string, unknown>, path: string): string | undefined {
   if (artifact.mediaType === "application/smart-health-card") {
+    if (artifact.fhirVersion !== undefined) {
+      return `${path}.fhirVersion must not be present for application/smart-health-card`;
+    }
     const value = artifact.value;
     if (!isRecord(value) || !stringArray(value.verifiableCredential) || value.verifiableCredential.length === 0) {
       return `${path}.value.verifiableCredential must be a non-empty string array`;
@@ -1222,14 +1220,51 @@ function validateArtifact(artifact: Record<string, unknown>, path: string): stri
     if (!("value" in artifact)) return `${path}.value missing`;
     return undefined;
   }
-  if (artifact.mediaType === "application/smart-health-link") {
-    if (!nonEmptyString(artifact.url)) return `${path}.url missing or not a string`;
-    return undefined;
-  }
   if (!("value" in artifact) && !("url" in artifact) && !("data" in artifact)) {
     return `${path} must include value, url, or data`;
   }
   return undefined;
+}
+
+export function validateResponseAgainstRequest(
+  request: unknown,
+  response: unknown,
+): { ok: true; value: SmartCheckinResponse } | { ok: false; error: string } {
+  const requestValidation = validateSmartCheckinRequest(request);
+  if (!requestValidation.ok) return { ok: false, error: `request invalid: ${requestValidation.error}` };
+  const responseValidation = validateSmartCheckinResponse(response);
+  if (!responseValidation.ok) return responseValidation;
+
+  const req = requestValidation.value;
+  const resp = responseValidation.value;
+  if (resp.requestId !== req.id) {
+    return { ok: false, error: `requestId must match request id ${req.id}` };
+  }
+
+  const itemIds = new Set(req.items.map((item) => item.id));
+  for (let i = 0; i < resp.artifacts.length; i++) {
+    const artifact = resp.artifacts[i]!;
+    for (const itemId of artifact.fulfills) {
+      if (!itemIds.has(itemId)) {
+        return { ok: false, error: `artifacts[${i}].fulfills references unknown item ${itemId}` };
+      }
+    }
+  }
+
+  const statusItems = new Set(resp.requestStatus.map((status) => status.item));
+  for (let i = 0; i < resp.requestStatus.length; i++) {
+    const itemId = resp.requestStatus[i]!.item;
+    if (!itemIds.has(itemId)) {
+      return { ok: false, error: `requestStatus[${i}].item references unknown item ${itemId}` };
+    }
+  }
+  for (const itemId of itemIds) {
+    if (!statusItems.has(itemId)) {
+      return { ok: false, error: `requestStatus missing item ${itemId}` };
+    }
+  }
+
+  return responseValidation;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -1323,7 +1358,12 @@ function extractOrgIsoMdocRequest(arg: unknown): {
 function inspectSmartRequestInfoValue(value: unknown): SmartRequestInspection {
   if (value === undefined) return { present: false };
   if (typeof value !== "string") {
-    return { present: true, json: "", valid: false, error: "smart_health_checkin is not a string" };
+    return {
+      present: true,
+      json: "",
+      valid: false,
+      error: `requestInfo["${SMART_REQUEST_INFO_KEY}"] is not a string`,
+    };
   }
   try {
     const parsed = JSON.parse(value);
