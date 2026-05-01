@@ -33,6 +33,26 @@ Not part of the CMWallet POC — only the matcher technique is reused.
 | [research/](research/) | Reference material for DC API, matcher ABI, mdoc response, encryption, and verifier architecture. |
 | [archive/](archive/) | Historical plans, old profile docs, OpenID4VP notes, and alternate explainer drafts. |
 
+## GitHub Pages deployment
+
+This repo can publish the verifier and explainer as one static GitHub Pages
+site. The landing page is `index.html`; the Pages build places the verifier at
+`/verifier/`, the explainer at `/explainer.html`, and the checked-in test
+fixtures at `/fixtures/` so the explainer can fetch the same captures used by
+the test suites.
+
+Local artifact build:
+
+```sh
+cd rp-web && bun install
+cd ..
+scripts/build-pages.sh
+```
+
+The workflow in `.github/workflows/deploy-pages.yml` builds `_site` and deploys
+it with the GitHub Pages artifact action on pushes to `main` or manual workflow
+dispatches.
+
 Read order for a fresh pickup: `CONTEXT.md` →
 `SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md` → `PROTOCOL-EXPLAINER.md` →
 `profiles/org-iso-mdoc.md` → `PLAN.md` → `OPEN-QUESTIONS.md`. Use `archive/`
