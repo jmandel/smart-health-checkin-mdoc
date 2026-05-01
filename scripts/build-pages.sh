@@ -11,6 +11,7 @@ mkdir -p "$SITE_DIR/verifier"
 
 cp "$ROOT/index.html" "$SITE_DIR/index.html"
 cp "$ROOT/explainer.html" "$SITE_DIR/explainer.html"
+cp "$ROOT/wire-protocol.html" "$SITE_DIR/wire-protocol.html"
 cp "$ROOT/SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md" "$SITE_DIR/SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md"
 cp -R "$ROOT/fixtures" "$SITE_DIR/fixtures"
 cp -R "$ROOT/rp-web/dist/." "$SITE_DIR/verifier/"
@@ -19,4 +20,3 @@ touch "$SITE_DIR/.nojekyll"
 find "$SITE_DIR" -type f -name ".DS_Store" -delete
 
 echo "Built GitHub Pages site at $SITE_DIR"
-

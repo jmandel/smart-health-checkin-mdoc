@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>SMART Health Check-in mdoc demo</title>
+    <title>SMART Health Check-in Digital Credentials demo</title>
     <style>
       :root {
         color-scheme: light dark;
@@ -173,16 +173,16 @@
   <body>
     <main>
       <div class="hero">
-        <p class="eyebrow">W3C Digital Credentials API + ISO mdoc</p>
-        <h1>SMART Health Check-in over direct mdoc</h1>
+        <p class="eyebrow">Patient-directed clinical data exchange</p>
+        <h1>SMART Health Check-in over W3C Digital Credentials API</h1>
         <p class="lede">
           This prototype shows a web verifier asking an Android wallet for
           patient-directed clinical data using a SMART Health Check-in request
-          embedded in an <code>org-iso-mdoc</code> Digital Credentials API flow.
+          carried through the browser's Digital Credentials API.
         </p>
         <div class="actions" aria-label="Primary links">
           <a class="button" href="./verifier/">Open verifier demo</a>
-          <a class="button secondary" href="./explainer.html">Open protocol explainer</a>
+          <a class="button secondary" href="./explainer.html">Open SMART model explainer</a>
         </div>
       </div>
 
@@ -192,10 +192,9 @@
           <article class="card">
             <h3>Verifier request</h3>
             <p>
-              The browser creates a direct mdoc request with
-              <code>docType = org.smarthealthit.checkin.1</code>. The SMART
-              request JSON lives in
-              <code>ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]</code>.
+              A clinic-style web page builds a SMART Health Check-in request:
+              a purpose, a list of consentable items, and the artifact formats
+              it can accept.
             </p>
           </article>
           <article class="card">
@@ -209,16 +208,16 @@
           <article class="card">
             <h3>Encrypted response</h3>
             <p>
-              The wallet places the SMART response JSON in the stable mdoc
-              element <code>smart_health_checkin_response</code>, signs the
-              mdoc response, and encrypts it back to the verifier with HPKE.
+              The wallet returns a SMART response with shared artifacts and a
+              per-item status list, encrypted back to the verifier through the
+              Digital Credentials API flow.
             </p>
           </article>
         </div>
       </section>
 
       <section>
-        <h2>Use the two hosted entry points</h2>
+        <h2>Use the hosted entry points</h2>
         <div class="cards">
           <article class="card">
             <h3><a href="./verifier/">Verifier demo</a></h3>
@@ -229,20 +228,23 @@
             </p>
             <p>
               It needs an HTTPS context and a browser/device stack that supports
-              the direct <code>org-iso-mdoc</code> Digital Credentials API path.
+              the Digital Credentials API profile used by this prototype.
             </p>
           </article>
           <article class="card">
-            <h3><a href="./explainer.html">Protocol explainer</a></h3>
+            <h3><a href="./explainer.html">SMART model explainer</a></h3>
             <p>
-              A byte-level walkthrough using checked-in Chrome/Android capture
-              fixtures. It annotates the request, response, SessionTranscript,
-              HPKE envelope, mdoc tags, and decoded SMART payloads.
+              A readable walkthrough of the requester role, responder role,
+              request item language, response artifacts, and per-item status
+              model.
             </p>
+          </article>
+          <article class="card">
+            <h3><a href="./wire-protocol.html">Wire protocol details</a></h3>
             <p>
-              The fixture tree is included in the Pages artifact at
-              <code>./fixtures/</code> so the explainer can load the same files
-              used by the test suites.
+              A byte-level companion for implementers. It uses the checked-in
+              Chrome/Android fixtures to annotate the request, response,
+              SessionTranscript, HPKE envelope, and technical carrying layer.
             </p>
           </article>
         </div>
@@ -250,4 +252,3 @@
     </main>
   </body>
 </html>
-
