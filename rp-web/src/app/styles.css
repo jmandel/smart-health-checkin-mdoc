@@ -420,18 +420,18 @@ textarea.json {
 .tool-grid {
   border-top: 1px solid var(--border);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 0;
 }
 
 .tool-section {
   min-width: 0;
   padding: 18px 20px;
-  border-right: 1px solid var(--border);
+  border-top: 1px solid var(--border);
 }
 
-.tool-section:last-child {
-  border-right: 0;
+.tool-section:first-child {
+  border-top: 0;
 }
 
 .tool-heading {
@@ -626,11 +626,10 @@ select {
 
   .checkin-hero,
   .response-columns,
-  .tool-grid,
-  .metric-row,
-  .task-item,
-  .decoded-row,
-  .answer-row,
+    .metric-row,
+    .task-item,
+    .decoded-row,
+    .answer-row,
   .kv {
     grid-template-columns: 1fr;
   }
@@ -648,14 +647,6 @@ select {
     height: 60px;
   }
 
-  .tool-section {
-    border-right: 0;
-    border-top: 1px solid var(--border);
-  }
-
-  .tool-section:first-child {
-    border-top: 0;
-  }
 }
 
 /* ============================================================

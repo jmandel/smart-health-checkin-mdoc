@@ -7,22 +7,16 @@
   <style>
     :root {
       color-scheme: light;
-      --ink: #1b2638;
-      --muted: #5d6f8a;
-      --line: #d8e2ef;
-      --soft: #f5f8fc;
-      --panel: #ffffff;
+      --ink: #172033;
+      --muted: #5f6f86;
+      --line: #d8e1ec;
+      --soft: #f6f9fc;
       --blue: #006fb7;
-      --blue-soft: #eaf6ff;
-      --green: #0b7c58;
-      --green-soft: #eaf8f2;
-      --purple: #7157d9;
-      --purple-soft: #f1eeff;
-      --amber: #9a5b00;
-      --amber-soft: #fff5e2;
-      --code: #111b2f;
-      --code-fg: #f1f6ff;
-      --shadow: 0 14px 32px rgba(25, 45, 77, 0.08);
+      --green: #08795b;
+      --amber: #925a00;
+      --code: #101827;
+      --code-fg: #edf5ff;
+      --max: 960px;
     }
 
     * {
@@ -36,8 +30,8 @@
     body {
       margin: 0;
       color: var(--ink);
-      background: #eef3f8;
-      font: 16px/1.55 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #ffffff;
+      font: 17px/1.6 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
     a {
@@ -45,303 +39,183 @@
     }
 
     header {
-      background:
-        radial-gradient(circle at 86% 8%, rgba(0, 111, 183, 0.16), transparent 24rem),
-        linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
       border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
     }
 
     .wrap {
-      max-width: 1180px;
+      max-width: var(--max);
       margin: 0 auto;
-      padding: 30px 24px;
-    }
-
-    .hero {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 340px;
-      gap: 28px;
-      align-items: end;
+      padding: 32px 24px;
     }
 
     h1,
     h2,
-    h3,
-    h4 {
+    h3 {
       margin: 0;
-      line-height: 1.12;
+      line-height: 1.15;
+      letter-spacing: -0.025em;
     }
 
     h1 {
-      max-width: 880px;
-      font-size: clamp(2.45rem, 5vw, 5.3rem);
+      max-width: 860px;
+      font-size: clamp(2.3rem, 5vw, 4.7rem);
       letter-spacing: -0.055em;
     }
 
     h2 {
-      margin-bottom: 12px;
-      font-size: clamp(1.7rem, 3vw, 2.35rem);
-      letter-spacing: -0.025em;
+      margin-bottom: 14px;
+      font-size: clamp(1.7rem, 3vw, 2.25rem);
     }
 
     h3 {
-      margin-bottom: 8px;
-      font-size: 1.22rem;
-    }
-
-    h4 {
-      margin-bottom: 6px;
-      color: var(--muted);
-      font-size: 0.88rem;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
+      margin: 26px 0 8px;
+      font-size: 1.25rem;
     }
 
     p {
-      margin: 0 0 12px;
+      margin: 0 0 14px;
+      max-width: 78ch;
     }
 
     .eyebrow {
       margin: 0 0 14px;
       color: #315a84;
+      font-size: 0.86rem;
       font-weight: 800;
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
 
     .lede {
-      max-width: 820px;
       margin-top: 18px;
       color: var(--muted);
       font-size: 1.18rem;
     }
 
-    .button-row,
-    .badge-row {
+    .links {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 18px;
+      gap: 10px 16px;
+      margin-top: 22px;
     }
 
-    .button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 42px;
-      padding: 0 16px;
-      border: 1px solid #95c8ee;
-      border-radius: 999px;
-      background: var(--blue);
-      color: #ffffff;
+    .links a {
       font-weight: 800;
-      text-decoration: none;
+      text-decoration-thickness: 0.08em;
+      text-underline-offset: 0.18em;
     }
 
-    .button.secondary {
+    .toc {
+      border-bottom: 1px solid var(--line);
       background: #ffffff;
-      color: var(--blue);
     }
 
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 7px 12px;
-      border: 1px solid #b8d6ee;
-      border-radius: 999px;
-      background: #eff8ff;
-      color: #005f9e;
-      font-weight: 800;
-      white-space: nowrap;
+    .toc .wrap {
+      padding-top: 16px;
+      padding-bottom: 16px;
     }
 
-    .panel,
-    .card,
-    .mini {
-      border: 1px solid var(--line);
-      background: var(--panel);
-      box-shadow: var(--shadow);
-    }
-
-    .panel {
-      border-radius: 18px;
-      padding: 22px;
-    }
-
-    main.wrap {
-      display: grid;
-      grid-template-columns: 250px minmax(0, 1fr);
-      gap: 24px;
-      align-items: start;
-    }
-
-    nav {
-      position: sticky;
-      top: 14px;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      background: #ffffff;
-      padding: 14px;
-      box-shadow: var(--shadow);
-    }
-
-    nav a {
-      display: block;
-      padding: 9px 10px;
-      border-radius: 10px;
+    .toc a {
+      display: inline-block;
+      margin: 0 18px 8px 0;
       color: #36506e;
+      font-size: 0.95rem;
       font-weight: 750;
       text-decoration: none;
     }
 
-    nav a:hover {
-      background: var(--blue-soft);
-      color: #004f84;
+    main.wrap {
+      padding-top: 0;
     }
 
     section {
-      margin-bottom: 28px;
-      padding: 28px;
-      border: 1px solid var(--line);
-      border-radius: 24px;
-      background: rgba(255, 255, 255, 0.72);
+      padding: 38px 0;
+      border-bottom: 1px solid var(--line);
     }
 
-    .role-map {
+    section:last-child {
+      border-bottom: 0;
+    }
+
+    .role-list {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 72px minmax(0, 1fr);
-      gap: 14px;
-      align-items: stretch;
-      margin-top: 18px;
+      gap: 24px;
+      margin-top: 20px;
     }
 
     .role {
-      display: grid;
-      gap: 12px;
-      padding: 22px;
-      border-radius: 22px;
-      min-height: 230px;
+      padding-left: 18px;
+      border-left: 5px solid var(--blue);
     }
 
-    .requester {
-      border: 2px solid #9acbed;
-      background: var(--blue-soft);
+    .role.responder {
+      border-left-color: var(--green);
     }
 
-    .responder {
-      border: 2px solid #93d8bd;
-      background: var(--green-soft);
+    .role h3 {
+      margin-top: 0;
     }
 
-    .arrow {
+    .role ul,
+    .plain-list {
+      margin: 8px 0 0;
+      padding-left: 22px;
+    }
+
+    .role li,
+    .plain-list li {
+      margin: 4px 0;
+    }
+
+    .steps {
+      margin: 24px 0 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: step;
+      border-left: 3px solid #c8d9e8;
+    }
+
+    .steps li {
+      counter-increment: step;
+      position: relative;
+      margin: 0 0 24px;
+      padding-left: 28px;
+    }
+
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: -16px;
+      top: 0;
+      width: 30px;
+      height: 30px;
       display: grid;
       place-items: center;
-      color: #315a84;
-      font-size: 2.2rem;
+      border: 2px solid #c8d9e8;
+      border-radius: 50%;
+      background: #ffffff;
+      color: var(--blue);
+      font-size: 0.9rem;
       font-weight: 900;
     }
 
-    .pills {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 4px;
-    }
-
-    .pill {
-      padding: 5px 9px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.75);
-      color: #294260;
-      font-size: 0.9rem;
-      font-weight: 800;
-    }
-
-    .flow {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 16px;
-    }
-
-    .flow-step {
-      border-left: 5px solid var(--blue);
-      border-radius: 16px;
-      padding: 16px;
-      background: #ffffff;
-      box-shadow: var(--shadow);
-    }
-
-    .flow-step strong {
+    .steps strong {
       display: block;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
 
-    .two,
-    .three,
-    .four {
-      display: grid;
-      gap: 16px;
-      margin-top: 16px;
+    .invariant,
+    .note {
+      margin: 22px 0 0;
+      padding: 16px 0 16px 18px;
+      border-left: 5px solid var(--green);
+      background: linear-gradient(90deg, rgba(8, 121, 91, 0.08), transparent 72%);
     }
 
-    .two {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .three {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .four {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-
-    .card,
-    .mini {
-      border-radius: 18px;
-      padding: 20px;
-    }
-
-    .card.request {
-      border-top: 5px solid var(--blue);
-    }
-
-    .card.response {
-      border-top: 5px solid var(--green);
-    }
-
-    .card.questionnaire {
-      border-top: 5px solid var(--purple);
-    }
-
-    .card.status {
-      border-top: 5px solid var(--amber);
-    }
-
-    .shape {
-      display: grid;
-      gap: 12px;
-      margin-top: 14px;
-    }
-
-    .shape-row {
-      display: grid;
-      grid-template-columns: 160px minmax(0, 1fr);
-      gap: 14px;
-      padding: 12px 0;
-      border-top: 1px solid #e6edf5;
-    }
-
-    .shape-row:first-child {
-      border-top: 0;
-    }
-
-    .field {
-      color: #0d4f82;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-weight: 800;
-      overflow-wrap: anywhere;
+    .note {
+      border-left-color: var(--amber);
+      background: linear-gradient(90deg, rgba(146, 90, 0, 0.08), transparent 72%);
     }
 
     code,
@@ -350,369 +224,290 @@
     }
 
     code {
-      padding: 0.1em 0.3em;
-      border-radius: 0.35em;
-      background: #edf4fb;
+      padding: 0.08em 0.25em;
+      background: #eef4fa;
+      color: #21334d;
       overflow-wrap: anywhere;
     }
 
     pre {
-      margin: 12px 0 0;
-      padding: 16px;
-      border-radius: 14px;
+      width: 100%;
+      margin: 14px 0 22px;
+      padding: 18px 20px;
+      overflow-x: auto;
       background: var(--code);
       color: var(--code-fg);
-      overflow-x: auto;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-      font-size: 0.9rem;
+      font-size: 0.92rem;
       line-height: 1.55;
+      white-space: pre;
     }
 
-    .label {
-      display: inline-flex;
-      align-items: center;
-      margin-bottom: 8px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      background: #edf4fb;
-      color: #36506e;
-      font-size: 0.82rem;
-      font-weight: 850;
-      letter-spacing: 0.02em;
-      text-transform: uppercase;
+    .example {
+      margin-top: 22px;
+      padding-top: 20px;
+      border-top: 1px solid #e5edf5;
+    }
+
+    .example:first-of-type {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    dl {
+      display: grid;
+      grid-template-columns: 180px minmax(0, 1fr);
+      gap: 10px 18px;
+      margin: 18px 0 0;
+    }
+
+    dt {
+      color: #0d4f82;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-weight: 800;
+    }
+
+    dd {
+      margin: 0;
+      color: #33445c;
     }
 
     table {
       width: 100%;
-      margin-top: 16px;
+      margin-top: 18px;
       border-collapse: collapse;
-      overflow: hidden;
-      border-radius: 16px;
-      background: #ffffff;
-      box-shadow: var(--shadow);
+      font-size: 0.96rem;
     }
 
     th,
     td {
-      padding: 13px 14px;
-      border-bottom: 1px solid #e6edf5;
+      padding: 11px 10px;
+      border-bottom: 1px solid #e5edf5;
       text-align: left;
       vertical-align: top;
     }
 
     th {
-      background: #f2f7fc;
-      color: #35506e;
-      font-size: 0.86rem;
-      letter-spacing: 0.04em;
+      color: #425873;
+      font-size: 0.8rem;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
     }
 
-    tr:last-child td {
-      border-bottom: 0;
+    .two-up {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      align-items: start;
+      margin-top: 22px;
     }
 
-    .callout {
-      margin-top: 16px;
-      border-left: 5px solid var(--blue);
-      border-radius: 16px;
-      padding: 16px 18px;
-      background: #ffffff;
-      box-shadow: var(--shadow);
+    .two-up > div {
+      min-width: 0;
     }
 
-    .callout.good {
-      border-left-color: var(--green);
-      background: var(--green-soft);
+    .two-up h3 {
+      margin-top: 0;
     }
 
-    .callout.warning {
-      border-left-color: var(--amber);
-      background: var(--amber-soft);
-    }
+    @media (max-width: 760px) {
+      body {
+        font-size: 16px;
+      }
 
-    .small {
-      color: var(--muted);
-      font-size: 0.94rem;
-    }
+      .wrap {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
 
-    @media (max-width: 980px) {
-      .hero,
-      main.wrap,
-      .role-map,
-      .flow,
-      .two,
-      .three,
-      .four {
+      dl,
+      .two-up {
         grid-template-columns: 1fr;
       }
 
-      nav {
-        position: static;
-      }
-
-      .arrow {
-        transform: rotate(90deg);
-        min-height: 38px;
-      }
-
-      .shape-row {
-        grid-template-columns: 1fr;
+      pre {
+        font-size: 0.84rem;
       }
     }
   </style>
 </head>
 <body>
   <header>
-    <div class="wrap hero">
-      <div>
-        <p class="eyebrow">SMART Health Check-in over W3C Digital Credentials API</p>
-        <h1>A request asks for check-in work. A response returns what the patient shared.</h1>
-        <p class="lede">
-          This page explains the application-level SMART model: who asks, who
-          responds, what counts as a request item, and how response artifacts
-          prove which item they fulfill. The mdoc bytes are important, but they
-          are the carrying layer, not the clinical language.
-        </p>
-        <div class="button-row">
-          <a class="button" href="./verifier/">Open verifier demo</a>
-          <a class="button secondary" href="./wire-protocol.html">Wire protocol details</a>
-        </div>
-        <div class="badge-row">
-          <span class="badge">request: tasks</span>
-          <span class="badge">response: artifacts + status</span>
-          <span class="badge">payload version: 1</span>
-        </div>
+    <div class="wrap">
+      <p class="eyebrow">SMART Health Check-in over W3C Digital Credentials API</p>
+      <h1>A request asks for check-in work. A response returns what the patient shared.</h1>
+      <p class="lede">
+        This page explains the application-level SMART model: who asks, who
+        responds, what counts as a request item, and how response artifacts map
+        back to the original checklist. The wire-protocol details are separate.
+      </p>
+      <div class="links">
+        <a href="./verifier/">Open verifier demo</a>
+        <a href="./wire-protocol.html">Open wire-protocol details</a>
+        <a href="./SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md">Read the draft payload spec</a>
       </div>
-      <aside class="panel">
-        <h3>Read this first</h3>
-        <p class="small">
-          Start here when you want the product and data model. Then open the
-          wire-protocol page for CBOR, mdoc, HPKE, SessionTranscript, and
-          byte-level fixture annotations.
-        </p>
-      </aside>
     </div>
   </header>
 
-  <main class="wrap">
-    <nav aria-label="Explainer sections">
-      <a href="#roles">Requester and responder</a>
-      <a href="#conversation">Conversation shape</a>
-      <a href="#request">Request object</a>
-      <a href="#items">Request items</a>
-      <a href="#response">Response object</a>
+  <nav class="toc" aria-label="Explainer sections">
+    <div class="wrap">
+      <a href="#roles">Roles</a>
+      <a href="#conversation">Conversation</a>
+      <a href="#request">Request</a>
+      <a href="#items">Items</a>
+      <a href="#response">Response</a>
       <a href="#artifacts">Artifacts</a>
       <a href="#statuses">Statuses</a>
-      <a href="#examples">Complete example</a>
-      <a href="#wire">Where the wire details live</a>
-    </nav>
+      <a href="#complete-example">Complete example</a>
+      <a href="#wire">Wire details</a>
+    </div>
+  </nav>
 
-    <div>
-      <section id="roles">
-        <h2>Two application roles</h2>
-        <p>
-          The SMART Health Check-in model is deliberately small. A requester
-          describes the check-in data it would like. A responder decides what is
-          available, shows the user a consent experience, and returns the
-          artifacts the user chose to share.
-        </p>
+  <main class="wrap">
+    <section id="roles">
+      <h2>Requester and responder roles</h2>
+      <p>
+        There are two application roles. The requester says what it wants for a
+        check-in workflow. The responder decides what it can provide, asks the
+        user, and returns the content the user approved.
+      </p>
 
-        <div class="role-map">
-          <article class="role requester">
-            <h3>Requester</h3>
-            <p>
-              Usually a clinic, registration kiosk, patient portal, or other
-              relying-party web app.
-            </p>
-            <div>
-              <h4>Owns</h4>
-              <div class="pills">
-                <span class="pill">purpose</span>
-                <span class="pill">item list</span>
-                <span class="pill">accepted media types</span>
-                <span class="pill">encryption key</span>
-              </div>
-            </div>
-            <p class="small">
-              It creates a SMART request and invokes the W3C Digital
-              Credentials API.
-            </p>
-          </article>
-
-          <div class="arrow" aria-hidden="true">&harr;</div>
-
-          <article class="role responder">
-            <h3>Responder</h3>
-            <p>
-              Usually a patient wallet or health app that can present clinical
-              data on behalf of the user.
-            </p>
-            <div>
-              <h4>Owns</h4>
-              <div class="pills">
-                <span class="pill">available data</span>
-                <span class="pill">user consent</span>
-                <span class="pill">shared artifacts</span>
-                <span class="pill">per-item status</span>
-              </div>
-            </div>
-            <p class="small">
-              It returns a SMART response through the same Digital Credentials
-              flow.
-            </p>
-          </article>
-        </div>
-      </section>
-
-      <section id="conversation">
-        <h2>The conversation shape</h2>
-        <p>
-          Think of the exchange as a checklist rather than a document request.
-          The requester sends a list of named items. The responder sends back
-          clinical artifacts and a status for every item on the checklist.
-        </p>
-
-        <div class="flow">
-          <div class="flow-step">
-            <strong>1. Requester chooses purpose</strong>
-            Example: clinic check-in, billing, visit intake, prior auth.
-          </div>
-          <div class="flow-step">
-            <strong>2. Requester lists items</strong>
-            Patient demographics, insurance card, IPS summary, intake form.
-          </div>
-          <div class="flow-step">
-            <strong>3. Responder matches items</strong>
-            The wallet decides what it can offer and shows the user.
-          </div>
-          <div class="flow-step">
-            <strong>4. User accepts or declines</strong>
-            The user may share all, some, or none of the requested items.
-          </div>
-          <div class="flow-step">
-            <strong>5. Response maps back</strong>
-            Artifacts cite <code>fulfills[]</code>; statuses cite each item id.
-          </div>
+      <div class="role-list">
+        <div class="role requester">
+          <h3>Requester</h3>
+          <p>
+            A clinic, registration kiosk, patient portal, or other relying-party
+            web app. It owns the reason for the exchange, the requested item
+            list, and the formats it can accept.
+          </p>
+          <ul>
+            <li>Creates a SMART Health Check-in request.</li>
+            <li>Invokes <code>navigator.credentials.get()</code>.</li>
+            <li>Decrypts and validates the response against the original request.</li>
+          </ul>
         </div>
 
-        <div class="callout good">
-          <strong>Core invariant:</strong> each <code>request.items[].id</code>
-          must appear exactly once in <code>response.requestStatus[]</code>.
-          Shared artifacts point back to one or more request item ids with
-          <code>fulfills[]</code>.
+        <div class="role responder">
+          <h3>Responder</h3>
+          <p>
+            A patient wallet or health app. It owns available health data,
+            renders consent, and creates a SMART Health Check-in response.
+          </p>
+          <ul>
+            <li>Matches request items it understands.</li>
+            <li>Shows the user what will be shared.</li>
+            <li>Returns artifacts plus a status for every item.</li>
+          </ul>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section id="request">
-        <h2>What makes a SMART request?</h2>
-        <p>
-          A request is a typed envelope plus an ordered list of request items.
-          The envelope gives the conversation an identity and declares
-          cross-cutting preferences. The items are the work the user sees.
-        </p>
+    <section id="conversation">
+      <h2>The conversation is a checklist</h2>
+      <p>
+        This is not "give me one credential." It is "here is a checklist of
+        consentable check-in tasks; tell me what the patient shared for each."
+      </p>
 
-        <div class="two">
-          <article class="card request">
-            <span class="label">Request envelope</span>
+      <ol class="steps">
+        <li>
+          <strong>Requester chooses a purpose.</strong>
+          Example: clinic check-in, billing, visit intake, or prior authorization.
+        </li>
+        <li>
+          <strong>Requester lists named items.</strong>
+          Examples: patient demographics, insurance card, health summary, intake form.
+        </li>
+        <li>
+          <strong>Responder matches the list.</strong>
+          The wallet decides what it can offer and how each item should be shown.
+        </li>
+        <li>
+          <strong>User accepts, edits, or declines.</strong>
+          The user may share all, some, or none of the requested items.
+        </li>
+        <li>
+          <strong>Responder maps everything back.</strong>
+          Artifacts cite item ids in <code>fulfills[]</code>. Status rows cite item ids in <code>requestStatus[]</code>.
+        </li>
+      </ol>
+
+      <p class="invariant">
+        <strong>Core invariant:</strong> each <code>request.items[].id</code>
+        must appear exactly once in <code>response.requestStatus[]</code>.
+        Artifacts point back to one or more item ids using <code>fulfills[]</code>.
+      </p>
+    </section>
+
+    <section id="request">
+      <h2>What makes a SMART request?</h2>
+      <p>
+        A request is a typed envelope plus an ordered list of items. The
+        envelope identifies the conversation. The items are the work the user
+        sees in the wallet.
+      </p>
+
 <pre>{
   "type": "smart-health-checkin-request",
   "version": "1",
   "id": "demo-all-of-the-above",
   "purpose": "Clinic check-in",
   "fhirVersions": ["4.0.1"],
-  "items": [ ... ]
+  "items": [
+    { "...": "request item" }
+  ]
 }</pre>
-          </article>
 
-          <article class="card request">
-            <span class="label">Envelope fields</span>
-            <div class="shape">
-              <div class="shape-row">
-                <div class="field">type</div>
-                <div>Fixed discriminator for this payload family.</div>
-              </div>
-              <div class="shape-row">
-                <div class="field">version</div>
-                <div>Payload schema version. Current value is <code>"1"</code>.</div>
-              </div>
-              <div class="shape-row">
-                <div class="field">id</div>
-                <div>Requester-chosen id echoed by <code>response.requestId</code>.</div>
-              </div>
-              <div class="shape-row">
-                <div class="field">purpose</div>
-                <div>Human-readable reason to show in consent UI.</div>
-              </div>
-              <div class="shape-row">
-                <div class="field">fhirVersions</div>
-                <div>FHIR versions the requester can consume.</div>
-              </div>
-              <div class="shape-row">
-                <div class="field">items</div>
-                <div>The named checklist of clinical requests.</div>
-              </div>
-            </div>
-          </article>
-        </div>
-      </section>
+      <dl>
+        <dt>type</dt>
+        <dd>Fixed discriminator: <code>smart-health-checkin-request</code>.</dd>
+        <dt>version</dt>
+        <dd>Payload schema version. Current value is <code>"1"</code>.</dd>
+        <dt>id</dt>
+        <dd>Requester-chosen id echoed by <code>response.requestId</code>.</dd>
+        <dt>purpose</dt>
+        <dd>Human-readable reason to show in consent UI.</dd>
+        <dt>fhirVersions</dt>
+        <dd>FHIR versions the requester can consume.</dd>
+        <dt>items</dt>
+        <dd>The named checklist of clinical requests.</dd>
+      </dl>
+    </section>
 
-      <section id="items">
-        <h2>What makes a request item?</h2>
-        <p>
-          A request item is one consentable task. It has a stable id, a display
-          label, a content description, and the response formats the requester
-          accepts for that item.
-        </p>
+    <section id="items">
+      <h2>What makes a request item?</h2>
+      <p>
+        A request item is one consentable task. It has a stable id, display
+        text, a content description, and a list of accepted response formats.
+      </p>
 
-        <div class="two">
-          <article class="card request">
-            <span class="label">Item shape</span>
 <pre>{
   "id": "insurance",
   "title": "Insurance card",
   "summary": "Insurance card for billing",
   "required": true,
-  "content": { ... },
+  "content": { "...": "what is being requested" },
   "accept": ["application/fhir+json"]
 }</pre>
-          </article>
 
-          <article class="card request">
-            <span class="label">Item fields</span>
-            <div class="shape">
-              <div class="shape-row">
-                <div class="field">id</div>
-                <div>Short stable name. Responses refer to this id.</div>
-              </div>
-              <div class="shape-row">
-                <div class="field">title / summary</div>
-                <div>User-facing explanation of the request item.</div>
-              </div>
-              <div class="shape-row">
-                <div class="field">required</div>
-                <div>Requester preference; the user still controls sharing.</div>
-              </div>
-              <div class="shape-row">
-                <div class="field">content</div>
-                <div>The clinical thing requested.</div>
-              </div>
-              <div class="shape-row">
-                <div class="field">accept</div>
-                <div>Media types the requester accepts for the artifact.</div>
-              </div>
-            </div>
-          </article>
-        </div>
+      <dl>
+        <dt>id</dt>
+        <dd>Short stable name. Responses refer to this id.</dd>
+        <dt>title / summary</dt>
+        <dd>User-facing display text for the wallet consent screen.</dd>
+        <dt>required</dt>
+        <dd>Requester preference. The user still controls sharing.</dd>
+        <dt>content</dt>
+        <dd>The clinical thing requested.</dd>
+        <dt>accept</dt>
+        <dd>Media types the requester accepts for the returned artifact.</dd>
+      </dl>
 
-        <div class="three">
-          <article class="card request">
-            <h3>Specific FHIR profiles</h3>
-            <p>
-              Ask for resources conforming to known profiles, such as US Core
-              Patient or C4DIC Coverage.
-            </p>
+      <div class="example">
+        <h3>Item type: specific FHIR profiles</h3>
+        <p>
+          Ask for resources conforming to known profiles, such as US Core
+          Patient or C4DIC Coverage.
+        </p>
 <pre>{
   "id": "patient",
   "title": "Patient demographics",
@@ -724,14 +519,14 @@
   },
   "accept": ["application/fhir+json"]
 }</pre>
-          </article>
+      </div>
 
-          <article class="card request">
-            <h3>Broad FHIR sharing</h3>
-            <p>
-              Omit filters when the requester is asking for any useful
-              patient-specific FHIR resources the wallet and user can offer.
-            </p>
+      <div class="example">
+        <h3>Item type: broad FHIR sharing</h3>
+        <p>
+          Omit filters when the requester wants useful patient-specific FHIR
+          resources and the user should choose what to share.
+        </p>
 <pre>{
   "id": "anything-useful",
   "title": "Relevant clinical history",
@@ -743,14 +538,14 @@
     "application/smart-health-card"
   ]
 }</pre>
-          </article>
+      </div>
 
-          <article class="card questionnaire">
-            <h3>Questionnaire</h3>
-            <p>
-              Ask the wallet to render a FHIR Questionnaire, accept user input,
-              and return a QuestionnaireResponse.
-            </p>
+      <div class="example">
+        <h3>Item type: questionnaire</h3>
+        <p>
+          Ask the wallet to render a FHIR Questionnaire, accept user input, and
+          return a QuestionnaireResponse.
+        </p>
 <pre>{
   "id": "intake",
   "title": "Migraine intake",
@@ -770,76 +565,58 @@
   },
   "accept": ["application/fhir+json"]
 }</pre>
-          </article>
-        </div>
+      </div>
 
-        <div class="callout warning">
-          <strong>Canonical URLs with versions:</strong> the wallet may strip
-          <code>|version</code> when fetching or checking family membership, but
-          preserves the canonical as written in records, fixtures, returned FHIR
-          resources, and logs.
-        </div>
-      </section>
+      <p class="note">
+        <strong>Canonical URLs with versions:</strong> the wallet may strip
+        <code>|version</code> when fetching or checking family membership, but
+        preserves the canonical as written in records, fixtures, returned FHIR
+        resources, and logs.
+      </p>
+    </section>
 
-      <section id="response">
-        <h2>What makes a SMART response?</h2>
-        <p>
-          A response is not just a pile of data. It is a typed envelope that
-          links shared artifacts back to the original request and says what
-          happened for every request item.
-        </p>
+    <section id="response">
+      <h2>What makes a SMART response?</h2>
+      <p>
+        A response is a typed envelope that links shared artifacts back to the
+        original request and says what happened for every requested item.
+      </p>
 
-        <div class="two">
-          <article class="card response">
-            <span class="label">Response envelope</span>
 <pre>{
   "type": "smart-health-checkin-response",
   "version": "1",
   "requestId": "demo-all-of-the-above",
-  "artifacts": [ ... ],
-  "requestStatus": [ ... ]
+  "artifacts": [
+    { "...": "shared clinical content" }
+  ],
+  "requestStatus": [
+    { "...": "one outcome per item" }
+  ]
 }</pre>
-          </article>
 
-          <article class="card response">
-            <span class="label">Envelope fields</span>
-            <div class="shape">
-              <div class="shape-row">
-                <div class="field">type</div>
-                <div>Fixed discriminator for response payloads.</div>
-              </div>
-              <div class="shape-row">
-                <div class="field">version</div>
-                <div>Response schema version. Current value is <code>"1"</code>.</div>
-              </div>
-              <div class="shape-row">
-                <div class="field">requestId</div>
-                <div>Must equal the original request <code>id</code>.</div>
-              </div>
-              <div class="shape-row">
-                <div class="field">artifacts</div>
-                <div>Clinical payloads the user chose to share.</div>
-              </div>
-              <div class="shape-row">
-                <div class="field">requestStatus</div>
-                <div>One outcome for every requested item.</div>
-              </div>
-            </div>
-          </article>
-        </div>
-      </section>
+      <dl>
+        <dt>type</dt>
+        <dd>Fixed discriminator: <code>smart-health-checkin-response</code>.</dd>
+        <dt>version</dt>
+        <dd>Response schema version. Current value is <code>"1"</code>.</dd>
+        <dt>requestId</dt>
+        <dd>Must equal the original request <code>id</code>.</dd>
+        <dt>artifacts</dt>
+        <dd>Clinical payloads the user chose to share.</dd>
+        <dt>requestStatus</dt>
+        <dd>One outcome for every requested item.</dd>
+      </dl>
+    </section>
 
-      <section id="artifacts">
-        <h2>Artifacts: the shared clinical content</h2>
-        <p>
-          An artifact is a concrete payload. It has its own id, a media type,
-          and a <code>fulfills[]</code> array that maps it back to one or more
-          request items.
-        </p>
+    <section id="artifacts">
+      <h2>Artifacts are the shared clinical content</h2>
+      <p>
+        An artifact has its own id, a media type, and a <code>fulfills[]</code>
+        array that maps it back to one or more request items.
+      </p>
 
-        <div class="three">
-          <article class="card response">
-            <h3>FHIR JSON resource or bundle</h3>
+      <div class="example">
+        <h3>FHIR JSON resource or bundle</h3>
 <pre>{
   "id": "artifact-insurance",
   "mediaType": "application/fhir+json",
@@ -854,28 +631,24 @@
     }
   }
 }</pre>
-            <p class="small">
-              Raw FHIR artifacts carry <code>fhirVersion</code> outside the
-              resource so the verifier can parse them consistently.
-            </p>
-          </article>
+      </div>
 
-          <article class="card response">
-            <h3>SMART Health Card</h3>
+      <div class="example">
+        <h3>SMART Health Card</h3>
 <pre>{
   "id": "artifact-ips-shc",
   "mediaType": "application/smart-health-card",
   "fulfills": ["ips"],
   "data": "shc:/567629..."
 }</pre>
-            <p class="small">
-              SMART Health Cards do not use outer <code>fhirVersion</code>;
-              the verifier inspects the signed JWS payload.
-            </p>
-          </article>
+        <p>
+          SMART Health Cards do not use outer <code>fhirVersion</code>; the
+          verifier inspects the signed JWS payload.
+        </p>
+      </div>
 
-          <article class="card questionnaire">
-            <h3>QuestionnaireResponse</h3>
+      <div class="example">
+        <h3>QuestionnaireResponse</h3>
 <pre>{
   "id": "artifact-intake",
   "mediaType": "application/fhir+json",
@@ -893,95 +666,92 @@
     ]
   }
 }</pre>
-          </article>
-        </div>
+      </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th>Artifact field</th>
-              <th>Meaning</th>
-              <th>Important rule</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>id</code></td>
-              <td>Responder-chosen artifact identifier.</td>
-              <td>Unique inside the response.</td>
-            </tr>
-            <tr>
-              <td><code>mediaType</code></td>
-              <td>How the verifier should parse the artifact.</td>
-              <td>Must be one of the media types accepted by every fulfilled item.</td>
-            </tr>
-            <tr>
-              <td><code>fulfills</code></td>
-              <td>Request item ids this artifact satisfies.</td>
-              <td>Must be non-empty and reference real request item ids.</td>
-            </tr>
-            <tr>
-              <td><code>value</code></td>
-              <td>Inline JSON content, such as FHIR JSON.</td>
-              <td>Used for clear JSON artifacts.</td>
-            </tr>
-            <tr>
-              <td><code>data</code></td>
-              <td>Compact encoded artifact, such as an SHC string.</td>
-              <td>Useful for signed or binary-friendly payloads.</td>
-            </tr>
-            <tr>
-              <td><code>url</code></td>
-              <td>Pointer to externally hosted content.</td>
-              <td>Extension point; not required by the current demo.</td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
+      <table>
+        <thead>
+          <tr>
+            <th>Artifact field</th>
+            <th>Meaning</th>
+            <th>Important rule</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>id</code></td>
+            <td>Responder-chosen artifact identifier.</td>
+            <td>Unique inside the response.</td>
+          </tr>
+          <tr>
+            <td><code>mediaType</code></td>
+            <td>How the verifier should parse the artifact.</td>
+            <td>Must be accepted by every item in <code>fulfills[]</code>.</td>
+          </tr>
+          <tr>
+            <td><code>fulfills</code></td>
+            <td>Request item ids this artifact satisfies.</td>
+            <td>Must be non-empty and reference real request item ids.</td>
+          </tr>
+          <tr>
+            <td><code>value</code></td>
+            <td>Inline JSON content, such as FHIR JSON.</td>
+            <td>Use for clear JSON artifacts.</td>
+          </tr>
+          <tr>
+            <td><code>data</code></td>
+            <td>Compact encoded artifact, such as an SHC string.</td>
+            <td>Use for signed or binary-friendly payloads.</td>
+          </tr>
+          <tr>
+            <td><code>url</code></td>
+            <td>Pointer to externally hosted content.</td>
+            <td>Extension point; not required by the current demo.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
 
-      <section id="statuses">
-        <h2>Status: what happened for each item?</h2>
-        <p>
-          Statuses make partial sharing explicit. A verifier should not infer
-          success from an artifact alone; it should check the status list too.
-        </p>
+    <section id="statuses">
+      <h2>Status says what happened for each item</h2>
+      <p>
+        A verifier should not infer success from artifacts alone. It should
+        check the status list for every requested item.
+      </p>
 
-        <div class="two">
-          <article class="card status">
-            <span class="label">Status shape</span>
 <pre>{
   "item": "insurance",
   "status": "fulfilled",
   "message": "Shared digital insurance card"
 }</pre>
-          </article>
 
-          <article class="card status">
-            <span class="label">Allowed statuses</span>
-            <table>
-              <tbody>
-                <tr><td><code>fulfilled</code></td><td>The item was satisfied.</td></tr>
-                <tr><td><code>partial</code></td><td>Some, but not all, useful content was shared.</td></tr>
-                <tr><td><code>unavailable</code></td><td>The wallet has no matching data.</td></tr>
-                <tr><td><code>declined</code></td><td>The user chose not to share it.</td></tr>
-                <tr><td><code>unsupported</code></td><td>The wallet cannot handle that item shape.</td></tr>
-                <tr><td><code>error</code></td><td>The wallet tried but failed.</td></tr>
-              </tbody>
-            </table>
-          </article>
-        </div>
-      </section>
+      <table>
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Meaning</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>fulfilled</code></td><td>The item was satisfied.</td></tr>
+          <tr><td><code>partial</code></td><td>Some, but not all, useful content was shared.</td></tr>
+          <tr><td><code>unavailable</code></td><td>The wallet has no matching data.</td></tr>
+          <tr><td><code>declined</code></td><td>The user chose not to share it.</td></tr>
+          <tr><td><code>unsupported</code></td><td>The wallet cannot handle that item shape.</td></tr>
+          <tr><td><code>error</code></td><td>The wallet tried but failed.</td></tr>
+        </tbody>
+      </table>
+    </section>
 
-      <section id="examples">
-        <h2>A complete but readable example</h2>
-        <p>
-          This is the shape of the checked-in demo capture, simplified to show
-          the application model without the raw mdoc bytes.
-        </p>
+    <section id="complete-example">
+      <h2>A complete example</h2>
+      <p>
+        This is the shape of the checked-in demo capture, simplified to focus on
+        the SMART model rather than raw transport bytes.
+      </p>
 
-        <div class="two">
-          <article class="card request">
-            <h3>Requester sends</h3>
+      <div class="two-up">
+        <div>
+          <h3>Requester sends</h3>
 <pre>{
   "type": "smart-health-checkin-request",
   "version": "1",
@@ -1024,16 +794,19 @@
       "title": "Intake form",
       "content": {
         "kind": "questionnaire",
-        "questionnaire": { "resourceType": "Questionnaire", "title": "Migraine Check-in" }
+        "questionnaire": {
+          "resourceType": "Questionnaire",
+          "title": "Migraine Check-in"
+        }
       },
       "accept": ["application/fhir+json"]
     }
   ]
 }</pre>
-          </article>
+        </div>
 
-          <article class="card response">
-            <h3>Responder returns</h3>
+        <div>
+          <h3>Responder returns</h3>
 <pre>{
   "type": "smart-health-checkin-response",
   "version": "1",
@@ -1074,38 +847,19 @@
     { "item": "intake", "status": "fulfilled" }
   ]
 }</pre>
-          </article>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section id="wire">
-        <h2>Where the wire details live</h2>
-        <p>
-          The SMART request and response above are embedded in a W3C Digital
-          Credentials API exchange. This demo currently carries them through
-          direct <code>org-iso-mdoc</code>, which adds CBOR, mdoc namespaces,
-          HPKE encryption, SessionTranscript binding, MSO digests, and COSE
-          signatures.
-        </p>
-        <div class="two">
-          <article class="mini">
-            <h3>Application model</h3>
-            <p>
-              Stay on this page to understand what is requested, what is shared,
-              and how consentable items map to artifacts.
-            </p>
-          </article>
-          <article class="mini">
-            <h3><a href="./wire-protocol.html">Wire protocol details</a></h3>
-            <p>
-              Open the byte-level page for the full checked-in capture,
-              annotated request and response bytes, CBOR diagnostics, HPKE
-              wrapper, and verification checklist.
-            </p>
-          </article>
-        </div>
-      </section>
-    </div>
+    <section id="wire">
+      <h2>Where the wire details live</h2>
+      <p>
+        This page is the product and payload model. The byte-level details are
+        intentionally separate: CBOR, direct mdoc namespaces, HPKE encryption,
+        SessionTranscript binding, MSO digests, COSE signatures, and checked-in
+        fixture annotations live in <a href="./wire-protocol.html">wire-protocol.html</a>.
+      </p>
+    </section>
   </main>
 </body>
 </html>

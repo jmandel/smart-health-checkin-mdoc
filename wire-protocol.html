@@ -11,21 +11,19 @@
       --muted: #60708a;
       --line: #d7e1ed;
       --soft: #f5f8fb;
-      --panel: #ffffff;
       --blue: #0072bc;
       --green: #0b7c58;
       --amber: #9a5b00;
       --red: #b42318;
       --code: #0e1628;
       --code-fg: #e9f0ff;
-      --shadow: 0 10px 24px rgba(23, 32, 51, 0.08);
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       font: 16px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--ink);
-      background: #eef3f8;
+      background: #ffffff;
     }
     header {
       background: #ffffff;
@@ -37,10 +35,7 @@
       padding: 28px;
     }
     .hero {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 360px;
-      gap: 28px;
-      align-items: end;
+      display: block;
     }
     h1, h2, h3, h4 { line-height: 1.12; margin: 0; }
     h1 { font-size: clamp(2.1rem, 4vw, 4.2rem); letter-spacing: 0; }
@@ -72,12 +67,9 @@
       font-weight: 700;
       white-space: nowrap;
     }
-    .panel {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      box-shadow: var(--shadow);
-      padding: 22px;
+    .advanced-loader {
+      max-width: 760px;
+      margin-top: 22px;
     }
     .button-row {
       display: flex;
@@ -108,10 +100,8 @@
     nav {
       position: sticky;
       top: 12px;
-      background: #ffffff;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 14px;
+      border-left: 3px solid var(--line);
+      padding: 4px 0 4px 12px;
     }
     nav a {
       display: block;
@@ -123,24 +113,30 @@
     }
     nav a:hover { background: var(--soft); }
     section {
-      background: #ffffff;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 24px;
-      margin-bottom: 18px;
+      padding: 30px 0;
+      margin-bottom: 0;
+      border-bottom: 1px solid var(--line);
     }
     .flow {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(130px, 1fr));
-      gap: 10px;
+      display: block;
       margin-top: 16px;
+      margin-left: 14px;
+      border-left: 3px solid #c8d9e8;
     }
     .flow-step {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 14px;
-      background: var(--soft);
-      min-height: 130px;
+      position: relative;
+      padding: 0 0 18px 24px;
+      background: transparent;
+    }
+    .flow-step::before {
+      content: "";
+      position: absolute;
+      left: -8px;
+      top: 0.35em;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--blue);
     }
     .flow-step strong { display: block; margin-bottom: 6px; }
     .flow-step code { font-size: 0.86rem; }
@@ -160,20 +156,16 @@
       background: #ecfbf5;
     }
     .two {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 16px;
+      display: block;
     }
     .three {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 16px;
+      display: block;
     }
     .mini {
-      border: 1px solid var(--line);
-      background: var(--soft);
-      border-radius: 8px;
-      padding: 14px;
+      margin: 18px 0;
+      padding: 0 0 0 16px;
+      border-left: 4px solid var(--line);
+      background: transparent;
     }
     table {
       width: 100%;
@@ -525,7 +517,7 @@
     .small { color: var(--muted); font-size: 0.92rem; }
     .nowrap { white-space: nowrap; }
     @media (max-width: 980px) {
-      .hero, .main-grid, .two, .three, .flow { grid-template-columns: 1fr; }
+      .main-grid { grid-template-columns: 1fr; }
       nav { position: static; }
       .wrap { padding: 18px; }
     }
@@ -550,17 +542,19 @@
           <span class="badge">element: smart_health_checkin_response</span>
         </div>
       </div>
-      <div class="panel">
-        <h3>Use With A Real Run</h3>
-        <p class="small">The page auto-loads the checked-in real Chrome/Android capture promoted from <code>/tmp/shc-handler-runs/run-1777656438734</code>. Pull a newer Android handler bundle when you want to compare.</p>
+      <details class="advanced-loader">
+        <summary>Advanced: load a different capture</summary>
+        <div>
+        <p class="small">This page already auto-loads the checked-in Chrome/Android capture. Use these controls only when comparing a newer local Android handler bundle.</p>
         <pre>node capture/capture-android-rp-flow.mjs --url http://127.0.0.1:3010 --no-server --adb-auto-wallet --out /tmp/shc-handler-runs --timeout 300000</pre>
-        <p class="small" style="margin-top:10px">Serve the repo root over HTTP so the checked-in fixture files can be fetched.</p>
+        <p class="small" style="margin-top:10px">Serve the repo root over HTTP so local fixture files can be fetched.</p>
         <div class="button-row">
-          <button id="loadExample" type="button">Load checked-in capture</button>
+          <button id="loadExample" type="button">Reload checked-in capture</button>
           <button id="clearRun" class="secondary" type="button">Clear loaded run</button>
         </div>
         <input id="runPicker" type="file" webkitdirectory multiple />
-      </div>
+        </div>
+      </details>
     </div>
   </header>
 
@@ -748,158 +742,13 @@
       </section>
 
       <section id="payload-language">
-        <h2>SMART Request/Response Payload Language</h2>
+        <h2>Where the SMART payload sits</h2>
         <p>
-          The mdoc layer only carries and protects bytes. The clinical meaning is
-          the SMART Health Check-in JSON embedded in those bytes. The request says
-          what the verifier wants; the response says what the wallet/user shared
-          and how each shared artifact maps back to the requested items.
+          This wire page is intentionally about bytes and bindings. For the
+          requester/responder roles, request item language, response artifacts,
+          and status model, use the
+          <a href="./explainer.html">SMART request/response explainer</a>.
         </p>
-        <div class="two">
-          <div class="mini">
-            <h3>Request envelope</h3>
-            <pre>{
-  "type": "smart-health-checkin-request",
-  "version": "1",
-  "id": "demo-all-of-the-above",
-  "purpose": "Clinic check-in",
-  "fhirVersions": ["4.0.1"],
-  "items": [
-    { "...": "FHIR resources or questionnaire request" }
-  ]
-}</pre>
-            <p class="small">
-              <code>id</code> is echoed by <code>response.requestId</code>.
-              <code>items[]</code> is the clinical task list shown to the user.
-            </p>
-          </div>
-          <div class="mini">
-            <h3>Response envelope</h3>
-            <pre>{
-  "type": "smart-health-checkin-response",
-  "version": "1",
-  "requestId": "demo-all-of-the-above",
-  "artifacts": [
-    { "...": "FHIR JSON, SMART Health Card, or extension artifact" }
-  ],
-  "requestStatus": [
-    { "item": "patient", "status": "fulfilled" }
-  ]
-}</pre>
-            <p class="small">
-              Each request item gets exactly one status. Artifacts can fulfill one
-              or more item ids using <code>fulfills[]</code>.
-            </p>
-          </div>
-        </div>
-
-        <h3>Request item examples</h3>
-        <div class="three">
-          <div class="mini">
-            <h3>Specific FHIR profiles</h3>
-            <pre>{
-  "id": "patient",
-  "title": "Patient demographics",
-  "required": true,
-  "content": {
-    "kind": "fhir.resources",
-    "profiles": [
-      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
-    ]
-  },
-  "accept": ["application/fhir+json"]
-}</pre>
-          </div>
-          <div class="mini">
-            <h3>Broad FHIR sharing</h3>
-            <pre>{
-  "id": "anything-useful",
-  "title": "Anything useful for check-in",
-  "summary": "Let the patient pick from available records.",
-  "content": { "kind": "fhir.resources" },
-  "accept": ["application/fhir+json"]
-}</pre>
-            <p class="small">
-              Omitting <code>profiles</code>, <code>profilesFrom</code>, and
-              <code>resourceTypes</code> intentionally means any patient-specific
-              FHIR resources the wallet can offer and the user chooses to share.
-            </p>
-          </div>
-          <div class="mini">
-            <h3>Questionnaire</h3>
-            <pre>{
-  "id": "intake",
-  "title": "Migraine follow-up",
-  "content": {
-    "kind": "questionnaire",
-    "questionnaire": {
-      "canonical": "https://example.org/Questionnaire/migraine|2026.04",
-      "resource": { "resourceType": "Questionnaire", "item": [] }
-    }
-  },
-  "accept": ["application/fhir+json"]
-}</pre>
-            <p class="small">
-              A canonical may include <code>|version</code>. The wallet displays
-              the Questionnaire, accepts user input, and returns a
-              <code>QuestionnaireResponse</code>.
-            </p>
-          </div>
-        </div>
-
-        <h3>Response artifact examples</h3>
-        <div class="three">
-          <div class="mini">
-            <h3>Raw FHIR JSON</h3>
-            <pre>{
-  "id": "artifact-patient",
-  "mediaType": "application/fhir+json",
-  "fhirVersion": "4.0.1",
-  "fulfills": ["patient"],
-  "value": { "resourceType": "Patient", "id": "demo" }
-}</pre>
-            <p class="small">
-              Raw FHIR JSON must declare <code>fhirVersion</code> outside the
-              resource because it is not independently signed as a SMART Health Card.
-            </p>
-          </div>
-          <div class="mini">
-            <h3>SMART Health Card</h3>
-            <pre>{
-  "id": "artifact-ips-shc",
-  "mediaType": "application/smart-health-card",
-  "fulfills": ["ips"],
-  "value": {
-    "verifiableCredential": ["&lt;compact JWS&gt;"]
-  }
-}</pre>
-            <p class="small">
-              A SMART Health Card must not carry an outer
-              <code>fhirVersion</code>; verifiers inspect the signed JWS payload.
-            </p>
-          </div>
-          <div class="mini">
-            <h3>Status without artifact</h3>
-            <pre>{
-  "requestStatus": [
-    {
-      "item": "insurance",
-      "status": "declined",
-      "message": "Patient declined to share this item."
-    },
-    {
-      "item": "labs",
-      "status": "unsupported"
-    }
-  ]
-}</pre>
-            <p class="small">
-              <code>declined</code>, <code>unsupported</code>,
-              <code>unavailable</code>, <code>partial</code>, and
-              <code>error</code> are first-class outcomes.
-            </p>
-          </div>
-        </div>
 
         <div class="callout">
           <strong>How this embeds in mdoc:</strong>
