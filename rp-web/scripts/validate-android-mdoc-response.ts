@@ -6,7 +6,6 @@ import {
   buildDcapiSessionTranscript,
   openWalletResponse,
   PROTOCOL_ID,
-  validateSmartCheckinResponse,
 } from "../src/protocol/index.ts";
 
 type Options = {
@@ -20,6 +19,9 @@ const options = parseArgs(process.argv.slice(2));
 const credential = JSON.parse(await readFile(join(options.generatedDir, "credential.json"), "utf8"));
 const expectedSmartResponse = JSON.parse(
   await readFile(join(options.generatedDir, "smart-response.expected.json"), "utf8"),
+);
+const smartRequest = JSON.parse(
+  await readFile(join(options.requestFixtureDir, "smart-request.expected.json"), "utf8"),
 );
 const requestMetadata = JSON.parse(
   await readFile(join(options.requestFixtureDir, "metadata.json"), "utf8"),
@@ -49,6 +51,7 @@ const opened = await openWalletResponse({
   recipientPrivateKey,
   recipientPublicJwk,
   sessionTranscript,
+  smartRequest,
 });
 
 assert(opened.deviceResponse.version === "1.0", "DeviceResponse.version must be 1.0");
@@ -67,7 +70,6 @@ assert(element.valueDigest?.matches === true, "IssuerSignedItem digest does not 
 assert(element.smartHealthCheckinResponse.present, "SMART response is absent");
 assert(element.smartHealthCheckinResponse.valid, "SMART response is invalid");
 const smartValue = element.smartHealthCheckinResponse.value;
-assert(validateSmartCheckinResponse(smartValue).ok, "SMART response failed schema validation");
 assert(stableJson(smartValue) === stableJson(expectedSmartResponse), "SMART response JSON mismatch");
 
 if (options.outDir) {

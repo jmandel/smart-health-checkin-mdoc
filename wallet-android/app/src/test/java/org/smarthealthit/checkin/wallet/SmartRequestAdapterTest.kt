@@ -35,7 +35,7 @@ class SmartRequestAdapterTest {
     @Test
     fun routesByCanonicalProfilesInsteadOfKeywordSubstrings() {
         val request = parse(
-            """{"type":"smart-health-checkin-request","version":"1","id":"r1","items":[{"id":"insuranceplan","title":"Coverage","content":{"kind":"fhir.resources","profiles":["http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage"]},"accept":["application/fhir+json"]}]}""",
+            """{"type":"smart-health-checkin-request","version":"1","id":"r1","items":[{"id":"insuranceplan","title":"Coverage","content":{"kind":"fhir.resources","profiles":["http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage|1.0.0"]},"accept":["application/fhir+json"]}]}""",
         )
 
         assertEquals(RequestKind.Coverage, request.items.single().kind)

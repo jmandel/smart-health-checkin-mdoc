@@ -294,6 +294,7 @@ export type OpenWalletResponseResult = {
   dcapiResponse: DcapiResponseInspection;
   deviceResponseBytes: Uint8Array;
   deviceResponse: DeviceResponseInspection;
+  smartResponseValidation?: { ok: true; value: SmartCheckinResponse };
 };
 
 export function encodeDynamicElement(request: SmartCheckinRequest): string {
@@ -675,6 +676,7 @@ export async function openWalletResponse(input: {
   recipientPrivateKey: CryptoKey;
   recipientPublicJwk: JsonWebKey;
   sessionTranscript: Uint8Array;
+  smartRequest?: unknown;
   aad?: Uint8Array;
 }): Promise<OpenWalletResponseResult> {
   const dcapiResponse = inspectDcapiMdocResponse(input.response);
@@ -709,11 +711,44 @@ export async function openWalletResponse(input: {
     aad: input.aad ?? new Uint8Array(),
     data: cipherText,
   });
+  const deviceResponse = await inspectDeviceResponseBytes(deviceResponseBytes);
+  const smartResponseValidation =
+    input.smartRequest === undefined
+      ? undefined
+      : validateOpenedSmartResponseAgainstRequest(input.smartRequest, deviceResponse);
   return {
     dcapiResponse,
     deviceResponseBytes,
-    deviceResponse: await inspectDeviceResponseBytes(deviceResponseBytes),
+    deviceResponse,
+    smartResponseValidation,
   };
+}
+
+function validateOpenedSmartResponseAgainstRequest(
+  smartRequest: unknown,
+  deviceResponse: DeviceResponseInspection,
+): { ok: true; value: SmartCheckinResponse } {
+  const response = firstSmartCheckinResponse(deviceResponse);
+  if (!response.present) {
+    throw new Error("SMART response is absent");
+  }
+  if (!response.valid) {
+    throw new Error(`SMART response failed schema validation: ${response.error}`);
+  }
+  const validation = validateResponseAgainstRequest(smartRequest, response.value);
+  if (!validation.ok) {
+    throw new Error(`SMART response does not match request: ${validation.error}`);
+  }
+  return validation;
+}
+
+function firstSmartCheckinResponse(deviceResponse: DeviceResponseInspection): SmartResponseInspection {
+  for (const document of deviceResponse.documents) {
+    for (const element of document.elements) {
+      if (element.smartHealthCheckinResponse.present) return element.smartHealthCheckinResponse;
+    }
+  }
+  return { present: false };
 }
 
 export async function inspectOrgIsoMdocNavigatorArgument(

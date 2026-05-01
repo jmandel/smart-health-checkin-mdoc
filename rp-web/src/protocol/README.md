@@ -20,7 +20,8 @@ Stable exports:
 - `inspectDcapiMdocResponse(...)`
 - `inspectDeviceResponseBytes(...)`
 - `hpkeSealDirectMdoc(...)`
-- `openWalletResponse(...)`
+- `openWalletResponse(...)` — pass `smartRequest` when available so the opened
+  response is cross-validated against request item ids and `requestId`
 - `inspectOrgIsoMdocNavigatorArgument(...)`
 - `inspectDeviceRequestBytes(...)`
 - `inspectItemsRequestBytes(...)`
@@ -28,6 +29,7 @@ Stable exports:
 - `cborDecode(...)`, `cborDiagnostic(...)`, `cborToJsonValue(...)`
 - `publicJwkToCoseKey(jwk)`
 - `validateSmartCheckinRequest(v)`
+- `validateResponseAgainstRequest(request, response)`
 - `SmartCheckinRequest`, `SmartCheckinResponse` types
 
 The active request shape is direct `org-iso-mdoc`:
@@ -50,6 +52,11 @@ mdoc element remains the stable `smart_health_checkin_response`.
 The `shc1j`/`shc1d` dynamic element encoding remains a fallback strategy if a
 real wallet API hides `requestInfo`; it is not used by the active request
 builder.
+
+Canonical `|version` rule of thumb: strip the suffix for HTTP fetches,
+profile-family routing, and IG membership checks; preserve it in returned
+records, `QuestionnaireResponse.questionnaire`, logs, fixtures, and exact
+conformance comparisons.
 
 CLI wrapper:
 

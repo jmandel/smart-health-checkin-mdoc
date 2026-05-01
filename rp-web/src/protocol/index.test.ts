@@ -483,10 +483,12 @@ describe("org-iso-mdoc response wrapper", () => {
       recipientPrivateKey,
       recipientPublicJwk,
       sessionTranscript,
+      smartRequest: await Bun.file("../fixtures/dcapi-requests/real-chrome-android-smart-checkin/smart-request.json").json(),
     });
 
     expect(hex(opened.deviceResponseBytes)).toBe(hex(expectedPlaintext));
     expect(opened.deviceResponse.documents[0]?.elements[0]?.valueDigest?.matches).toBe(true);
+    expect(opened.smartResponseValidation?.ok).toBe(true);
   });
 
   test("seals and opens a direct mdoc wallet response with HPKE", async () => {
@@ -516,5 +518,33 @@ describe("org-iso-mdoc response wrapper", () => {
     expect(opened.dcapiResponse.enc?.hex).toBe(hex(sealed.enc));
     expect(opened.dcapiResponse.cipherText?.hex).toBe(hex(sealed.cipherText));
     expect(opened.deviceResponse.documents[0]?.elements[0]?.smartHealthCheckinResponse.present).toBe(true);
+  });
+
+  test("openWalletResponse rejects SMART responses that do not match the original request", async () => {
+    const bundle = await buildOrgIsoMdocRequest(PATIENT_REQUEST, {
+      nonce: new Uint8Array(Array.from({ length: 32 }, (_, i) => i)),
+    });
+    const sessionTranscript = await buildDcapiSessionTranscript({
+      origin: "https://clinic.example",
+      encryptionInfo: bundle.encryptionInfoBytes,
+    });
+    const plaintext = new Uint8Array(
+      await Bun.file("../fixtures/responses/pymdoc-minimal/document.cbor").arrayBuffer(),
+    );
+    const sealed = await hpkeSealDirectMdoc({
+      plaintext,
+      recipientPublicJwk: bundle.verifierPublicJwk,
+      info: sessionTranscript,
+    });
+
+    expect(
+      openWalletResponse({
+        response: sealed.response,
+        recipientPrivateKey: bundle.verifierKeyPair.privateKey,
+        recipientPublicJwk: bundle.verifierPublicJwk,
+        sessionTranscript,
+        smartRequest: PATIENT_REQUEST,
+      }),
+    ).rejects.toThrow("SMART response does not match request");
   });
 });

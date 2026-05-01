@@ -129,6 +129,7 @@ export function App() {
           recipientPrivateKey: bundle.verifierKeyPair.privateKey,
           recipientPublicJwk: bundle.verifierPublicJwk,
           sessionTranscript,
+          smartRequest: validated.value,
         });
         emit("DCAPI_RESPONSE_OPENED", {
           dcapiResponse: openedResponse.dcapiResponse,

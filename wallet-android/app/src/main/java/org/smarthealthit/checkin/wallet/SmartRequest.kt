@@ -19,7 +19,7 @@ internal object SmartRequestAdapter {
             "type must be \"smart-health-checkin-request\""
         }
         require(smartRequest.optString("version") == "1") { "version must be \"1\"" }
-        val requestId = requiredString(smartRequest, "id")
+        val requestId = requiredString(smartRequest, "id", "id")
         return VerifiedRequest(
             requestId = requestId,
             verifierOrigin = verifierOrigin,
@@ -43,9 +43,9 @@ internal object SmartRequestAdapter {
         val ids = LinkedHashSet<String>()
         for (i in 0 until requestsArray.length()) {
             val item = requestsArray.optJSONObject(i) ?: error("items[$i] must be an object")
-            val id = requiredString(item, "items[$i].id")
+            val id = requiredString(item, "id", "items[$i].id")
             require(ids.add(id)) { "items[$i].id is duplicated" }
-            requiredString(item, "items[$i].title")
+            requiredString(item, "title", "items[$i].title")
             val content = item.optJSONObject("content") ?: error("items[$i].content must be an object")
             val accept = requiredStringArray(item.optJSONArray("accept"), "items[$i].accept")
             out += when (content.optString("kind")) {
@@ -95,7 +95,9 @@ internal object SmartRequestAdapter {
         content: JSONObject,
         accept: List<String>,
     ): RequestItem {
-        val profiles = stringList(content.optJSONArray("profiles")).map { it.lowercase() }.toSet()
+        val profiles = stringList(content.optJSONArray("profiles"))
+            .map { it.substringBefore('|').lowercase() }
+            .toSet()
         val resourceTypes = stringList(content.optJSONArray("resourceTypes")).map { it.lowercase() }.toSet()
         val profileCollections = profilesFromCanonicals(content.opt("profilesFrom"))
         val summary = item.optString("summary")
@@ -201,9 +203,9 @@ internal object SmartRequestAdapter {
         return out
     }
 
-    private fun requiredString(obj: JSONObject, path: String): String {
-        val value = obj.opt(path.substringAfterLast('.'))
-        require(value is String && value.isNotBlank()) { "$path missing or not a string" }
+    private fun requiredString(obj: JSONObject, key: String, diagnosticPath: String): String {
+        val value = obj.opt(key)
+        require(value is String && value.isNotBlank()) { "$diagnosticPath missing or not a string" }
         return value
     }
 

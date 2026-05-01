@@ -489,6 +489,27 @@ export type FhirResourceType = string;
 export type OneOrMany<T> = T | T[];
 ```
 
+### Canonical `|version` handling
+
+FHIR canonicals may append a version with `canonical|version`. Implementations
+need to be explicit about when the suffix is part of the semantic claim and
+when it is only a resolver or routing hint.
+
+| Operation | Action | Why |
+| --------- | ------ | --- |
+| HTTP fetch of a canonical | Strip `|version` | A versioned canonical is an identifier, not a literal URL. |
+| IG/profile-collection membership such as `profilesFrom` | Strip `|version` | Collection membership and wallet-side routing are version-agnostic unless a later profile says otherwise. |
+| Wallet kind classification | Strip `|version` | Routing to coverage, clinical, questionnaire, etc. should not depend on profile version. |
+| Profile de-duplication/grouping | Strip `|version` | Strings differing only by suffix are the same logical profile for grouping. |
+| `QuestionnaireResponse.questionnaire` | Preserve `|version` | The receiver needs to know which exact Questionnaire version was answered. |
+| Returned resource `meta.profile` | Preserve `|version` | Resource provenance can legitimately claim an exact profile version. |
+| Exact conformance checks | Preserve consistently | Compare both sides at the same level; do not strip one side only. |
+| Test fixtures, logs, and debug bundles | Preserve exactly | Captures should record what was sent on the wire. |
+
+Rule of thumb: strip when going to the network or answering "is this in this
+profile family/IG?"; preserve when writing a record, log, fixture, or response
+back to the verifier.
+
 ## 4. Request semantics
 
 ### `fhir.resources`
