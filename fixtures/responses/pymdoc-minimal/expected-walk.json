@@ -8,25 +8,32 @@
     "docType": "org.smarthealthit.checkin.1",
     "version": "1.0"
   },
-  "msoDigestSha256": "8f7b1f307aacd205224e10ce2b3857fa2dc48186b04655c118d7810e55d0d93c",
+  "msoDigestSha256": "65411f6e3e7aada4f1d29d7d3132e20d24031330fcb14d9a62f0943bf45388d0",
   "namespace": "org.smarthealthit.checkin",
-  "recomputedDigestSha256": "8f7b1f307aacd205224e10ce2b3857fa2dc48186b04655c118d7810e55d0d93c",
+  "recomputedDigestSha256": "65411f6e3e7aada4f1d29d7d3132e20d24031330fcb14d9a62f0943bf45388d0",
   "smartResponse": {
-    "answers": {
-      "patient": [
-        "a1"
-      ]
-    },
     "artifacts": [
       {
-        "data": {
+        "fhirVersion": "4.0.1",
+        "fulfills": [
+          "patient"
+        ],
+        "id": "a1",
+        "mediaType": "application/fhir+json",
+        "value": {
           "id": "demo",
           "resourceType": "Patient"
-        },
-        "id": "a1",
-        "type": "fhir_resource"
+        }
       }
     ],
+    "requestId": "fixture-minimal-request",
+    "requestStatus": [
+      {
+        "item": "patient",
+        "status": "fulfilled"
+      }
+    ],
+    "type": "smart-health-checkin-response",
     "version": "1"
   }
 }

@@ -1,0 +1,12 @@
+{
+  "declined": false,
+  "selectedItems": {
+    "patient": true,
+    "insurance": true,
+    "ips": true,
+    "intake": true
+  },
+  "answerCount": 0,
+  "origin": "http:\/\/127.0.0.1:3010",
+  "itemCount": 4
+}

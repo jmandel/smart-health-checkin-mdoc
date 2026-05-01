@@ -57,20 +57,18 @@ ItemsRequest = {
   "docType": "org.smarthealthit.checkin.1",
   "nameSpaces": {
     "org.smarthealthit.checkin": {
-      "smart_health_checkin_response": false
+      "smart_health_checkin_response": true
     }
   },
   "requestInfo": {
-    "smart_health_checkin": JSON.stringify(SMART request)
+    "org.smarthealthit.checkin.request": JSON.stringify(SMART request)
   }
 }
 ```
 
-The checked-in implementation currently uses the prototype
-`requestInfo.smart_health_checkin` key and `intentToRetain = false` in existing
-fixtures. The implementation target is
-`SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md`, using
-`requestInfo["org.smarthealthit.checkin.request"]` and defaulting
+The checked-in implementation uses the
+`requestInfo["org.smarthealthit.checkin.request"]` key from
+`SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md` and defaults
 `intentToRetain = true` for the stable `smart_health_checkin_response` element.
 
 The RP web verifier now includes per-`DocRequest.readerAuth` when it knows the

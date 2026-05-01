@@ -16,12 +16,17 @@ class DirectMdocProtocolTest {
         assertEquals("org.smarthealthit.checkin.1", request!!.docType)
         assertTrue(request.namespaces["org.smarthealthit.checkin"]!!.containsKey("smart_health_checkin_response"))
         val smartRequest = request.smartRequestJson!!
+        assertEquals("smart-health-checkin-request", smartRequest.getString("type"))
         assertEquals("1", smartRequest.getString("version"))
         val item = smartRequest.getJSONArray("items").getJSONObject(0)
         assertEquals("patient", item.getString("id"))
-        assertEquals("http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient", item.getString("profile"))
+        assertEquals("Patient demographics", item.getString("title"))
         assertEquals(true, item.getBoolean("required"))
-        assertEquals("Demographics for check-in", item.getString("description"))
+        assertEquals("Demographics for check-in", item.getString("summary"))
+        assertEquals(
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
+            item.getJSONObject("content").getJSONArray("profiles").getString(0),
+        )
     }
 
     @Test
@@ -45,14 +50,25 @@ class DirectMdocProtocolTest {
             .put("encryptionInfo", SmartMdocBase64.encodeUrl(ENCRYPTION_INFO))
         val request = DirectMdocRequestParser.parseData(data, "https://clinic.example")
         val smartResponse = JSONObject()
+            .put("type", "smart-health-checkin-response")
             .put("version", "1")
+            .put("requestId", "test-patient-request")
             .put("artifacts", org.json.JSONArray().put(
                 JSONObject()
                     .put("id", "a1")
-                    .put("type", "fhir_resource")
-                    .put("data", JSONObject().put("resourceType", "Patient")),
+                    .put("mediaType", "application/fhir+json")
+                    .put("fhirVersion", "4.0.1")
+                    .put("fulfills", org.json.JSONArray().put("patient"))
+                    .put("value", JSONObject().put("resourceType", "Patient")),
             ))
-            .put("answers", JSONObject().put("patient", org.json.JSONArray().put("a1")))
+            .put(
+                "requestStatus",
+                org.json.JSONArray().put(
+                    JSONObject()
+                        .put("item", "patient")
+                        .put("status", "fulfilled"),
+                ),
+            )
 
         val response = SmartHealthMdocResponder.buildCredentialResponse(
             request = request,
@@ -120,19 +136,22 @@ class DirectMdocProtocolTest {
 
     private companion object {
         const val PATIENT_REQUEST_JSON =
-            """{"version":"1","items":[{"id":"patient","profile":"http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient","required":true,"description":"Demographics for check-in"}]}"""
+            """{"type":"smart-health-checkin-request","version":"1","id":"test-patient-request","purpose":"Clinic check-in","fhirVersions":["4.0.1"],"items":[{"id":"patient","title":"Patient demographics","summary":"Demographics for check-in","required":true,"content":{"kind":"fhir.resources","profiles":["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"]},"accept":["application/fhir+json"]}]}"""
 
-        val PATIENT_DEVICE_REQUEST = (
-            "a26776657273696f6e63312e306b646f63526571756573747381a16c6974656d7352657175657374" +
-                "d818590142a367646f6354797065781b6f72672e736d6172746865616c746869742e636865636b696e2e316a" +
-                "6e616d65537061636573a178196f72672e736d6172746865616c746869742e636865636b696ea1781d736d61" +
-                "72745f6865616c74685f636865636b696e5f726573706f6e7365f46b72657175657374496e666fa174736d61" +
-                "72745f6865616c74685f636865636b696e78b07b2276657273696f6e223a2231222c226974656d73223a5b7b" +
-                "226964223a2270617469656e74222c2270726f66696c65223a22687474703a2f2f686c372e6f72672f666869" +
-                "722f75732f636f72652f537472756374757265446566696e6974696f6e2f75732d636f72652d70617469656e" +
-                "74222c227265717569726564223a747275652c226465736372697074696f6e223a2244656d6f677261706869" +
-                "637320666f7220636865636b2d696e227d5d7d"
-            ).hexToBytes()
+        val PATIENT_DEVICE_REQUEST: ByteArray by lazy {
+            val raw = DirectMdocProtocolTest::class.java.classLoader!!
+                .getResourceAsStream("test-vectors.json")!!
+                .bufferedReader(Charsets.UTF_8)
+                .use { it.readText() }
+            val vectors = JSONObject(raw).getJSONArray("requestVectors")
+            for (i in 0 until vectors.length()) {
+                val vector = vectors.getJSONObject(i)
+                if (vector.getString("name") == "patient-only") {
+                    return@lazy vector.getString("deviceRequestHex").hexToBytes()
+                }
+            }
+            error("patient-only vector missing")
+        }
 
         val ENCRYPTION_INFO = (
             "82656463617069a2656e6f6e63655820000102030405060708090a0b0c0d0e0f101112131415161718191a" +

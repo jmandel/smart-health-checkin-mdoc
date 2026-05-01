@@ -5,7 +5,7 @@ Scope: transport-neutral request/response objects for SMART Health Check-in, int
 
 This repo is greenfield. When this payload shape is adopted, implementations can
 migrate directly to it rather than supporting the earlier prototype
-`{ "version": "1", "items": [...] }` shape in parallel.
+untyped `{ "version": "1", "items": [...] }` prototype in parallel.
 
 ## 1. Design summary
 
@@ -63,7 +63,7 @@ The same response object can be returned in the `vp_token`.
 
 7. **Declare FHIR version for raw FHIR JSON.** SMART Health Cards already carry FHIR version inside the signed credential payload. Raw FHIR JSON artifacts must declare `fhirVersion` explicitly.
 
-8. **Report per-request outcomes.** `requestStatus[]` is required and has one entry for each request item, including declined, unavailable, unsupported, and error cases that produce no artifact.
+8. **Report per-item outcomes.** `requestStatus[]` is required and has one entry for each request item, including declined, unavailable, unsupported, and error cases that produce no artifact.
 
 9. **Default to retention for SMART Check-in.** In the direct mdoc carrier,
 `intentToRetain` defaults to `true` for `smart_health_checkin_response`, because
@@ -80,10 +80,10 @@ version
 id
 purpose?
 fhirVersions?
-requests[]
+items[]
 ```
 
-Each content request has:
+Each request item has:
 
 ```text
 id
@@ -157,17 +157,17 @@ export interface SmartHealthCheckinRequest {
   fhirVersions?: FhirVersion[];
 
   /**
-   * Clinical content requests.
+   * Clinical content request items.
    *
    * Each request item can be fulfilled by zero, one, or many artifacts.
    */
-  requests: SmartHealthCheckinContentRequest[];
+  items: SmartHealthCheckinRequestItem[];
 }
 
 /**
  * One requested piece or category of clinical content.
  */
-export interface SmartHealthCheckinContentRequest {
+export interface SmartHealthCheckinRequestItem {
   /**
    * Stable id for this request item.
    *
@@ -587,13 +587,13 @@ one request item can be fulfilled by multiple artifacts
 some request items may have no artifacts
 ```
 
-Each artifact says which request ids it fulfills:
+Each artifact says which item ids it fulfills:
 
 ```text
-artifact.fulfills = ["request-id-1", "request-id-2"]
+artifact.fulfills = ["item-id-1", "item-id-2"]
 ```
 
-Per-request status is separate so that a wallet can report declined, unavailable, unsupported, or error outcomes even when there is no artifact.
+Per-item status is separate so that a wallet can report declined, unavailable, unsupported, or error outcomes even when there is no artifact.
 
 ### Response TypeScript
 
@@ -629,27 +629,27 @@ export interface SmartHealthCheckinResponse {
   artifacts: SmartHealthCheckinArtifact[];
 
   /**
-   * Per-request status.
+   * Per-item status.
    *
    * This is needed because some request items may be declined, unavailable,
    * unsupported, partially fulfilled, or failed without producing an artifact.
    */
-  requestStatus: SmartHealthCheckinRequestStatus[];
+  requestStatus: SmartHealthCheckinItemStatus[];
 }
 
 /**
  * Status for one request item.
  */
-export interface SmartHealthCheckinRequestStatus {
+export interface SmartHealthCheckinItemStatus {
   /**
-   * Request item id from SmartHealthCheckinRequest.requests[].id.
+   * Request item id from SmartHealthCheckinRequest.items[].id.
    */
-  request: string;
+  item: string;
 
   /**
    * Overall status for this request item.
    */
-  status: SmartHealthCheckinRequestStatusCode;
+  status: SmartHealthCheckinItemStatusCode;
 
   /**
    * Optional explanation.
@@ -662,7 +662,7 @@ export interface SmartHealthCheckinRequestStatus {
   message?: string;
 }
 
-export type SmartHealthCheckinRequestStatusCode =
+export type SmartHealthCheckinItemStatusCode =
   | "fulfilled"
   | "partial"
   | "unavailable"
@@ -691,7 +691,7 @@ export interface SmartHealthCheckinArtifactBase {
   /**
    * Request item ids this artifact fulfills.
    *
-   * A single artifact may fulfill multiple requests.
+   * A single artifact may fulfill multiple request items.
    */
   fulfills: string[];
 }
@@ -859,7 +859,7 @@ Bundle.entry[].resource.meta.profile
 
 ### Many-to-many fulfillment
 
-A single artifact can fulfill multiple requests:
+A single artifact can fulfill multiple request items:
 
 ```json
 {
@@ -903,7 +903,7 @@ export const exampleRequest: SmartHealthCheckinRequest = {
   // Ordered by verifier preference.
   fhirVersions: ["4.0.1"],
 
-  requests: [
+  items: [
     {
       id: "insurance-card",
       title: "Insurance card",
@@ -1063,16 +1063,16 @@ export const exampleResponse: SmartHealthCheckinResponse = {
 
   requestStatus: [
     {
-      request: "insurance-card",
+      item: "insurance-card",
       status: "fulfilled"
     },
     {
-      request: "us-core-records",
+      item: "us-core-records",
       status: "partial",
       message: "Shared available matching US Core resources."
     },
     {
-      request: "migraine-intake",
+      item: "migraine-intake",
       status: "fulfilled"
     }
   ]
@@ -1087,9 +1087,9 @@ export const exampleResponse: SmartHealthCheckinResponse = {
 
 2. `SmartHealthCheckinRequest.version` SHALL be `"1"` for this version of the schema.
 
-3. `requests[].id` values SHALL be unique within a request.
+3. `items[].id` values SHALL be unique within a request.
 
-4. `requests[].accept` SHALL be ordered by verifier preference.
+4. `items[].accept` SHALL be ordered by verifier preference.
 
 5. The request object SHALL NOT include self-asserted requester identity metadata such as clinic name, logo, or URL.
 
@@ -1115,7 +1115,7 @@ export const exampleResponse: SmartHealthCheckinResponse = {
 
 4. `artifacts[].id` values SHALL be unique within a response.
 
-5. `artifacts[].fulfills` SHALL contain ids from the original request's `requests[].id`.
+5. `artifacts[].fulfills` SHALL contain ids from the original request's `items[].id`.
 
 6. For each id in `artifacts[].fulfills`, the artifact `mediaType` SHALL appear in that request item's `accept[]` list.
 
@@ -1133,7 +1133,7 @@ export const exampleResponse: SmartHealthCheckinResponse = {
 
 13. Artifacts SHOULD NOT include a profile summary field. Verifiers SHOULD inspect FHIR `meta.profile` values in the payload itself.
 
-14. `requestStatus` SHALL include one entry for each original request item.
+14. `requestStatus` SHALL include one entry for each original request item, and `requestStatus[].item` SHALL contain that item's id.
 
 15. `requestStatus.status = "fulfilled"` means the wallet believes the request item was fully satisfied.
 

@@ -10,17 +10,17 @@ navigator.credentials.get(...)
   data.encryptionInfo          = base64url(CBOR(["dcapi", {...}]))
 ```
 
-The checked-in implementation currently carries prototype SMART request JSON in
+The checked-in implementation carries SMART request JSON in
 `ItemsRequest.requestInfo`:
 
 ```text
 docType:   org.smarthealthit.checkin.1
 namespace: org.smarthealthit.checkin
 element:   smart_health_checkin_response
-requestInfo.smart_health_checkin: <SMART request JSON string>
+requestInfo["org.smarthealthit.checkin.request"]: <SMART request JSON string>
 ```
 
-The next implementation target is the transport-neutral payload shape in
+The active payload shape is the transport-neutral schema in
 `SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md`, carried under
 `requestInfo["org.smarthealthit.checkin.request"]`, with responses returned in
 the same stable `smart_health_checkin_response` mdoc element.
@@ -38,11 +38,11 @@ fallback idea only. It is not the active path.
 | mdoc response builder | Builds `IssuerSignedItem`, MSO, `issuerAuth`, `DeviceAuthentication`, `deviceSignature`, plaintext `DeviceResponse`, and direct `dcapi` HPKE wrapper. |
 | Fixtures | Synthetic deterministic fixtures plus a real Chrome/Android handler run are checked in under `fixtures/`. |
 | Oracles | TypeScript inspection/HPKE-open, Android JVM parser tests, Python pyMDOC-style byte checks, and COSE signature verification are wired. |
-| Explainer | `explainer-copilot.html` renders the checked-in real request/response fixtures byte-by-byte, including nested CBOR and contained SMART JSON. |
+| Explainer | `explainer.html` renders the checked-in real request/response fixtures byte-by-byte, including nested CBOR/tag-24 and contained SMART JSON. |
 
 ## Current proof points
 
-The real run from `/tmp/shc-handler-runs/run-1777649836829` is promoted to:
+The real run from `/tmp/shc-handler-runs/run-1777656438734` is promoted to:
 
 ```text
 fixtures/dcapi-requests/real-chrome-android-smart-checkin/
@@ -52,7 +52,7 @@ fixtures/responses/real-chrome-android-smart-checkin/
 Those fixtures prove:
 
 - Chrome/Android delivered a real `org-iso-mdoc` request with
-  `requestInfo.smart_health_checkin`.
+  `requestInfo["org.smarthealthit.checkin.request"]`.
 - Android parsed the web origin as `http://127.0.0.1:3010` via Credential
   Manager / browser caller metadata.
 - Android generated a real `DigitalCredential` response with

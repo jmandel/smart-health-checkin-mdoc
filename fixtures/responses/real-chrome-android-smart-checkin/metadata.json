@@ -1,34 +1,42 @@
 {
   "id": "real-chrome-android-smart-checkin",
   "kind": "positive-smart-health-checkin-real-platform-response",
-  "source": "/tmp/shc-handler-runs/run-1777649836829",
+  "source": "/tmp/shc-handler-runs/run-1777656438734",
   "sourceRequestFixture": "fixtures/dcapi-requests/real-chrome-android-smart-checkin",
-  "capturedAt": "2026-05-01T15:37:16.833791Z",
+  "capturedAt": "2026-05-01T17:27:18.788312Z",
   "origin": "http://127.0.0.1:3010",
   "originSource": "web-origin",
   "packageName": "com.android.chrome",
   "protocol": "org-iso-mdoc",
   "containsPhi": false,
   "note": "Real Android wallet response debug artifacts using demo wallet data. Includes encrypted wrapper, plaintext DeviceResponse, and an intentionally public test-only RP HPKE private JWK in the paired request fixture.",
+  "readerAuth": {
+    "present": true,
+    "signatureValid": true,
+    "certificateSubject": "CN=SMART Health Check-in Demo Verifier"
+  },
   "hpkeReopen": {
     "available": true,
     "privateJwkFixture": "fixtures/dcapi-requests/real-chrome-android-smart-checkin/recipient-private.jwk.json",
     "openedInspection": "hpke-opened-response-inspection.json"
   },
   "sha256": {
-    "wallet-response.digital-credential.json": "6da73127b36d433092f3eab6e911723051992a82c1b466a5f0c5bab7db2eb814",
-    "credential.json": "6da73127b36d433092f3eab6e911723051992a82c1b466a5f0c5bab7db2eb814",
-    "dcapi-response.cbor": "f6e0b2393eae1974ba01e4081476dc19f23c9c6d0d7b031d60780d8a8fe98769",
-    "hpke-enc.bin": "d7d7ab784a918fb1248b3af91d459a5d737ed406b29e4aa4312723a869470b0c",
-    "hpke-ciphertext.bin": "bf069e87f1955fa92323f2c6fe47a88ca22bbc4b7009e7510131a4f1f445db08",
-    "device-response.cbor": "44ca04fde236c92d4e7b70d731f77f9226bb940c0e5b72b29d94e08ef4383ba6",
-    "issuer-signed-item-tag24.cbor": "9eb55a99222ebeab7cfd697273218d1e35041289acfb29926799bb0dc54329d5",
-    "value-digest.bin": "f3eb90fa065b86e0817ae74d7be8cd509ba37948906f412c2ec85b2b0fd39963",
-    "mso.cbor": "49ea909cc4356af89d0a39296fbbd2d069f3d800c64e877bc07c324a3134625b",
-    "issuer-auth.cbor": "76594c90bd75227181f59d7341b829cb4944eb893897ef92e72f87e9f7cea6e7",
-    "device-authentication.cbor": "45f4d778fb5b4203a6e002628e98c54711a50fa8a1abe8a2c52b3fdcbb9c960f",
-    "session-transcript.cbor": "12c79c34c4d755875205e18fc3fb493b0d29aabd82aa282dae2f3a0a1c7583ea",
-    "smart-response.expected.json": "0bb9dc36dea3d063eccb3df2e749197fbfc78983cd1423f594ca59e1df1abfc8",
-    "hpke-opened-response-inspection.json": "7a7fea59b442fcf1314dfdde880d02f1cf5428149fefe6aa6cb05c1b44e7399e"
+    "wallet-response.digital-credential.json": "7b0a68936d70b2a22e6d8262c43dd36a86313d6adc04a3de6662a5e6d069f2f4",
+    "credential.json": "7b0a68936d70b2a22e6d8262c43dd36a86313d6adc04a3de6662a5e6d069f2f4",
+    "dcapi-response.cbor": "76f52cd0da6ea5c24fa8f437bbcd9b293c56c5e5f71735ff8a63732adbc17943",
+    "hpke-enc.bin": "0f531d28f7e9664e0e0e34145d0c3ba28325ebfdc080e31a17ee757a477ccab0",
+    "hpke-ciphertext.bin": "0e94becc1963798fc00952320e38d2a4f90ad917075ad1c939c965d289787fce",
+    "device-response.cbor": "5f2670d11c77e9baeaa83d4f44e71db06c7fb138006286c5addb53cf39353f31",
+    "issuer-signed-item-tag24.cbor": "ab885cd4465051c91891a80b20a4d6497c116179975c4b82d626051064b33076",
+    "value-digest.bin": "71dd3989671e523bad82e15d5a02d108c1f1f569f7a0fde273cd02005ebc6fcc",
+    "mso.cbor": "a9b87fca6e9e1f14d456cc624b84519dce32fdcddc0a57443292110fa108736f",
+    "issuer-auth.cbor": "3a7b8c0804fcee3a837ec29776dfa0d674290773d97dc3e2da2b304c63aded2e",
+    "device-authentication.cbor": "63d6f8a8d0b7072f2f051f3bb749f22d2ac264f1539715a9fc45a29b71ffa662",
+    "session-transcript.cbor": "cd8d7107af11c495276def333040c48b1265b8a2da88c7685f5551c980045f84",
+    "smart-response.expected.json": "4e1edf80e1b75463a4cc3f7d5df1e59f4d742d81a6b3faefb2cc83b79c360de4",
+    "hpke-opened-response-inspection.json": "79e8e8e5fbbb54f673f6bed9f0b0b23c7b98964931e9ebcc13ed2abab034f382",
+    "opened-response-inspection.json": "79e8e8e5fbbb54f673f6bed9f0b0b23c7b98964931e9ebcc13ed2abab034f382",
+    "pymdoc-byte-check.json": "41807b2dddf1d24140ac831afd0d71b2e827ad7bfbf30043bcc2d5425df0c9eb",
+    "submit.json": "8ec3b48b3aaf09b2e61ccdb517c7c5373145580d18b4feae72af0973df445ec9"
   }
 }

@@ -479,7 +479,8 @@ function ResponsePanel({ events }: { events: DebugEvent[] }) {
   const smart = asRecord(element?.smartHealthCheckinResponse);
   const smartValue = smart?.valid === true ? asRecord(smart.value) : undefined;
   const artifacts = Array.isArray(smartValue?.artifacts) ? smartValue.artifacts : [];
-  const answers = asRecord(smartValue?.answers);
+  const requestStatus = Array.isArray(smartValue?.requestStatus) ? smartValue.requestStatus : [];
+  const fulfilledItems = responseFulfillmentsFromSmartValue(smartValue);
   const digestMatches = readPath<boolean>(element, ["valueDigest", "matches"]);
   const docType = readPath<string>(doc, ["docType"]);
   const status = readPath<number>(deviceResponse, ["status"]);
@@ -504,8 +505,8 @@ function ResponsePanel({ events }: { events: DebugEvent[] }) {
               <span className="muted"> artifacts</span>
             </div>
             <div>
-              <span className="metric">{answers ? Object.keys(answers).length : 0}</span>
-              <span className="muted"> answered items</span>
+              <span className="metric">{requestStatus.length}</span>
+              <span className="muted"> item statuses</span>
             </div>
             {cipherText ? (
               <div className="truncate">
@@ -526,7 +527,7 @@ function ResponsePanel({ events }: { events: DebugEvent[] }) {
                     <ResourceCard
                       key={`${id}-${i}`}
                       credentialId={id}
-                      resource={a?.data ?? artifact}
+                      resource={a?.value ?? a?.data ?? artifact}
                     />
                   );
                 })}
@@ -536,18 +537,26 @@ function ResponsePanel({ events }: { events: DebugEvent[] }) {
 
           <div className="response-columns">
             <div>
-              <div className="tool-subheading">Answers</div>
-              {answers && Object.keys(answers).length > 0 ? (
+              <div className="tool-subheading">Item status</div>
+              {requestStatus.length > 0 ? (
                 <div className="answers">
-                  {Object.entries(answers).map(([itemId, ids]) => (
+                  {requestStatus.map((entry, i) => {
+                    const status = asRecord(entry);
+                    const itemId = String(status?.item ?? `item-${i + 1}`);
+                    const artifactIds = fulfilledItems[itemId] ?? [];
+                    return (
                     <div className="answer-row" key={itemId}>
                       <code>{itemId}</code>
-                      <span>{Array.isArray(ids) ? ids.join(", ") : JSON.stringify(ids)}</span>
+                      <span>
+                        {String(status?.status ?? "unknown")}
+                        {artifactIds.length > 0 ? ` (${artifactIds.join(", ")})` : ""}
+                      </span>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
-                <div className="muted">No answers shared.</div>
+                <div className="muted">No item status returned.</div>
               )}
             </div>
 
@@ -561,10 +570,10 @@ function ResponsePanel({ events }: { events: DebugEvent[] }) {
                       <details key={`${String(a?.id ?? i)}-${i}`}>
                         <summary>
                           <code>{String(a?.id ?? `artifact-${i + 1}`)}</code>
-                          <span>{String(a?.type ?? "unknown")}</span>
+                          <span>{String(a?.mediaType ?? "unknown")}</span>
                         </summary>
                         <pre className="json result__pre">
-                          {JSON.stringify(a?.data ?? artifact, null, 2)}
+                          {JSON.stringify(a?.value ?? a?.data ?? artifact, null, 2)}
                         </pre>
                       </details>
                     );
@@ -612,50 +621,80 @@ function responseAnswers(event: DebugEvent | undefined): Record<string, string[]
   const element =
     elements.map(asRecord).find((e) => e?.elementIdentifier === SMART_RESPONSE_ELEMENT_ID) ??
     asRecord(elements[0]);
-  const answers = readPath(element, ["smartHealthCheckinResponse", "value", "answers"]);
-  if (!answers || typeof answers !== "object" || Array.isArray(answers)) return undefined;
+  const smartValue = asRecord(readPath(element, ["smartHealthCheckinResponse", "value"]));
+  const out = responseFulfillmentsFromSmartValue(smartValue);
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
+function responseFulfillmentsFromSmartValue(smartValue: Record<string, unknown> | undefined): Record<string, string[]> {
   const out: Record<string, string[]> = {};
-  for (const [key, value] of Object.entries(answers)) {
-    if (Array.isArray(value)) out[key] = value.filter((v): v is string => typeof v === "string");
+  const artifacts = Array.isArray(smartValue?.artifacts) ? smartValue.artifacts : [];
+  for (let i = 0; i < artifacts.length; i++) {
+    const artifact = asRecord(artifacts[i]);
+    const artifactId = String(artifact?.id ?? `artifact-${i + 1}`);
+    const fulfills = Array.isArray(artifact?.fulfills) ? artifact.fulfills : [];
+    for (const itemId of fulfills) {
+      if (typeof itemId !== "string" || itemId.length === 0) continue;
+      (out[itemId] ??= []).push(artifactId);
+    }
   }
   return out;
 }
 
 function taskFromItem(item: SmartCheckinRequest["items"][number], answers: Record<string, string[]> | undefined): TaskView {
   const id = item.id;
-  if ("questionnaire" in item) {
-    const questionnaire = asRecord(item.questionnaire);
+  const content = asRecord(item.content);
+  if (content?.kind === "questionnaire") {
+    const questionnaire = questionnaireResource(content.questionnaire);
     return {
       id,
-      title: String(questionnaire?.title ?? "Migraine Check-in"),
-      description: item.description ?? "Brief recurring migraine follow-up",
+      title: item.title || String(questionnaire?.title ?? "Questionnaire"),
+      description:
+        item.summary ??
+        (typeof questionnaire?.description === "string" ? questionnaire.description : undefined) ??
+        questionnaireCanonical(content.questionnaire) ??
+        "Form answers requested by the verifier.",
       kind: "Questionnaire",
       done: Boolean(answers?.[id]?.length),
     };
   }
-  if ("questionnaireUrl" in item) {
-    return {
-      id,
-      title: "Questionnaire",
-      description: item.description ?? item.questionnaireUrl,
-      kind: "Questionnaire URL",
-      done: Boolean(answers?.[id]?.length),
-    };
-  }
-  const title = profileTitle(item.profile, id);
+  const profiles = Array.isArray(content?.profiles)
+    ? content.profiles.filter((v): v is string => typeof v === "string")
+    : [];
+  const resourceTypes = Array.isArray(content?.resourceTypes)
+    ? content.resourceTypes.filter((v): v is string => typeof v === "string")
+    : [];
+  const selectorDescription =
+    profiles.join(", ") ||
+    resourceTypes.join(", ") ||
+    (typeof content?.profilesFrom === "string" ? content.profilesFrom : undefined) ||
+    "FHIR resources";
   return {
     id,
-    title,
-    description: item.description ?? item.profile,
-    kind: "FHIR profile",
+    title: item.title || profileTitle(profiles, id),
+    description: item.summary ?? selectorDescription,
+    kind: profiles.length > 0 ? "FHIR profile" : "FHIR resources",
     done: Boolean(answers?.[id]?.length),
   };
 }
 
-function profileTitle(profile: string, id: string): string {
-  if (profile.includes("C4DIC-Coverage")) return "Insurance information";
-  if (profile.includes("us-core-patient")) return "Patient demographics";
-  if (profile.includes("Bundle-uv-ips")) return "Clinical history";
+function questionnaireResource(value: unknown): Record<string, unknown> | undefined {
+  const obj = asRecord(value);
+  if (obj?.resourceType === "Questionnaire") return obj;
+  return asRecord(obj?.resource);
+}
+
+function questionnaireCanonical(value: unknown): string | undefined {
+  if (typeof value === "string") return value;
+  const obj = asRecord(value);
+  return typeof obj?.canonical === "string" ? obj.canonical : undefined;
+}
+
+function profileTitle(profiles: string[], id: string): string {
+  const joined = profiles.join(" ");
+  if (joined.includes("C4DIC-Coverage")) return "Insurance information";
+  if (joined.includes("us-core-patient")) return "Patient demographics";
+  if (joined.includes("Bundle-uv-ips")) return "Clinical history";
   if (id === "ips") return "Clinical history";
   return id.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }

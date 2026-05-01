@@ -66,13 +66,22 @@ const SMART_REQUESTS: Array<{
     name: "patient-only",
     description: "single FHIR profile request for US Core Patient",
     request: {
+      type: "smart-health-checkin-request",
       version: "1",
+      id: "test-patient-request",
+      purpose: "Clinic check-in",
+      fhirVersions: ["4.0.1"],
       items: [
         {
           id: "patient",
-          profile: "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
+          title: "Patient demographics",
+          summary: "Demographics for check-in",
           required: true,
-          description: "Demographics for check-in",
+          content: {
+            kind: "fhir.resources",
+            profiles: ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"],
+          },
+          accept: ["application/fhir+json"],
         },
       ],
     },
@@ -81,17 +90,32 @@ const SMART_REQUESTS: Array<{
     name: "patient-and-coverage",
     description: "Patient + CARIN Coverage",
     request: {
+      type: "smart-health-checkin-request",
       version: "1",
+      id: "test-patient-coverage-request",
+      purpose: "Clinic check-in",
+      fhirVersions: ["4.0.1"],
       items: [
         {
           id: "patient",
-          profile: "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
+          title: "Patient demographics",
           required: true,
+          content: {
+            kind: "fhir.resources",
+            profiles: ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"],
+          },
+          accept: ["application/fhir+json"],
         },
         {
           id: "coverage",
-          profile:
-            "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage",
+          title: "Coverage",
+          content: {
+            kind: "fhir.resources",
+            profiles: [
+              "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage",
+            ],
+          },
+          accept: ["application/fhir+json"],
         },
       ],
     },
@@ -100,18 +124,27 @@ const SMART_REQUESTS: Array<{
     name: "questionnaire-inline",
     description: "single inline FHIR Questionnaire",
     request: {
+      type: "smart-health-checkin-request",
       version: "1",
+      id: "test-questionnaire-request",
+      purpose: "Clinic check-in",
+      fhirVersions: ["4.0.1"],
       items: [
         {
           id: "intake",
-          questionnaire: {
-            resourceType: "Questionnaire",
-            title: "Migraine Check-in",
-            status: "active",
-            item: [
-              { linkId: "headache", text: "Headache?", type: "boolean" },
-            ],
+          title: "Migraine Check-in",
+          content: {
+            kind: "questionnaire",
+            questionnaire: {
+              resourceType: "Questionnaire",
+              title: "Migraine Check-in",
+              status: "active",
+              item: [
+                { linkId: "headache", text: "Headache?", type: "boolean" },
+              ],
+            },
           },
+          accept: ["application/fhir+json"],
         },
       ],
     },
@@ -120,32 +153,57 @@ const SMART_REQUESTS: Array<{
     name: "all-of-the-above",
     description: "Patient + Coverage + IPS + inline Questionnaire",
     request: {
+      type: "smart-health-checkin-request",
       version: "1",
+      id: "test-all-of-the-above-request",
+      purpose: "Clinic check-in",
+      fhirVersions: ["4.0.1"],
       items: [
         {
           id: "patient",
-          profile: "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
+          title: "Patient demographics",
           required: true,
+          content: {
+            kind: "fhir.resources",
+            profiles: ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"],
+          },
+          accept: ["application/fhir+json"],
         },
         {
           id: "coverage",
-          profile:
-            "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage",
+          title: "Coverage",
+          content: {
+            kind: "fhir.resources",
+            profiles: [
+              "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage",
+            ],
+          },
+          accept: ["application/fhir+json"],
         },
         {
           id: "ips",
-          profile: "http://hl7.org/fhir/uv/ips/StructureDefinition/Bundle-uv-ips",
+          title: "International Patient Summary",
+          content: {
+            kind: "fhir.resources",
+            profiles: ["http://hl7.org/fhir/uv/ips/StructureDefinition/Bundle-uv-ips"],
+          },
+          accept: ["application/smart-health-card", "application/fhir+json"],
         },
         {
           id: "intake",
-          questionnaire: {
-            resourceType: "Questionnaire",
-            title: "Migraine Check-in",
-            status: "active",
-            item: [
-              { linkId: "headache", text: "Headache?", type: "boolean" },
-            ],
+          title: "Migraine Check-in",
+          content: {
+            kind: "questionnaire",
+            questionnaire: {
+              resourceType: "Questionnaire",
+              title: "Migraine Check-in",
+              status: "active",
+              item: [
+                { linkId: "headache", text: "Headache?", type: "boolean" },
+              ],
+            },
           },
+          accept: ["application/fhir+json"],
         },
       ],
     },
@@ -257,7 +315,7 @@ const out = {
   doctype: "org.smarthealthit.checkin.1",
   namespace: "org.smarthealthit.checkin",
   responseElement: "smart_health_checkin_response",
-  requestInfoKey: "smart_health_checkin",
+  requestInfoKey: "org.smarthealthit.checkin.request",
   requestVectors: vectors,
   rejectionVectors,
   sessionTranscriptVectors,

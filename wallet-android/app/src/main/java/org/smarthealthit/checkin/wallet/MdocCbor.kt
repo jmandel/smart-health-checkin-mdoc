@@ -211,7 +211,7 @@ internal data class DecodedItemsRequest(
 internal object DeviceRequestParser {
     private const val EXPECTED_DOC_TYPE = "org.smarthealthit.checkin.1"
     private const val EXPECTED_NAMESPACE = "org.smarthealthit.checkin"
-    private const val SMART_REQUEST_INFO_KEY = "smart_health_checkin"
+    private const val SMART_REQUEST_INFO_KEY = "org.smarthealthit.checkin.request"
 
     /**
      * Decode a base64url-no-padding `deviceRequest` string into our
@@ -240,11 +240,13 @@ internal object DeviceRequestParser {
                 } ?: emptyMap()
                 nsName to elements
             }
-            // SMART payload: ItemsRequest.requestInfo["smart_health_checkin"]
+            // SMART payload: ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]
             // is a tstr containing UTF-8 SMART request JSON.
             val requestInfo = inner["requestInfo"] as? Map<*, *>
-            val smartTstr = requestInfo?.get(SMART_REQUEST_INFO_KEY) as? String
-            val smartJson = smartTstr?.let { runCatching { JSONObject(it) }.getOrNull() }
+            val smartTstr = requestInfo?.get(SMART_REQUEST_INFO_KEY) as? String ?: continue
+            val smartJson = runCatching { JSONObject(smartTstr) }.getOrElse {
+                error("requestInfo[$SMART_REQUEST_INFO_KEY] is not valid JSON: ${it.message}")
+            }
             return DecodedItemsRequest(
                 docType = docType,
                 namespaces = namespaces,

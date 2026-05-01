@@ -26,6 +26,16 @@ const INTAKE_QUESTIONNAIRE = {
       linkId: "severity",
       text: "Pain severity (0-10)",
       type: "integer",
+      extension: [
+        {
+          url: "http://hl7.org/fhir/StructureDefinition/minValue",
+          valueInteger: 0,
+        },
+        {
+          url: "http://hl7.org/fhir/StructureDefinition/maxValue",
+          valueInteger: 10,
+        },
+      ],
     },
     {
       linkId: "started",
@@ -35,32 +45,58 @@ const INTAKE_QUESTIONNAIRE = {
   ],
 };
 
+const ACCEPT_FHIR = ["application/fhir+json"];
+const ACCEPT_SHC_OR_FHIR = ["application/smart-health-card", "application/fhir+json"];
+
 const ALL_OF_THE_ABOVE: SmartCheckinRequest = {
+  type: "smart-health-checkin-request",
   version: "1",
+  id: "demo-all-of-the-above",
+  purpose: "Clinic check-in",
+  fhirVersions: ["4.0.1"],
   items: [
     {
       id: "patient",
-      profile: "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
+      title: "Patient demographics",
+      summary: "Demographics for check-in",
       required: true,
-      description: "Demographics for check-in",
+      content: {
+        kind: "fhir.resources",
+        profiles: ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"],
+      },
+      accept: ACCEPT_FHIR,
     },
     {
       id: "insurance",
-      profile:
-        "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage",
+      title: "Insurance card",
+      summary: "Insurance card for billing",
       required: true,
-      description: "Insurance card",
+      content: {
+        kind: "fhir.resources",
+        profiles: [
+          "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage",
+        ],
+      },
+      accept: ACCEPT_FHIR,
     },
     {
       id: "ips",
-      profile: "http://hl7.org/fhir/uv/ips/StructureDefinition/Bundle-uv-ips",
-      signing: ["shc_v1", "none"],
-      description: "International Patient Summary (problems, meds, allergies, immunizations)",
+      title: "Health summary",
+      summary: "Problems, medications, allergies, and immunizations",
+      content: {
+        kind: "fhir.resources",
+        profiles: ["http://hl7.org/fhir/uv/ips/StructureDefinition/Bundle-uv-ips"],
+      },
+      accept: ACCEPT_SHC_OR_FHIR,
     },
     {
       id: "intake",
-      description: "Intake form",
-      questionnaire: INTAKE_QUESTIONNAIRE,
+      title: "Intake form",
+      content: {
+        kind: "questionnaire",
+        questionnaire: INTAKE_QUESTIONNAIRE,
+      },
+      accept: ACCEPT_FHIR,
     },
   ],
 };
@@ -78,13 +114,22 @@ export const PRESETS: ReadonlyArray<Preset> = [
     label: "Patient (US Core)",
     description: "Single FHIR profile request — Demographics for check-in.",
     request: {
+      type: "smart-health-checkin-request",
       version: "1",
+      id: "demo-patient-only",
+      purpose: "Clinic check-in",
+      fhirVersions: ["4.0.1"],
       items: [
         {
           id: "patient",
-          profile: "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
+          title: "Patient demographics",
+          summary: "Demographics for check-in",
           required: true,
-          description: "Demographics for check-in",
+          content: {
+            kind: "fhir.resources",
+            profiles: ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"],
+          },
+          accept: ACCEPT_FHIR,
         },
       ],
     },
@@ -94,19 +139,34 @@ export const PRESETS: ReadonlyArray<Preset> = [
     label: "Patient + Coverage",
     description: "Demographics plus an insurance card (C4DIC).",
     request: {
+      type: "smart-health-checkin-request",
       version: "1",
+      id: "demo-patient-and-coverage",
+      purpose: "Clinic check-in",
+      fhirVersions: ["4.0.1"],
       items: [
         {
           id: "patient",
-          profile: "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
+          title: "Patient demographics",
           required: true,
+          content: {
+            kind: "fhir.resources",
+            profiles: ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"],
+          },
+          accept: ACCEPT_FHIR,
         },
         {
           id: "insurance",
-          profile:
-            "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage",
+          title: "Insurance card",
+          summary: "Insurance card from your wallet",
           required: false,
-          description: "Insurance card from your wallet",
+          content: {
+            kind: "fhir.resources",
+            profiles: [
+              "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage",
+            ],
+          },
+          accept: ACCEPT_FHIR,
         },
       ],
     },
@@ -116,11 +176,20 @@ export const PRESETS: ReadonlyArray<Preset> = [
     label: "Inline Questionnaire",
     description: "A small inline FHIR Questionnaire to fill out.",
     request: {
+      type: "smart-health-checkin-request",
       version: "1",
+      id: "demo-questionnaire-inline",
+      purpose: "Clinic check-in",
+      fhirVersions: ["4.0.1"],
       items: [
         {
           id: "intake",
-          questionnaire: INTAKE_QUESTIONNAIRE,
+          title: "Intake form",
+          content: {
+            kind: "questionnaire",
+            questionnaire: INTAKE_QUESTIONNAIRE,
+          },
+          accept: ACCEPT_FHIR,
         },
       ],
     },

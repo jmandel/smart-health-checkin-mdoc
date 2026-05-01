@@ -14,9 +14,8 @@ The active direct mdoc transport uses:
 - HPKE-sealed mdoc `DeviceResponse`;
 - ES256 COSE issuer/device signatures.
 
-The checked-in implementation still uses the prototype
-`requestInfo.smart_health_checkin` payload key. The next implementation target is
-`SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md`, using
+The checked-in implementation uses the transport-neutral
+`SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md` payload shape under
 `requestInfo["org.smarthealthit.checkin.request"]`.
 
 Historical profiles are under `../archive/profiles/`, including the old

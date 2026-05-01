@@ -10,13 +10,22 @@ SMART_RESPONSE_ELEMENT_ID = "smart_health_checkin_response"
 DYNAMIC_ELEMENT_PREFIX = "shc1j"
 
 MINIMAL_SMART_REQUEST = {
+    "type": "smart-health-checkin-request",
     "version": "1",
+    "id": "fixture-minimal-request",
+    "purpose": "Clinic check-in",
+    "fhirVersions": ["4.0.1"],
     "items": [
         {
             "id": "patient",
-            "profile": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
+            "title": "Patient demographics",
+            "summary": "Demographics for check-in",
             "required": True,
-            "description": "Demographics for check-in",
+            "content": {
+                "kind": "fhir.resources",
+                "profiles": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"],
+            },
+            "accept": ["application/fhir+json"],
         }
     ],
 }
@@ -53,18 +62,20 @@ FIXED_VALIDITY = {
 }
 
 MINIMAL_SMART_RESPONSE = {
+    "type": "smart-health-checkin-response",
     "version": "1",
+    "requestId": "fixture-minimal-request",
     "artifacts": [
         {
             "id": "a1",
-            "type": "fhir_resource",
-            "data": {
+            "mediaType": "application/fhir+json",
+            "fhirVersion": "4.0.1",
+            "fulfills": ["patient"],
+            "value": {
                 "resourceType": "Patient",
                 "id": "demo",
             },
         }
     ],
-    "answers": {
-        "patient": ["a1"],
-    },
+    "requestStatus": [{"item": "patient", "status": "fulfilled"}],
 }

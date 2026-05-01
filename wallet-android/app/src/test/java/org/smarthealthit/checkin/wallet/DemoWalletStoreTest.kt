@@ -45,9 +45,11 @@ class DemoWalletStoreTest {
         val byId = (0 until artifacts.length())
             .associate { index ->
                 val artifact = artifacts.getJSONObject(index)
-                artifact.getString("id") to artifact.getJSONObject("data")
+                artifact.getString("id") to artifact.getJSONObject("value")
             }
 
+        assertEquals("smart-health-checkin-response", response.getString("type"))
+        assertEquals("demo-request", response.getString("requestId"))
         assertEquals("Coverage", byId.getValue("artifact-coverage").getString("resourceType"))
         assertEquals("coverage-1", byId.getValue("artifact-coverage").getString("id"))
         assertEquals("Bundle", byId.getValue("artifact-clinical").getString("resourceType"))
@@ -62,6 +64,7 @@ class DemoWalletStoreTest {
         assertTrue(questionnaireResponse.toString().contains("\"valueInteger\":24"))
         assertTrue(questionnaireResponse.toString().contains("\"code\":\"somewhat-better\""))
         assertTrue(questionnaireResponse.toString().contains("Medication-use pattern may be worth reviewing"))
+        assertEquals(4, response.getJSONArray("requestStatus").length())
     }
 
     @Test
@@ -84,16 +87,21 @@ class DemoWalletStoreTest {
 
         val artifacts = response.getJSONArray("artifacts")
         assertEquals(2, artifacts.length())
-        val answers = response.getJSONObject("answers")
-        assertTrue(answers.has("coverage"))
-        assertTrue(answers.has("intake"))
-        assertEquals(false, answers.has("clinical"))
-        assertEquals(false, answers.has("plan"))
+        val statuses = (0 until response.getJSONArray("requestStatus").length())
+            .associate { index ->
+                val status = response.getJSONArray("requestStatus").getJSONObject(index)
+                status.getString("item") to status.getString("status")
+            }
+        assertEquals("fulfilled", statuses["coverage"])
+        assertEquals("fulfilled", statuses["intake"])
+        assertEquals("declined", statuses["clinical"])
+        assertEquals("declined", statuses["plan"])
     }
 
     private fun verifiedRequestWithDemoQuestionnaire(): VerifiedRequest {
         val questionnaire = JSONObject(File("src/main/assets/demo-data/migraine-questionnaire.json").readText())
         return VerifiedRequest(
+            requestId = "demo-request",
             verifierOrigin = "https://clinic.example",
             clientId = "",
             requestUri = "",

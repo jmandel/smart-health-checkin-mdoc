@@ -42,6 +42,11 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -159,7 +164,7 @@ class MainActivity : ComponentActivity() {
     // were removed in Stage B. The DC API path replaces them: HandlerActivity
     // (Stage C) reads a ProviderGetCredentialRequest, decodes the org-iso-mdoc
     // DeviceRequest, pulls the SMART request JSON out of
-    // ItemsRequest.requestInfo.smart_health_checkin, builds a SMART-request-shape
+    // ItemsRequest.requestInfo["org.smarthealthit.checkin.request"], builds a SMART-request-shape
     // VerifiedRequest, and calls prepareConsent below. DeviceResponse build +
     // HPKE seal arrive after that.
 
@@ -224,7 +229,7 @@ class MainActivity : ComponentActivity() {
     // buildErrorPayload / buildSuccessPayload / presentationFor were removed in
     // Stage B — they assembled OID4VP vp_token JSON. The Stage C
     // DeviceResponse builder takes their place: it places the SMART response
-    // JSON (artifacts + answers map) as the elementValue of the lone
+    // JSON (artifacts + per-item statuses) as the elementValue of the lone
     // IssuerSignedItem in an mdoc Document.
 
     @Suppress("unused") // wired in Stage C
@@ -1036,6 +1041,9 @@ private fun QuestionnaireField(
 
         when {
             type == "boolean" -> BooleanAnswer(value, onChange = { onAnswerChanged(key, it) })
+            type == "date" -> DateAnswer(value, onChange = { onAnswerChanged(key, it) })
+            type == "integer" && integerBounds(item) != null ->
+                IntegerSliderAnswer(item, value, onChange = { onAnswerChanged(key, it) })
             type in setOf("choice", "open-choice") && item.optJSONArray("answerOption") != null && item.optBoolean("repeats") ->
                 MultiChoiceAnswer(item, value, onChange = { onAnswerChanged(key, it) })
             type in setOf("choice", "open-choice") && item.optJSONArray("answerOption") != null ->
@@ -1062,31 +1070,180 @@ private fun DisplayText(text: String, depth: Int) {
 
 @Composable
 private fun BooleanAnswer(value: Any?, onChange: (Boolean) -> Unit) {
-    Row(
+    val current = when (value) {
+        is Boolean -> value
+        is String -> when (value.lowercase()) {
+            "true" -> true
+            "false" -> false
+            else -> null
+        }
+        else -> null
+    }
+    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+        SegmentedButton(
+            selected = current == true,
+            onClick = { onChange(true) },
+            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+        ) {
+            Text("Yes")
+        }
+        SegmentedButton(
+            selected = current == false,
+            onClick = { onChange(false) },
+            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+        ) {
+            Text("No")
+        }
+    }
+}
+
+private fun integerBounds(item: JSONObject): IntRange? {
+    var min: Int? = null
+    var max: Int? = null
+    val extensions = item.optJSONArray("extension") ?: return null
+    for (i in 0 until extensions.length()) {
+        val ext = extensions.optJSONObject(i) ?: continue
+        when (ext.optString("url")) {
+            "http://hl7.org/fhir/StructureDefinition/minValue" ->
+                if (ext.has("valueInteger")) min = ext.optInt("valueInteger")
+            "http://hl7.org/fhir/StructureDefinition/maxValue" ->
+                if (ext.has("valueInteger")) max = ext.optInt("valueInteger")
+        }
+    }
+    return if (min != null && max != null && max > min) min..max else null
+}
+
+@Composable
+private fun IntegerSliderAnswer(item: JSONObject, value: Any?, onChange: (Int) -> Unit) {
+    val bounds = integerBounds(item) ?: return
+    val current = (value as? Number)?.toInt()
+        ?: value?.toString()?.toIntOrNull()
+        ?: bounds.first
+    val clamped = current.coerceIn(bounds)
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
             .border(BorderStroke(1.dp, AppColors.Line), RoundedCornerShape(14.dp))
             .padding(horizontal = 14.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text(
-            text = "Yes",
-            style = MaterialTheme.typography.bodyLarge,
-            color = AppColors.Ink,
-            modifier = Modifier.weight(1f),
-        )
-        Switch(
-            checked = value == true || value.toString().equals("true", ignoreCase = true),
-            onCheckedChange = onChange,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
-                checkedTrackColor = AppColors.Primary,
-                uncheckedThumbColor = Color.White,
-                uncheckedTrackColor = AppColors.SwitchOff,
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = bounds.first.toString(),
+                style = MaterialTheme.typography.bodySmall,
+                color = AppColors.Muted,
+            )
+            Spacer(Modifier.weight(1f))
+            Text(
+                text = clamped.toString(),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.Ink,
+            )
+            Spacer(Modifier.weight(1f))
+            Text(
+                text = bounds.last.toString(),
+                style = MaterialTheme.typography.bodySmall,
+                color = AppColors.Muted,
+            )
+        }
+        Slider(
+            value = clamped.toFloat(),
+            onValueChange = { onChange(it.toInt()) },
+            valueRange = bounds.first.toFloat()..bounds.last.toFloat(),
+            steps = (bounds.last - bounds.first - 1).coerceAtLeast(0),
+            colors = SliderDefaults.colors(
+                thumbColor = AppColors.Primary,
+                activeTrackColor = AppColors.Primary,
             ),
         )
     }
+}
+
+@Composable
+private fun DateAnswer(value: Any?, onChange: (String) -> Unit) {
+    val parts = parseDateParts(value?.toString())
+    var year by remember { mutableStateOf(parts.year) }
+    var month by remember { mutableStateOf(parts.month) }
+    var day by remember { mutableStateOf(parts.day) }
+
+    fun emit() {
+        onChange(formatDateParts(year, month, day))
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .border(BorderStroke(1.dp, AppColors.Line), RoundedCornerShape(14.dp))
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        OutlinedTextField(
+            value = year,
+            onValueChange = { input ->
+                val sanitized = input.filter(Char::isDigit).take(4)
+                year = sanitized
+                emit()
+            },
+            modifier = Modifier.weight(1.4f),
+            singleLine = true,
+            placeholder = { Text("YYYY") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            shape = RoundedCornerShape(10.dp),
+        )
+        OutlinedTextField(
+            value = month,
+            onValueChange = { input ->
+                val sanitized = input.filter(Char::isDigit).take(2)
+                month = sanitized
+                emit()
+            },
+            modifier = Modifier.weight(1f),
+            singleLine = true,
+            placeholder = { Text("MM") },
+            enabled = year.length == 4,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            shape = RoundedCornerShape(10.dp),
+        )
+        OutlinedTextField(
+            value = day,
+            onValueChange = { input ->
+                val sanitized = input.filter(Char::isDigit).take(2)
+                day = sanitized
+                emit()
+            },
+            modifier = Modifier.weight(1f),
+            singleLine = true,
+            placeholder = { Text("DD") },
+            enabled = year.length == 4 && month.length in 1..2,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            shape = RoundedCornerShape(10.dp),
+        )
+    }
+}
+
+private data class DateParts(val year: String, val month: String, val day: String)
+
+private fun parseDateParts(raw: String?): DateParts {
+    if (raw.isNullOrBlank()) return DateParts("", "", "")
+    val tokens = raw.split('-')
+    val y = tokens.getOrNull(0)?.filter(Char::isDigit)?.take(4).orEmpty()
+    val m = tokens.getOrNull(1)?.filter(Char::isDigit)?.take(2).orEmpty()
+    val d = tokens.getOrNull(2)?.filter(Char::isDigit)?.take(2).orEmpty()
+    return DateParts(y, m, d)
+}
+
+private fun formatDateParts(year: String, month: String, day: String): String {
+    if (year.length != 4) return ""
+    val mm = month.takeIf { it.isNotBlank() }?.padStart(2, '0') ?: return year
+    val dd = day.takeIf { it.isNotBlank() }?.padStart(2, '0') ?: return "$year-$mm"
+    return "$year-$mm-$dd"
 }
 
 @Composable
@@ -1531,6 +1688,7 @@ internal sealed interface ScreenState {
 }
 
 internal data class VerifiedRequest(
+    val requestId: String = "",
     val verifierOrigin: String,
     val clientId: String,
     val requestUri: String,
@@ -1551,6 +1709,7 @@ internal data class RequestItem(
     val subtitle: String,
     val kind: RequestKind,
     val meta: JSONObject,
+    val acceptedMediaTypes: List<String> = listOf("application/fhir+json"),
 )
 
 internal enum class RequestKind {

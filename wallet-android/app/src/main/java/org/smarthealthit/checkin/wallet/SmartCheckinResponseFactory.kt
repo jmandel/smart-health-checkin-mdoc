@@ -11,25 +11,51 @@ internal object SmartCheckinResponseFactory {
         walletStore: SmartHealthWalletStore,
     ): JSONObject {
         val artifacts = JSONArray()
-        val answers = JSONObject()
+        val requestStatus = JSONArray()
 
         request.items
-            .filter { selectedItems[it.id] != false }
             .forEach { item ->
+                if (selectedItems[item.id] == false) {
+                    requestStatus.put(
+                        JSONObject()
+                            .put("item", item.id)
+                            .put("status", "declined"),
+                    )
+                    return@forEach
+                }
+
                 val artifactId = "artifact-${item.id}"
                 val artifact = walletStore.resolveArtifact(item, questionnaireAnswers)
+                if (!item.acceptedMediaTypes.contains(artifact.mediaType)) {
+                    requestStatus.put(
+                        JSONObject()
+                            .put("item", item.id)
+                            .put("status", "unsupported")
+                            .put("message", "Wallet cannot produce an accepted media type for this request."),
+                    )
+                    return@forEach
+                }
+
                 artifacts.put(
                     JSONObject()
                         .put("id", artifactId)
-                        .put("type", artifact.type)
-                        .put("data", artifact.data),
+                        .put("mediaType", artifact.mediaType)
+                        .put("fhirVersion", artifact.fhirVersion)
+                        .put("fulfills", JSONArray().put(item.id))
+                        .put("value", artifact.value),
                 )
-                answers.put(item.id, JSONArray().put(artifactId))
+                requestStatus.put(
+                    JSONObject()
+                        .put("item", item.id)
+                        .put("status", "fulfilled"),
+                )
             }
 
         return JSONObject()
+            .put("type", "smart-health-checkin-response")
             .put("version", "1")
+            .put("requestId", request.requestId.ifBlank { "smart-health-checkin-request" })
             .put("artifacts", artifacts)
-            .put("answers", answers)
+            .put("requestStatus", requestStatus)
     }
 }

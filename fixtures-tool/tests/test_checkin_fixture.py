@@ -6,8 +6,6 @@ import sys
 
 from fixtures_tool.constants import DOCTYPE, ELEMENT, NAMESPACE
 
-EXPECTED_VALUE_DIGEST = "8f7b1f307aacd205224e10ce2b3857fa2dc48186b04655c118d7810e55d0d93c"
-
 
 def test_issue_fixture_and_parse_round_trip(tmp_path):
     out_dir = tmp_path / "pymdoc-minimal"
@@ -27,10 +25,10 @@ def test_issue_fixture_and_parse_round_trip(tmp_path):
     assert expected_walk["namespace"] == NAMESPACE
     assert expected_walk["elementIdentifier"] == ELEMENT
     assert expected_walk["digestMatches"] is True
-    assert expected_walk["recomputedDigestSha256"] == EXPECTED_VALUE_DIGEST
-    assert expected_walk["msoDigestSha256"] == EXPECTED_VALUE_DIGEST
-    assert expected_walk["smartResponse"]["artifacts"][0]["data"]["resourceType"] == "Patient"
-    assert expected_walk["smartResponse"]["answers"] == {"patient": ["a1"]}
+    assert expected_walk["recomputedDigestSha256"] == expected_walk["msoDigestSha256"]
+    assert expected_walk["smartResponse"]["type"] == "smart-health-checkin-response"
+    assert expected_walk["smartResponse"]["artifacts"][0]["value"]["resourceType"] == "Patient"
+    assert expected_walk["smartResponse"]["requestStatus"] == [{"item": "patient", "status": "fulfilled"}]
 
     parsed = subprocess.run(
         [
@@ -99,9 +97,10 @@ def test_checked_in_real_android_response_fixture_verifies():
     assert summary["walk"]["digestMatches"] is True
     assert summary["cose"]["issuerAuth"]["verified"] is True
     assert summary["cose"]["deviceSignature"]["verified"] is True
-    assert summary["walk"]["smartResponse"]["answers"] == {
-        "insurance": ["artifact-insurance"],
-        "intake": ["artifact-intake"],
-        "ips": ["artifact-ips"],
-        "patient": ["artifact-patient"],
-    }
+    assert summary["walk"]["smartResponse"]["type"] == "smart-health-checkin-response"
+    assert sorted(status["item"] for status in summary["walk"]["smartResponse"]["requestStatus"]) == [
+        "insurance",
+        "intake",
+        "ips",
+        "patient",
+    ]

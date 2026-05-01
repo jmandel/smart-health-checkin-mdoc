@@ -3,22 +3,29 @@
   "elementIdentifier": "smart_health_checkin_response",
   "namespace": "org.smarthealthit.checkin",
   "smartResponse": {
-    "answers": {
-      "patient": [
-        "a1"
-      ]
-    },
     "artifacts": [
       {
-        "data": {
+        "fhirVersion": "4.0.1",
+        "fulfills": [
+          "patient"
+        ],
+        "id": "a1",
+        "mediaType": "application/fhir+json",
+        "value": {
           "id": "demo",
           "resourceType": "Patient"
-        },
-        "id": "a1",
-        "type": "fhir_resource"
+        }
       }
     ],
+    "requestId": "fixture-minimal-request",
+    "requestStatus": [
+      {
+        "item": "patient",
+        "status": "fulfilled"
+      }
+    ],
+    "type": "smart-health-checkin-response",
     "version": "1"
   },
-  "smartResponseJson": "{\"answers\":{\"patient\":[\"a1\"]},\"artifacts\":[{\"data\":{\"id\":\"demo\",\"resourceType\":\"Patient\"},\"id\":\"a1\",\"type\":\"fhir_resource\"}],\"version\":\"1\"}"
+  "smartResponseJson": "{\"artifacts\":[{\"fhirVersion\":\"4.0.1\",\"fulfills\":[\"patient\"],\"id\":\"a1\",\"mediaType\":\"application/fhir+json\",\"value\":{\"id\":\"demo\",\"resourceType\":\"Patient\"}}],\"requestId\":\"fixture-minimal-request\",\"requestStatus\":[{\"item\":\"patient\",\"status\":\"fulfilled\"}],\"type\":\"smart-health-checkin-response\",\"version\":\"1\"}"
 }

@@ -834,6 +834,55 @@ select {
   font-weight: 600;
 }
 
+.resource-field-markdown {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 8px 0;
+}
+
+.markdown-body {
+  color: #1f2937;
+  font-size: 13px;
+  line-height: 1.55;
+  min-width: 0;
+}
+
+.markdown-body > :first-child { margin-top: 0; }
+.markdown-body > :last-child { margin-bottom: 0; }
+.markdown-body h1 { font-size: 17px; margin: 14px 0 6px; }
+.markdown-body h2 { font-size: 15px; margin: 14px 0 6px; }
+.markdown-body h3 { font-size: 13px; margin: 10px 0 4px; }
+.markdown-body p { margin: 6px 0; }
+.markdown-body ul,
+.markdown-body ol { padding-left: 20px; margin: 6px 0; }
+.markdown-body li { margin: 2px 0; }
+.markdown-body img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 6px 0;
+}
+.markdown-body blockquote {
+  border-left: 3px solid #e2e8f0;
+  margin: 8px 0;
+  padding: 2px 12px;
+  color: #64748b;
+  font-style: italic;
+}
+.markdown-body code {
+  background: #eef2f7;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 0.92em;
+}
+.markdown-body strong { color: #1f2937; }
+.markdown-body a { color: #0369a1; }
+
 .bundle-entry-list {
   display: grid;
   gap: 10px;

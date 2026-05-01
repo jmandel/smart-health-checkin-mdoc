@@ -1,10 +1,16 @@
 {
+  "type": "smart-health-checkin-response",
   "version": "1",
+  "requestId": "demo-all-of-the-above",
   "artifacts": [
     {
       "id": "artifact-patient",
-      "type": "fhir_resource",
-      "data": {
+      "mediaType": "application\/fhir+json",
+      "fhirVersion": "4.0.1",
+      "fulfills": [
+        "patient"
+      ],
+      "value": {
         "resourceType": "Bundle",
         "id": "clinical-history-1",
         "type": "collection",
@@ -218,8 +224,12 @@
     },
     {
       "id": "artifact-insurance",
-      "type": "fhir_resource",
-      "data": {
+      "mediaType": "application\/fhir+json",
+      "fhirVersion": "4.0.1",
+      "fulfills": [
+        "insurance"
+      ],
+      "value": {
         "resourceType": "Coverage",
         "id": "coverage-1",
         "meta": {
@@ -441,8 +451,12 @@
     },
     {
       "id": "artifact-ips",
-      "type": "fhir_resource",
-      "data": {
+      "mediaType": "application\/fhir+json",
+      "fhirVersion": "4.0.1",
+      "fulfills": [
+        "ips"
+      ],
+      "value": {
         "resourceType": "Bundle",
         "id": "clinical-history-1",
         "type": "collection",
@@ -656,28 +670,36 @@
     },
     {
       "id": "artifact-intake",
-      "type": "fhir_resource",
-      "data": {
+      "mediaType": "application\/fhir+json",
+      "fhirVersion": "4.0.1",
+      "fulfills": [
+        "intake"
+      ],
+      "value": {
         "resourceType": "QuestionnaireResponse",
         "id": "intake-response",
         "status": "completed",
-        "authored": "2026-05-01T15:37:19.740557Z",
+        "authored": "2026-05-01T17:27:21.311492Z",
         "item": []
       }
     }
   ],
-  "answers": {
-    "patient": [
-      "artifact-patient"
-    ],
-    "insurance": [
-      "artifact-insurance"
-    ],
-    "ips": [
-      "artifact-ips"
-    ],
-    "intake": [
-      "artifact-intake"
-    ]
-  }
+  "requestStatus": [
+    {
+      "item": "patient",
+      "status": "fulfilled"
+    },
+    {
+      "item": "insurance",
+      "status": "fulfilled"
+    },
+    {
+      "item": "ips",
+      "status": "fulfilled"
+    },
+    {
+      "item": "intake",
+      "status": "fulfilled"
+    }
+  ]
 }

@@ -11,15 +11,15 @@
   "protocol": "org-iso-mdoc",
   "pymdoccbor": "1.3.0",
   "sha256": {
-    "document.cbor": "99600409de9919896af8ab98a66a1635eac27f892ba6a83da09eaefe340b6c91",
-    "expected-walk.json": "c6800d946ad4480082e93b1ebfe3d883dc5e40111acfd31d6f6e11e504571ecd",
-    "issuer-auth.cbor": "ff4031df266909f4f168b7bfebc288dbccf117fe18932191ed9a9a665806ed71",
-    "issuer-signed-item-tag24.cbor": "8f7b1f307aacd205224e10ce2b3857fa2dc48186b04655c118d7810e55d0d93c",
-    "issuer-signed-item.cbor": "3b19a8c9cd67f28adc6e26dc72b4b6f60b707762ea5d6ac3f6225fc40fc0192b",
-    "mso-tag24.cbor": "33fef428b8ce22c399cf618fba856a85dbbdc1230f668496f21be7592d233273",
-    "mso.cbor": "c196086493a10fadfe45478a9ffa927a3efb8bf2c36277dd361c8367177a67dc",
-    "smart-response.json": "eed0afc55999aa4d13e1c5d9fe54095f42db00eebe4b5841162722e7fe34531f",
-    "value-digest-input.cbor": "8f7b1f307aacd205224e10ce2b3857fa2dc48186b04655c118d7810e55d0d93c"
+    "document.cbor": "046443e9278458bcf3c154085a88239c2bac21eb03a81e626dbfbd25ae1b64c7",
+    "expected-walk.json": "18ec47dc76b45cf8ec9b26bc4ac461572ed82b551bd1068e05ec6be01e2edea9",
+    "issuer-auth.cbor": "953089c309a6c8612631c33c72503236e4e8a08481912e471ae375aa8301fb47",
+    "issuer-signed-item-tag24.cbor": "65411f6e3e7aada4f1d29d7d3132e20d24031330fcb14d9a62f0943bf45388d0",
+    "issuer-signed-item.cbor": "7424faf30e08002846f355ab353b552e3751946055154215b148c08573de7dcf",
+    "mso-tag24.cbor": "b6871c03ed23e68e1c8dd30076f2125f2dc0236e2c63c2c877191d14a4f286e5",
+    "mso.cbor": "1c65bf81a4d387ac6bedc5662b711a8b517354e5db4f01ea7d8f6d59ed7025fe",
+    "smart-response.json": "32da250808d34dbad5e6c3fb5a1eaab62208e60e34da0dea9b9167223f48c01c",
+    "value-digest-input.cbor": "65411f6e3e7aada4f1d29d7d3132e20d24031330fcb14d9a62f0943bf45388d0"
   },
   "source": "fixtures-tool/pyMDOC-CBOR"
 }

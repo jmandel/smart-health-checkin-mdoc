@@ -35,32 +35,60 @@ const RECIPIENT_PRIVATE_JWK: JsonWebKey = {
 };
 
 const SMART_REQUEST: SmartCheckinRequest = {
+  type: "smart-health-checkin-request",
   version: "1",
+  id: "fixture-smart-checkin-basic",
+  purpose: "Clinic check-in",
+  fhirVersions: ["4.0.1"],
   items: [
     {
       id: "coverage",
-      profile: "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage",
+      title: "Coverage",
+      summary: "Member coverage and payer details.",
       required: true,
-      description: "Member coverage and payer details.",
+      content: {
+        kind: "fhir.resources",
+        profiles: [
+          "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage",
+        ],
+      },
+      accept: ["application/fhir+json"],
     },
     {
       id: "clinical",
-      profile: "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
+      title: "Clinical summary",
+      summary: "Patient demographics and clinical summary.",
       required: true,
-      description: "Patient demographics and clinical summary.",
+      content: {
+        kind: "fhir.resources",
+        profiles: ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"],
+      },
+      accept: ["application/fhir+json"],
     },
     {
       id: "plan",
-      profile: "http://hl7.org/fhir/us/insurance-card/StructureDefinition/sbc-insurance-plan",
+      title: "Insurance plan",
+      summary: "Summary of Benefits and Coverage.",
       required: false,
-      description: "Summary of Benefits and Coverage.",
+      content: {
+        kind: "fhir.resources",
+        profiles: [
+          "http://hl7.org/fhir/us/insurance-card/StructureDefinition/sbc-insurance-plan",
+        ],
+      },
+      accept: ["application/fhir+json"],
     },
     {
       id: "intake",
-      questionnaireUrl:
-        "https://smart-health-checkin.example.org/fhir/Questionnaire/chronic-migraine-followup",
+      title: "Migraine follow-up",
+      summary: "Migraine follow-up form.",
       required: false,
-      description: "Migraine follow-up form.",
+      content: {
+        kind: "questionnaire",
+        questionnaire:
+          "https://smart-health-checkin.example.org/fhir/Questionnaire/chronic-migraine-followup",
+      },
+      accept: ["application/fhir+json"],
     },
   ],
 };

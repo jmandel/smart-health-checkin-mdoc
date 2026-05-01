@@ -1,23 +1,23 @@
 {
   "cose": {
-    "deviceAuthenticationSessionTranscriptHex": "83f6f6826564636170695820d9c889410d92ec40c564b310edbecde1c94ddfccd376267bbfbd0e7bf378dfcc",
+    "deviceAuthenticationSessionTranscriptHex": "83f6f68265646361706958203551e52313863d7031ddf4ae9d4650a845be2a5a46d662a3a54bfbf963a8598a",
     "deviceSignature": {
       "alg": "ES256",
-      "payloadSha256": "45f4d778fb5b4203a6e002628e98c54711a50fa8a1abe8a2c52b3fdcbb9c960f",
-      "sigStructureSha256": "8dffad390cfa3c4aea8e0a55ec1a23f49a50b2eb84b34ad39d5e9327b64fc470",
+      "payloadSha256": "63d6f8a8d0b7072f2f051f3bb749f22d2ac264f1539715a9fc45a29b71ffa662",
+      "sigStructureSha256": "9ff81ef7c2b22cd7ef7c609c2235dd1d873fb2d54400c04892312555ad74d355",
       "verified": true
     },
     "issuerAuth": {
       "alg": "ES256",
-      "payloadSha256": "62234b501459b2aa95fa6af687657167b9dd71edb5e442cd343abe2109a75ddf",
-      "sigStructureSha256": "f6ec5118bb61752dd69644e53bb8c5cfc1cb04180b54eab0dbae931a0451bd9c",
+      "payloadSha256": "456d197c16edec48e389070a78b56ae3de088ff26d2002f59dc0e279ca414968",
+      "sigStructureSha256": "ce30b0bae3af4b980eed01b52c18d311ac721cba1fd2f68f47248c89a513c72e",
       "verified": true
     }
   },
-  "documentSha256": "44ca04fde236c92d4e7b70d731f77f9226bb940c0e5b72b29d94e08ef4383ba6",
+  "documentSha256": "5f2670d11c77e9baeaa83d4f44e71db06c7fb138006286c5addb53cf39353f31",
   "issuerCertificateSubject": "CN=SMART Health Check-in Demo",
-  "issuerSignedItemTag24Sha256": "9eb55a99222ebeab7cfd697273218d1e35041289acfb29926799bb0dc54329d5",
-  "msoSha256": "49ea909cc4356af89d0a39296fbbd2d069f3d800c64e877bc07c324a3134625b",
+  "issuerSignedItemTag24Sha256": "ab885cd4465051c91891a80b20a4d6497c116179975c4b82d626051064b33076",
+  "msoSha256": "a9b87fca6e9e1f14d456cc624b84519dce32fdcddc0a57443292110fa108736f",
   "ok": true,
   "walk": {
     "digestID": 0,
@@ -29,27 +29,19 @@
       "docType": "org.smarthealthit.checkin.1",
       "version": "1.0"
     },
-    "msoDigestSha256": "9eb55a99222ebeab7cfd697273218d1e35041289acfb29926799bb0dc54329d5",
+    "msoDigestSha256": "ab885cd4465051c91891a80b20a4d6497c116179975c4b82d626051064b33076",
     "namespace": "org.smarthealthit.checkin",
-    "recomputedDigestSha256": "9eb55a99222ebeab7cfd697273218d1e35041289acfb29926799bb0dc54329d5",
+    "recomputedDigestSha256": "ab885cd4465051c91891a80b20a4d6497c116179975c4b82d626051064b33076",
     "smartResponse": {
-      "answers": {
-        "insurance": [
-          "artifact-insurance"
-        ],
-        "intake": [
-          "artifact-intake"
-        ],
-        "ips": [
-          "artifact-ips"
-        ],
-        "patient": [
-          "artifact-patient"
-        ]
-      },
       "artifacts": [
         {
-          "data": {
+          "fhirVersion": "4.0.1",
+          "fulfills": [
+            "patient"
+          ],
+          "id": "artifact-patient",
+          "mediaType": "application/fhir+json",
+          "value": {
             "entry": [
               {
                 "fullUrl": "urn:uuid:patient-1",
@@ -259,12 +251,16 @@
             "resourceType": "Bundle",
             "timestamp": "2026-04-29T12:00:00Z",
             "type": "collection"
-          },
-          "id": "artifact-patient",
-          "type": "fhir_resource"
+          }
         },
         {
-          "data": {
+          "fhirVersion": "4.0.1",
+          "fulfills": [
+            "insurance"
+          ],
+          "id": "artifact-insurance",
+          "mediaType": "application/fhir+json",
+          "value": {
             "beneficiary": {
               "display": "Jane Doe",
               "reference": "Patient/patient-1"
@@ -482,12 +478,16 @@
               ],
               "text": "health insurance plan policy"
             }
-          },
-          "id": "artifact-insurance",
-          "type": "fhir_resource"
+          }
         },
         {
-          "data": {
+          "fhirVersion": "4.0.1",
+          "fulfills": [
+            "ips"
+          ],
+          "id": "artifact-ips",
+          "mediaType": "application/fhir+json",
+          "value": {
             "entry": [
               {
                 "fullUrl": "urn:uuid:patient-1",
@@ -697,22 +697,44 @@
             "resourceType": "Bundle",
             "timestamp": "2026-04-29T12:00:00Z",
             "type": "collection"
-          },
-          "id": "artifact-ips",
-          "type": "fhir_resource"
+          }
         },
         {
-          "data": {
-            "authored": "2026-05-01T15:37:19.740557Z",
+          "fhirVersion": "4.0.1",
+          "fulfills": [
+            "intake"
+          ],
+          "id": "artifact-intake",
+          "mediaType": "application/fhir+json",
+          "value": {
+            "authored": "2026-05-01T17:27:21.311492Z",
             "id": "intake-response",
             "item": [],
             "resourceType": "QuestionnaireResponse",
             "status": "completed"
-          },
-          "id": "artifact-intake",
-          "type": "fhir_resource"
+          }
         }
       ],
+      "requestId": "demo-all-of-the-above",
+      "requestStatus": [
+        {
+          "item": "patient",
+          "status": "fulfilled"
+        },
+        {
+          "item": "insurance",
+          "status": "fulfilled"
+        },
+        {
+          "item": "ips",
+          "status": "fulfilled"
+        },
+        {
+          "item": "intake",
+          "status": "fulfilled"
+        }
+      ],
+      "type": "smart-health-checkin-response",
       "version": "1"
     }
   }

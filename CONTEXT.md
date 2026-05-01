@@ -39,21 +39,15 @@ fixtures/responses/real-chrome-android-smart-checkin/
 
 That capture proves the request survives into Android with `requestInfo`, and
 that the wallet can return a direct `org-iso-mdoc` response with valid mdoc/COSE
-structure. The current fixture uses the prototype
-`requestInfo.smart_health_checkin` payload key and includes a test-only verifier
-HPKE private JWK, so the encrypted `dcapi` wrapper can be reopened offline by
-the RP web oracle.
+structure. The current fixture uses
+`requestInfo["org.smarthealthit.checkin.request"]` and includes a test-only
+verifier HPKE private JWK, so the encrypted `dcapi` wrapper can be reopened
+offline by the RP web oracle.
 
 ## SMART request carrier
 
 The active transport uses `ItemsRequest.requestInfo` as the load-bearing dynamic
-request channel. The checked-in implementation currently uses the prototype key:
-
-```text
-ItemsRequest.requestInfo.smart_health_checkin = <SMART request JSON string>
-```
-
-The implementation target is `SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md`, using:
+request channel:
 
 ```text
 ItemsRequest.requestInfo["org.smarthealthit.checkin.request"] =
@@ -124,18 +118,19 @@ DeviceRequest = {
       "docType": "org.smarthealthit.checkin.1",
       "nameSpaces": {
         "org.smarthealthit.checkin": {
-          "smart_health_checkin_response": false
+          "smart_health_checkin_response": true
         }
       },
       "requestInfo": {
-        "smart_health_checkin": "<SMART request JSON>"
+        "org.smarthealthit.checkin.request": "<SMART request JSON>"
       }
     }))
   }]
 }
 ```
 
-The `false` value is mdoc `intentToRetain`.
+The `true` value is mdoc `intentToRetain`; SMART Check-in defaults to retention
+because clinical check-in artifacts are typically ingested into the EHR.
 
 The RP also builds:
 

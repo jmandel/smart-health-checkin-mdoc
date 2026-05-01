@@ -61,7 +61,11 @@ class AndroidMdocValidationFixtureTest {
         val decodedResponse = MdocCbor.decode(walletResponse.deviceResponseBytes) as Map<*, *>
         assertEquals("1.0", decodedResponse["version"])
         assertEquals(0L, decodedResponse["status"])
-        assertTrue(smartResponse.getJSONObject("answers").has("intake"))
+        val statuses = smartResponse.getJSONArray("requestStatus")
+        assertTrue((0 until statuses.length()).any { index ->
+            val status = statuses.getJSONObject(index)
+            status.optString("item") == "intake" && status.optString("status") == "fulfilled"
+        })
     }
 
     private fun withLocalQuestionnaire(smartRequest: JSONObject): JSONObject {
@@ -70,9 +74,20 @@ class AndroidMdocValidationFixtureTest {
         val items = copy.getJSONArray("items")
         for (i in 0 until items.length()) {
             val item = items.getJSONObject(i)
-            val url = item.optString("questionnaireUrl")
-            if (url == questionnaire.optString("url")) {
-                item.put("questionnaire", questionnaire)
+            val content = item.optJSONObject("content") ?: continue
+            val spec = content.opt("questionnaire")
+            val canonical = when (spec) {
+                is String -> spec
+                is JSONObject -> spec.optString("canonical")
+                else -> ""
+            }
+            if (canonical == questionnaire.optString("url")) {
+                content.put(
+                    "questionnaire",
+                    JSONObject()
+                        .put("canonical", canonical)
+                        .put("resource", questionnaire),
+                )
             }
         }
         return copy

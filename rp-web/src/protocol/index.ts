@@ -2,57 +2,112 @@
 //
 // Active mapping:
 //   Digital Credentials API protocol: "org-iso-mdoc"
-//   SMART request carrier: ItemsRequest.requestInfo.smart_health_checkin
+//   SMART request carrier: ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]
 //   Requested mdoc element: smart_health_checkin_response
 //
 // A dynamic element-identifier fallback (shc1j/shc1d) is documented and kept as
 // utility code, but the active path assumes requestInfo is available to the
 // wallet library and uses it as the load-bearing carrier.
 
-export type SmartCheckinRequestItem =
+export type FhirCanonical = string;
+export type FhirVersion = string;
+export type FhirResourceType = string;
+export type SmartHealthCheckinAcceptedMediaType =
+  | "application/smart-health-card"
+  | "application/fhir+json"
+  | "application/smart-health-link"
+  | (string & {});
+
+export type FhirProfileCollectionRef =
+  | FhirCanonical
   | {
-      id: string;
-      profile: string;
-      required?: boolean;
-      signing?: ReadonlyArray<"none" | "shc_v1" | "shc_v2">;
-      description?: string;
-    }
-  | {
-      id: string;
-      questionnaire: unknown; // FHIR Questionnaire JSON
-      required?: boolean;
-      signing?: ReadonlyArray<"none" | "shc_v1" | "shc_v2">;
-      description?: string;
-    }
-  | {
-      id: string;
-      questionnaireUrl: string;
-      required?: boolean;
-      signing?: ReadonlyArray<"none" | "shc_v1" | "shc_v2">;
-      description?: string;
+      canonical: FhirCanonical;
+      package?: string;
+      version?: string;
     };
 
+export type SmartCheckinContentSelector =
+  | {
+      kind: "fhir.resources";
+      profiles?: ReadonlyArray<FhirCanonical>;
+      profilesFrom?: FhirProfileCollectionRef | ReadonlyArray<FhirProfileCollectionRef>;
+      resourceTypes?: ReadonlyArray<FhirResourceType>;
+    }
+  | {
+      kind: "questionnaire";
+      questionnaire:
+        | FhirCanonical
+        | unknown
+        | {
+            canonical?: FhirCanonical;
+            resource?: unknown;
+          };
+    };
+
+export type SmartCheckinRequestItem = {
+  id: string;
+  title: string;
+  summary?: string;
+  required?: boolean;
+  content: SmartCheckinContentSelector;
+  accept: ReadonlyArray<SmartHealthCheckinAcceptedMediaType>;
+};
+
 export type SmartCheckinRequest = {
+  type: "smart-health-checkin-request";
   version: "1";
+  id: string;
+  purpose?: string;
+  fhirVersions?: ReadonlyArray<FhirVersion>;
   items: ReadonlyArray<SmartCheckinRequestItem>;
 };
 
-export type SmartArtifact = {
-  id: string;
-  type: "fhir_resource" | "shc" | "shl" | "opaque";
-  data: unknown;
+export type SmartCheckinItemStatus = {
+  item: string;
+  status: "fulfilled" | "partial" | "unavailable" | "declined" | "unsupported" | "error";
+  message?: string;
 };
 
+export type SmartArtifactBase = {
+  id: string;
+  mediaType: string;
+  fulfills: ReadonlyArray<string>;
+};
+
+export type SmartArtifact =
+  | (SmartArtifactBase & {
+      mediaType: "application/smart-health-card";
+      value: { verifiableCredential: ReadonlyArray<string> };
+    })
+  | (SmartArtifactBase & {
+      mediaType: "application/fhir+json";
+      fhirVersion: FhirVersion;
+      value: unknown;
+    })
+  | (SmartArtifactBase & {
+      mediaType: "application/smart-health-link";
+      url: string;
+    })
+  | (SmartArtifactBase & {
+      value?: unknown;
+      url?: string;
+      data?: string;
+      filename?: string;
+      fhirVersion?: FhirVersion;
+    });
+
 export type SmartCheckinResponse = {
+  type: "smart-health-checkin-response";
   version: "1";
+  requestId: string;
   artifacts: ReadonlyArray<SmartArtifact>;
-  answers: Readonly<Record<string, ReadonlyArray<string>>>;
+  requestStatus: ReadonlyArray<SmartCheckinItemStatus>;
 };
 
 export const PROTOCOL_ID = "org-iso-mdoc" as const;
 export const MDOC_DOC_TYPE = "org.smarthealthit.checkin.1" as const;
 export const MDOC_NAMESPACE = "org.smarthealthit.checkin" as const;
-export const SMART_REQUEST_INFO_KEY = "smart_health_checkin" as const;
+export const SMART_REQUEST_INFO_KEY = "org.smarthealthit.checkin.request" as const;
 export const SMART_RESPONSE_ELEMENT_ID = "smart_health_checkin_response" as const;
 export const DYNAMIC_ELEMENT_PREFIX = "shc1j" as const;
 export const RESERVED_COMPRESSED_ELEMENT_PREFIX = "shc1d" as const;
@@ -370,7 +425,7 @@ export function buildItemsRequestTag24Bytes(input: {
     docType: MDOC_DOC_TYPE,
     nameSpaces: {
       [MDOC_NAMESPACE]: {
-        [responseElementIdentifier]: false,
+        [responseElementIdentifier]: true,
       },
     },
     requestInfo: {
@@ -1005,68 +1060,192 @@ export function cborToJsonValue(value: unknown): JsonValue {
 export function validateSmartCheckinRequest(
   v: unknown,
 ): { ok: true; value: SmartCheckinRequest } | { ok: false; error: string } {
-  if (typeof v !== "object" || v === null) {
+  if (!isRecord(v)) {
     return { ok: false, error: "request must be an object" };
   }
-  const obj = v as Record<string, unknown>;
+  const obj = v;
+  if (obj.type !== "smart-health-checkin-request") {
+    return { ok: false, error: 'type must be "smart-health-checkin-request"' };
+  }
   if (obj.version !== "1") return { ok: false, error: 'version must be "1"' };
+  if (!nonEmptyString(obj.id)) return { ok: false, error: "id missing or not a string" };
+  if (obj.purpose !== undefined && typeof obj.purpose !== "string") {
+    return { ok: false, error: "purpose must be a string" };
+  }
+  if (obj.fhirVersions !== undefined && !stringArray(obj.fhirVersions)) {
+    return { ok: false, error: "fhirVersions must be an array of strings" };
+  }
   if (!Array.isArray(obj.items)) return { ok: false, error: "items must be an array" };
+  const ids = new Set<string>();
   for (let i = 0; i < obj.items.length; i++) {
     const item = obj.items[i];
-    if (typeof item !== "object" || item === null) {
+    if (!isRecord(item)) {
       return { ok: false, error: `items[${i}] is not an object` };
     }
-    const it = item as Record<string, unknown>;
-    if (typeof it.id !== "string" || it.id.length === 0) {
+    if (!nonEmptyString(item.id)) {
       return { ok: false, error: `items[${i}].id missing or not a string` };
     }
-    const kinds = ["profile", "questionnaire", "questionnaireUrl"].filter(
-      (k) => k in it,
-    );
-    if (kinds.length !== 1) {
-      return {
-        ok: false,
-        error: `items[${i}] must have exactly one of profile/questionnaire/questionnaireUrl (found ${kinds.length})`,
-      };
+    if (ids.has(item.id)) return { ok: false, error: `items[${i}].id is duplicated` };
+    ids.add(item.id);
+    if (!nonEmptyString(item.title)) {
+      return { ok: false, error: `items[${i}].title missing or not a string` };
     }
+    if (item.summary !== undefined && typeof item.summary !== "string") {
+      return { ok: false, error: `items[${i}].summary must be a string` };
+    }
+    if (item.required !== undefined && typeof item.required !== "boolean") {
+      return { ok: false, error: `items[${i}].required must be a boolean` };
+    }
+    if (!stringArray(item.accept) || item.accept.length === 0) {
+      return { ok: false, error: `items[${i}].accept must be a non-empty string array` };
+    }
+    const content = item.content;
+    if (!isRecord(content)) {
+      return { ok: false, error: `items[${i}].content must be an object` };
+    }
+    const contentError = validateContentSelector(content, `items[${i}].content`);
+    if (contentError) return { ok: false, error: contentError };
   }
   return { ok: true, value: obj as unknown as SmartCheckinRequest };
+}
+
+function validateContentSelector(content: Record<string, unknown>, path: string): string | undefined {
+  if (content.kind === "fhir.resources") {
+    if (content.profiles !== undefined && !stringArray(content.profiles)) {
+      return `${path}.profiles must be an array of strings`;
+    }
+    if (content.resourceTypes !== undefined && !stringArray(content.resourceTypes)) {
+      return `${path}.resourceTypes must be an array of strings`;
+    }
+    if (content.profilesFrom !== undefined && !validProfilesFrom(content.profilesFrom)) {
+      return `${path}.profilesFrom must be a canonical URL string or object`;
+    }
+    return undefined;
+  }
+  if (content.kind === "questionnaire") {
+    const questionnaire = content.questionnaire;
+    if (typeof questionnaire === "string") {
+      return questionnaire.length > 0 ? undefined : `${path}.questionnaire must not be blank`;
+    }
+    if (!isRecord(questionnaire)) return `${path}.questionnaire must be a canonical string or object`;
+    if (questionnaire.resourceType === "Questionnaire") return undefined;
+    if (questionnaire.canonical === undefined && questionnaire.resource === undefined) {
+      return `${path}.questionnaire object must include canonical or resource`;
+    }
+    if (questionnaire.canonical !== undefined && !nonEmptyString(questionnaire.canonical)) {
+      return `${path}.questionnaire.canonical must be a string`;
+    }
+    if (questionnaire.resource !== undefined && !isRecord(questionnaire.resource)) {
+      return `${path}.questionnaire.resource must be an object`;
+    }
+    return undefined;
+  }
+  return `${path}.kind must be fhir.resources or questionnaire`;
+}
+
+function validProfilesFrom(value: unknown): boolean {
+  if (typeof value === "string") return isCanonicalUrl(value);
+  if (Array.isArray(value)) return value.length > 0 && value.every(validProfilesFrom);
+  if (!isRecord(value)) return false;
+  return isCanonicalUrl(value.canonical);
 }
 
 export function validateSmartCheckinResponse(
   v: unknown,
 ): { ok: true; value: SmartCheckinResponse } | { ok: false; error: string } {
-  if (typeof v !== "object" || v === null) {
+  if (!isRecord(v)) {
     return { ok: false, error: "response must be an object" };
   }
-  const obj = v as Record<string, unknown>;
-  if (obj.version !== "1") return { ok: false, error: 'version must be "1"' };
-  if (!Array.isArray(obj.artifacts)) return { ok: false, error: "artifacts must be an array" };
-  if (typeof obj.answers !== "object" || obj.answers === null || Array.isArray(obj.answers)) {
-    return { ok: false, error: "answers must be an object" };
+  const obj = v;
+  if (obj.type !== "smart-health-checkin-response") {
+    return { ok: false, error: 'type must be "smart-health-checkin-response"' };
   }
+  if (obj.version !== "1") return { ok: false, error: 'version must be "1"' };
+  if (!nonEmptyString(obj.requestId)) return { ok: false, error: "requestId missing or not a string" };
+  if (!Array.isArray(obj.artifacts)) return { ok: false, error: "artifacts must be an array" };
+  if (!Array.isArray(obj.requestStatus)) {
+    return { ok: false, error: "requestStatus must be an array" };
+  }
+  const artifactIds = new Set<string>();
   for (let i = 0; i < obj.artifacts.length; i++) {
     const artifact = obj.artifacts[i];
-    if (typeof artifact !== "object" || artifact === null) {
+    if (!isRecord(artifact)) {
       return { ok: false, error: `artifacts[${i}] is not an object` };
     }
-    const a = artifact as Record<string, unknown>;
-    if (typeof a.id !== "string" || a.id.length === 0) {
+    if (!nonEmptyString(artifact.id)) {
       return { ok: false, error: `artifacts[${i}].id missing or not a string` };
     }
-    if (!["fhir_resource", "shc", "shl", "opaque"].includes(String(a.type))) {
-      return { ok: false, error: `artifacts[${i}].type invalid` };
+    if (artifactIds.has(artifact.id)) {
+      return { ok: false, error: `artifacts[${i}].id is duplicated` };
     }
-    if (!("data" in a)) {
-      return { ok: false, error: `artifacts[${i}].data missing` };
+    artifactIds.add(artifact.id);
+    if (!nonEmptyString(artifact.mediaType)) {
+      return { ok: false, error: `artifacts[${i}].mediaType missing or not a string` };
     }
+    if (!stringArray(artifact.fulfills)) {
+      return { ok: false, error: `artifacts[${i}].fulfills must be an array of strings` };
+    }
+    const artifactError = validateArtifact(artifact, `artifacts[${i}]`);
+    if (artifactError) return { ok: false, error: artifactError };
   }
-  for (const [key, value] of Object.entries(obj.answers as Record<string, unknown>)) {
-    if (!Array.isArray(value) || !value.every((v) => typeof v === "string")) {
-      return { ok: false, error: `answers.${key} must be an array of artifact ids` };
+  const seenStatus = new Set<string>();
+  for (let i = 0; i < obj.requestStatus.length; i++) {
+    const status = obj.requestStatus[i];
+    if (!isRecord(status)) return { ok: false, error: `requestStatus[${i}] is not an object` };
+    if (!nonEmptyString(status.item)) {
+      return { ok: false, error: `requestStatus[${i}].item missing or not a string` };
+    }
+    if (seenStatus.has(status.item)) {
+      return { ok: false, error: `requestStatus[${i}].item is duplicated` };
+    }
+    seenStatus.add(status.item);
+    if (!["fulfilled", "partial", "unavailable", "declined", "unsupported", "error"].includes(String(status.status))) {
+      return { ok: false, error: `requestStatus[${i}].status invalid` };
+    }
+    if (status.message !== undefined && typeof status.message !== "string") {
+      return { ok: false, error: `requestStatus[${i}].message must be a string` };
     }
   }
   return { ok: true, value: obj as unknown as SmartCheckinResponse };
+}
+
+function validateArtifact(artifact: Record<string, unknown>, path: string): string | undefined {
+  if (artifact.mediaType === "application/smart-health-card") {
+    const value = artifact.value;
+    if (!isRecord(value) || !stringArray(value.verifiableCredential) || value.verifiableCredential.length === 0) {
+      return `${path}.value.verifiableCredential must be a non-empty string array`;
+    }
+    return undefined;
+  }
+  if (artifact.mediaType === "application/fhir+json") {
+    if (!nonEmptyString(artifact.fhirVersion)) return `${path}.fhirVersion missing or not a string`;
+    if (!("value" in artifact)) return `${path}.value missing`;
+    return undefined;
+  }
+  if (artifact.mediaType === "application/smart-health-link") {
+    if (!nonEmptyString(artifact.url)) return `${path}.url missing or not a string`;
+    return undefined;
+  }
+  if (!("value" in artifact) && !("url" in artifact) && !("data" in artifact)) {
+    return `${path} must include value, url, or data`;
+  }
+  return undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function nonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0;
+}
+
+function stringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+function isCanonicalUrl(value: unknown): value is string {
+  return typeof value === "string" && /^https?:\/\//.test(value);
 }
 
 export function base64UrlEncodeUtf8(s: string): string {

@@ -5,18 +5,8 @@ import org.json.JSONObject
 
 /**
  * Hydrates a `VerifiedRequest` (the Compose UI's existing model) from a SMART
- * Health Check-in request JSON pulled out of `requestInfo.smart_health_checkin`.
- *
- * SMART request shape (see `profiles/org-iso-mdoc.md` §SMART payload location):
- *
- *   {
- *     "version": "1",
- *     "items": [
- *       { "id": "patient",  "profile": "...us-core-patient", "required": true },
- *       { "id": "intake",   "questionnaire": { ... } },
- *       { "id": "coverage", "profile": "...C4DIC-Coverage" }
- *     ]
- *   }
+ * Health Check-in request JSON pulled out of
+ * `requestInfo["org.smarthealthit.checkin.request"]`.
  */
 internal object SmartRequestAdapter {
     fun build(
@@ -26,6 +16,7 @@ internal object SmartRequestAdapter {
         readerAuth: ReaderAuthVerification = ReaderAuthVerification.ABSENT,
     ): VerifiedRequest {
         return VerifiedRequest(
+            requestId = smartRequest.optString("id").ifBlank { "smart-health-checkin-request" },
             verifierOrigin = verifierOrigin,
             clientId = "",
             requestUri = "",
@@ -41,59 +32,145 @@ internal object SmartRequestAdapter {
         )
     }
 
-    private fun parseItems(itemsArray: JSONArray?): List<RequestItem> {
-        if (itemsArray == null) return emptyList()
-        val out = ArrayList<RequestItem>(itemsArray.length())
-        for (i in 0 until itemsArray.length()) {
-            val item = itemsArray.optJSONObject(i) ?: continue
+    private fun parseItems(requestsArray: JSONArray?): List<RequestItem> {
+        if (requestsArray == null) return emptyList()
+        val out = ArrayList<RequestItem>(requestsArray.length())
+        for (i in 0 until requestsArray.length()) {
+            val item = requestsArray.optJSONObject(i) ?: continue
             val id = item.optString("id").ifBlank { "item-${i + 1}" }
-            val parsed = if (item.has("questionnaire") || item.has("questionnaireUrl")) {
-                val q = item.optJSONObject("questionnaire")
-                RequestItem(
+            val content = item.optJSONObject("content") ?: JSONObject()
+            val accept = stringList(item.optJSONArray("accept")).ifEmpty { listOf("application/fhir+json") }
+            out += when (content.optString("kind")) {
+                "questionnaire" -> parseQuestionnaireItem(id, item, content, accept)
+                "fhir.resources" -> parseFhirResourcesItem(id, item, content, accept)
+                else -> RequestItem(
                     id = id,
-                    title = q?.optString("title")?.ifBlank { null } ?: "Questionnaire",
-                    subtitle = q?.optString("description")?.ifBlank { null }
-                        ?: item.optString("description").ifBlank { "Form answers requested by the verifier." },
-                    kind = RequestKind.Questionnaire,
-                    meta = item, // pass through; UI reads `questionnaire`/`questionnaireUrl` from here
+                    title = item.optString("title").ifBlank { id },
+                    subtitle = item.optString("summary").ifBlank { "Requested artifact." },
+                    kind = RequestKind.Unknown,
+                    meta = JSONObject(item.toString()),
+                    acceptedMediaTypes = accept,
                 )
-            } else {
-                val profile = item.optString("profile").lowercase()
-                val description = item.optString("description")
+            }
+        }
+        return out
+    }
+
+    private fun parseQuestionnaireItem(
+        id: String,
+        item: JSONObject,
+        content: JSONObject,
+        accept: List<String>,
+    ): RequestItem {
+        val meta = JSONObject(item.toString())
+        val questionnaire = content.opt("questionnaire")
+        val resource = questionnaireResource(questionnaire)
+        val canonical = questionnaireCanonical(questionnaire, resource)
+        if (resource != null) meta.put("questionnaire", resource)
+        if (!canonical.isNullOrBlank()) {
+            meta.put("questionnaireCanonical", canonical)
+            meta.put("questionnaireUrl", canonical)
+        }
+        return RequestItem(
+            id = id,
+            title = item.optString("title").ifBlank {
+                resource?.optString("title")?.ifBlank { null } ?: "Questionnaire"
+            },
+            subtitle = item.optString("summary").ifBlank {
+                resource?.optString("description")?.ifBlank { null } ?: "Form answers requested by the verifier."
+            },
+            kind = RequestKind.Questionnaire,
+            meta = meta,
+            acceptedMediaTypes = accept,
+        )
+    }
+
+    private fun parseFhirResourcesItem(
+        id: String,
+        item: JSONObject,
+        content: JSONObject,
+        accept: List<String>,
+    ): RequestItem {
+        val selector = buildString {
+            append(id)
+            append(' ')
+            append(stringList(content.optJSONArray("profiles")).joinToString(" "))
+            append(' ')
+            append(stringList(content.optJSONArray("resourceTypes")).joinToString(" "))
+            append(' ')
+            append(content.opt("profilesFrom")?.toString().orEmpty())
+        }.lowercase()
+        val summary = item.optString("summary")
+        return when {
+            "coverage" in selector -> RequestItem(
+                id = id,
+                title = item.optString("title").ifBlank { "Digital Insurance Card" },
+                subtitle = summary.ifBlank { "Member coverage and payer details." },
+                kind = RequestKind.Coverage,
+                meta = JSONObject(item.toString()),
+                acceptedMediaTypes = accept,
+            )
+            "insuranceplan" in selector || "sbc" in selector -> RequestItem(
+                id = id,
+                title = item.optString("title").ifBlank { "Plan Benefits Summary" },
+                subtitle = summary.ifBlank { "Benefits, cost sharing, and plan limits." },
+                kind = RequestKind.Plan,
+                meta = JSONObject(item.toString()),
+                acceptedMediaTypes = accept,
+            )
+            "patient" in selector || "ips" in selector || "bundle" in selector ||
+                "immunization" in selector || "condition" in selector ||
+                "allergyintolerance" in selector -> RequestItem(
+                id = id,
+                title = item.optString("title").ifBlank { "Clinical History" },
+                subtitle = summary.ifBlank { "Patient summary, conditions, medications, and allergies." },
+                kind = RequestKind.Clinical,
+                meta = JSONObject(item.toString()),
+                acceptedMediaTypes = accept,
+            )
+            else -> RequestItem(
+                id = id,
+                title = item.optString("title").ifBlank { id },
+                subtitle = summary.ifBlank { "Requested FHIR resources." },
+                kind = RequestKind.Unknown,
+                meta = JSONObject(item.toString()),
+                acceptedMediaTypes = accept,
+            )
+        }
+    }
+
+    private fun questionnaireResource(value: Any?): JSONObject? {
+        return when (value) {
+            is JSONObject -> {
                 when {
-                    "coverage" in profile -> RequestItem(
-                        id = id,
-                        title = "Digital Insurance Card",
-                        subtitle = description.ifBlank { "Member coverage and payer details." },
-                        kind = RequestKind.Coverage,
-                        meta = item,
-                    )
-                    "insuranceplan" in profile || "sbc" in profile -> RequestItem(
-                        id = id,
-                        title = "Plan Benefits Summary",
-                        subtitle = description.ifBlank { "Benefits, cost sharing, and plan limits." },
-                        kind = RequestKind.Plan,
-                        meta = item,
-                    )
-                    "patient" in profile || "ips" in profile || "bundle" in profile ||
-                        "immunization" in profile || "condition" in profile ||
-                        "allergyintolerance" in profile -> RequestItem(
-                        id = id,
-                        title = "Clinical History",
-                        subtitle = description.ifBlank { "Patient summary, conditions, medications, and allergies." },
-                        kind = RequestKind.Clinical,
-                        meta = item,
-                    )
-                    else -> RequestItem(
-                        id = id,
-                        title = id,
-                        subtitle = description.ifBlank { "Requested artifact." },
-                        kind = RequestKind.Unknown,
-                        meta = item,
-                    )
+                    value.optString("resourceType") == "Questionnaire" -> JSONObject(value.toString())
+                    value.optJSONObject("resource") != null -> value.optJSONObject("resource")
+                    else -> null
                 }
             }
-            out += parsed
+            else -> null
+        }
+    }
+
+    private fun questionnaireCanonical(value: Any?, resource: JSONObject?): String? {
+        return when (value) {
+            is String -> value
+            is JSONObject -> value.optString("canonical").ifBlank { null }
+            else -> null
+        } ?: resource?.let { questionnaire ->
+            val url = questionnaire.optString("url")
+            if (url.isBlank()) null else {
+                val version = questionnaire.optString("version")
+                if (version.isBlank()) url else "$url|$version"
+            }
+        }
+    }
+
+    private fun stringList(array: JSONArray?): List<String> {
+        if (array == null) return emptyList()
+        val out = ArrayList<String>(array.length())
+        for (i in 0 until array.length()) {
+            array.optString(i).takeIf { it.isNotBlank() }?.let(out::add)
         }
         return out
     }

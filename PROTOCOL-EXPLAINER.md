@@ -20,18 +20,17 @@ namespace: org.smarthealthit.checkin
 element:   smart_health_checkin_response
 ```
 
-The current implementation carries prototype SMART request JSON in:
+The current implementation carries SMART request JSON in:
 
 ```text
-ItemsRequest.requestInfo.smart_health_checkin
+ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]
 ```
 
-The implementation target is `SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md`, which
-keeps `requestInfo` as the load-bearing channel but uses
-`requestInfo["org.smarthealthit.checkin.request"]` and the transport-neutral
-`SmartHealthCheckinRequest` / `SmartHealthCheckinResponse` payloads. Encoding the
-request JSON into a claim name (`shc1j...`) is only a fallback if a real platform
-API hides `requestInfo`.
+`SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md` defines the active
+transport-neutral `SmartHealthCheckinRequest` /
+`SmartHealthCheckinResponse` payloads. Encoding the request JSON into a claim
+name (`shc1j...`) is only a fallback if a real platform API hides
+`requestInfo`.
 
 ## Roles
 
@@ -66,7 +65,7 @@ The wallet:
 - matches `docType = org.smarthealthit.checkin.1`;
 - reads SMART request JSON from `ItemsRequest.requestInfo`;
 - shows a consent UI with decoded SMART request items;
-- builds `{artifacts, answers}`;
+- builds `{artifacts, requestStatus}`;
 - constructs an mdoc `DeviceResponse`;
 - HPKE-seals it for the verifier key from `encryptionInfo`;
 - returns `{"protocol":"org-iso-mdoc","data":{"response":"<b64u>"}}`.
@@ -113,40 +112,54 @@ Decoded `ItemsRequest`:
   "docType": "org.smarthealthit.checkin.1",
   "nameSpaces": {
     "org.smarthealthit.checkin": {
-      "smart_health_checkin_response": false
+      "smart_health_checkin_response": true
     }
   },
   "requestInfo": {
-    "smart_health_checkin": "<SMART request JSON>"
+    "org.smarthealthit.checkin.request": "<SMART request JSON>"
   }
 }
 ```
 
-The `false` value is the mdoc `intentToRetain` flag.
-The target payload spec defaults this to `true` for SMART Check-in carriers; the
-current checked-in fixtures still show the prototype `false` value.
+The `true` value is the mdoc `intentToRetain` flag. SMART Check-in defaults to
+retention because realistic clinical workflows ingest the shared artifacts into
+the EHR.
 
 ## SMART Request JSON
 
-The `requestInfo.smart_health_checkin` value is a compact JSON string:
+The `requestInfo["org.smarthealthit.checkin.request"]` value is a compact JSON
+string:
 
 ```json
 {
+  "type": "smart-health-checkin-request",
   "version": "1",
+  "id": "demo-all-of-the-above",
+  "purpose": "Clinic check-in",
+  "fhirVersions": ["4.0.1"],
   "items": [
     {
       "id": "coverage",
-      "profile": "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage",
+      "title": "Insurance card",
       "required": true,
-      "description": "Insurance card"
+      "content": {
+        "kind": "fhir.resources",
+        "profiles": ["http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage"]
+      },
+      "accept": ["application/fhir+json"]
     },
     {
       "id": "intake",
-      "questionnaire": {
-        "resourceType": "Questionnaire",
-        "status": "active",
-        "item": []
-      }
+      "title": "Intake form",
+      "content": {
+        "kind": "questionnaire",
+        "questionnaire": {
+          "resourceType": "Questionnaire",
+          "status": "active",
+          "item": []
+        }
+      },
+      "accept": ["application/fhir+json"]
     }
   ]
 }
@@ -154,11 +167,12 @@ The `requestInfo.smart_health_checkin` value is a compact JSON string:
 
 Rules:
 
-- `version` is `"1"`.
-- `items[].id` is the verifier's stable response correlation key.
-- Exactly one of `profile`, `questionnaire`, or `questionnaireUrl` appears on
-  each item.
-- `required`, `signing`, and `description` are wallet policy and UX hints.
+- `type` is `"smart-health-checkin-request"` and `version` is `"1"`.
+- `id` is the verifier's request id; the response echoes it as `requestId`.
+- `items[].id` is the stable item correlation key.
+- `items[].content.kind` identifies FHIR-resource selectors versus
+  questionnaire selectors.
+- `items[].accept` declares acceptable response media types.
 
 ## EncryptionInfo and SessionTranscript
 
@@ -225,17 +239,21 @@ SMART response JSON:
 
 ```json
 {
+  "type": "smart-health-checkin-response",
   "version": "1",
+  "requestId": "demo-all-of-the-above",
   "artifacts": [
     {
       "id": "a1",
-      "type": "fhir_resource",
-      "data": { "resourceType": "Patient" }
+      "mediaType": "application/fhir+json",
+      "fhirVersion": "4.0.1",
+      "fulfills": ["patient"],
+      "value": { "resourceType": "Patient" }
     }
   ],
-  "answers": {
-    "patient": ["a1"]
-  }
+  "requestStatus": [
+    { "item": "patient", "status": "fulfilled" }
+  ]
 }
 ```
 

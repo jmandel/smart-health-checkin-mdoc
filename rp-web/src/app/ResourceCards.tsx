@@ -1,3 +1,6 @@
+import { marked } from "marked";
+import DOMPurify from "dompurify";
+
 // FHIR-resource-aware renderers for SMART Health Check-in artifacts.
 //
 // Ported from ~/work/smart-health-checkin-demo/demo/shared/TransactionBrowser.tsx
@@ -453,26 +456,41 @@ function QuestionnaireResponseFields({
             </div>
           );
         }
+        if (typeof value === "string" && looksLikeMarkdown(value)) {
+          return (
+            <div key={item.linkId} className="resource-field resource-field-markdown">
+              <div className="resource-field-label">{label}</div>
+              <MarkdownText text={value} />
+            </div>
+          );
+        }
         return <Field key={item.linkId} label={label} value={value} />;
       })}
     </>
   );
 }
 
+marked.setOptions({ gfm: true, breaks: false });
+
+function renderMarkdown(text: string): string {
+  const html = marked.parse(text, { async: false }) as string;
+  return DOMPurify.sanitize(html, {
+    ADD_TAGS: ["img"],
+    ADD_ATTR: ["target", "rel"],
+    ALLOWED_URI_REGEXP:
+      /^(?:(?:https?|mailto|tel|data:image\/(?:svg\+xml|png|jpeg|gif|webp);base64,)|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+  });
+}
+
+function looksLikeMarkdown(text: string): boolean {
+  if (text.includes("\n")) return true;
+  return /(^|\s)(#{1,6}\s|!\[|\*\*|`)/.test(text);
+}
+
 function MarkdownText({ text }: { text: string }) {
-  const parts = text.split(/(\[[^\]]+\]\(https?:\/\/[^)\s]+\))/g);
+  if (!looksLikeMarkdown(text)) return <>{text}</>;
   return (
-    <>
-      {parts.map((part, i) => {
-        const match = part.match(/^\[([^\]]+)\]\((https?:\/\/[^)]+)\)$/);
-        if (!match) return <span key={i}>{part}</span>;
-        return (
-          <a key={i} href={match[2]} target="_blank" rel="noreferrer">
-            {match[1]}
-          </a>
-        );
-      })}
-    </>
+    <div className="markdown-body" dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }} />
   );
 }
 

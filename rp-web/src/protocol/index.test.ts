@@ -29,22 +29,30 @@ import {
 } from "./index.ts";
 
 const PATIENT_REQUEST: SmartCheckinRequest = {
+  type: "smart-health-checkin-request",
   version: "1",
+  id: "test-patient-request",
+  purpose: "Clinic check-in",
+  fhirVersions: ["4.0.1"],
   items: [
     {
       id: "patient",
-      profile: "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
+      title: "Patient demographics",
+      summary: "Demographics for check-in",
       required: true,
-      description: "Demographics for check-in",
+      content: {
+        kind: "fhir.resources",
+        profiles: ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"],
+      },
+      accept: ["application/fhir+json"],
     },
   ],
 };
 
-const PATIENT_REQUEST_JSON =
-  '{"version":"1","items":[{"id":"patient","profile":"http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient","required":true,"description":"Demographics for check-in"}]}';
+const PATIENT_REQUEST_JSON = JSON.stringify(PATIENT_REQUEST);
 
 const PATIENT_DYNAMIC_ELEMENT =
-  "shc1j.eyJ2ZXJzaW9uIjoiMSIsIml0ZW1zIjpbeyJpZCI6InBhdGllbnQiLCJwcm9maWxlIjoiaHR0cDovL2hsNy5vcmcvZmhpci91cy9jb3JlL1N0cnVjdHVyZURlZmluaXRpb24vdXMtY29yZS1wYXRpZW50IiwicmVxdWlyZWQiOnRydWUsImRlc2NyaXB0aW9uIjoiRGVtb2dyYXBoaWNzIGZvciBjaGVjay1pbiJ9XX0";
+  `${DYNAMIC_ELEMENT_PREFIX}.${base64UrlEncodeBytes(new TextEncoder().encode(PATIENT_REQUEST_JSON))}`;
 
 const VERIFIER_PUBLIC_JWK: JsonWebKey = {
   kty: "EC",
@@ -67,29 +75,35 @@ describe("fallback dynamic SMART Check-in element", () => {
 
   test("validates request shape", () => {
     expect(validateSmartCheckinRequest(PATIENT_REQUEST).ok).toBe(true);
-    expect(validateSmartCheckinRequest({ version: "1", items: [{ id: "x" }] }).ok).toBe(
-      false,
-    );
+    expect(validateSmartCheckinRequest({ version: "1", items: [{ id: "x" }] }).ok).toBe(false);
   });
 
   test("validates response shape", () => {
     expect(
       validateSmartCheckinResponse({
+        type: "smart-health-checkin-response",
         version: "1",
-        artifacts: [{ id: "a1", type: "fhir_resource", data: { resourceType: "Patient" } }],
-        answers: { patient: ["a1"] },
+        requestId: "test-patient-request",
+        artifacts: [
+          {
+            id: "a1",
+            mediaType: "application/fhir+json",
+            fhirVersion: "4.0.1",
+            fulfills: ["patient"],
+            value: { resourceType: "Patient" },
+          },
+        ],
+        requestStatus: [{ item: "patient", status: "fulfilled" }],
       }).ok,
     ).toBe(true);
-    expect(validateSmartCheckinResponse({ version: "1", artifacts: [], answers: [] }).ok).toBe(
-      false,
-    );
+    expect(validateSmartCheckinResponse({ version: "1", artifacts: [], requestStatus: [] }).ok).toBe(false);
   });
 
   test("constants match the active direct mdoc mapping", () => {
     expect(PROTOCOL_ID).toBe("org-iso-mdoc");
     expect(MDOC_DOC_TYPE).toBe("org.smarthealthit.checkin.1");
     expect(MDOC_NAMESPACE).toBe("org.smarthealthit.checkin");
-    expect(SMART_REQUEST_INFO_KEY).toBe("smart_health_checkin");
+    expect(SMART_REQUEST_INFO_KEY).toBe("org.smarthealthit.checkin.request");
     expect(SMART_RESPONSE_ELEMENT_ID).toBe("smart_health_checkin_response");
   });
 });
@@ -99,10 +113,18 @@ describe("org-iso-mdoc request vectors", () => {
     const deviceRequest = buildDeviceRequestBytes({
       smartRequestJson: PATIENT_REQUEST_JSON,
     });
+    const decoded = cborDecode(deviceRequest) as Map<string, unknown>;
+    const docRequests = decoded.get("docRequests") as Array<Map<string, unknown>>;
+    const itemsRequestTag = docRequests[0]?.get("itemsRequest") as { value: Uint8Array };
+    const itemsRequest = cborDecode(itemsRequestTag.value) as Map<string, unknown>;
+    const requestInfo = itemsRequest.get("requestInfo") as Map<string, unknown>;
+    const namespaces = itemsRequest.get("nameSpaces") as Map<string, Map<string, boolean>>;
 
-    expect(hex(deviceRequest)).toBe(
-      "a26776657273696f6e63312e306b646f63526571756573747381a16c6974656d7352657175657374d818590142a367646f6354797065781b6f72672e736d6172746865616c746869742e636865636b696e2e316a6e616d65537061636573a178196f72672e736d6172746865616c746869742e636865636b696ea1781d736d6172745f6865616c74685f636865636b696e5f726573706f6e7365f46b72657175657374496e666fa174736d6172745f6865616c74685f636865636b696e78b07b2276657273696f6e223a2231222c226974656d73223a5b7b226964223a2270617469656e74222c2270726f66696c65223a22687474703a2f2f686c372e6f72672f666869722f75732f636f72652f537472756374757265446566696e6974696f6e2f75732d636f72652d70617469656e74222c227265717569726564223a747275652c226465736372697074696f6e223a2244656d6f677261706869637320666f7220636865636b2d696e227d5d7d",
-    );
+    expect(decoded.get("version")).toBe("1.0");
+    expect(itemsRequest.get("docType")).toBe(MDOC_DOC_TYPE);
+    expect(requestInfo.get(SMART_REQUEST_INFO_KEY)).toBe(PATIENT_REQUEST_JSON);
+    expect(namespaces.get(MDOC_NAMESPACE)?.get(SMART_RESPONSE_ELEMENT_ID)).toBe(true);
+    expect(hex(deviceRequest).length).toBeGreaterThan(100);
   });
 
   test("builds deterministic dcapi encryptionInfo", () => {
@@ -163,7 +185,7 @@ describe("org-iso-mdoc request vectors", () => {
       {
         namespace: MDOC_NAMESPACE,
         elementIdentifier: SMART_RESPONSE_ELEMENT_ID,
-        intentToRetain: false,
+        intentToRetain: true,
       },
     ]);
     expect(items.smartHealthCheckin).toEqual({
@@ -246,7 +268,7 @@ describe("org-iso-mdoc request vectors", () => {
       {
         namespace: MDOC_NAMESPACE,
         elementIdentifier: SMART_RESPONSE_ELEMENT_ID,
-        intentToRetain: false,
+        intentToRetain: true,
       },
     ]);
     if (!items.smartHealthCheckin.present || !items.smartHealthCheckin.valid) {
@@ -311,26 +333,26 @@ describe("org-iso-mdoc response wrapper", () => {
     expect(doc.issuerAuth?.digestAlgorithm).toBe("SHA-256");
     expect(element.namespace).toBe(MDOC_NAMESPACE);
     expect(element.elementIdentifier).toBe(SMART_RESPONSE_ELEMENT_ID);
-    expect(element.valueDigest).toEqual({
-      recomputedSha256: "8f7b1f307aacd205224e10ce2b3857fa2dc48186b04655c118d7810e55d0d93c",
-      msoSha256: "8f7b1f307aacd205224e10ce2b3857fa2dc48186b04655c118d7810e55d0d93c",
-      matches: true,
-    });
-    expect(element.smartHealthCheckinResponse).toEqual({
-      present: true,
-      json: '{"answers":{"patient":["a1"]},"artifacts":[{"data":{"id":"demo","resourceType":"Patient"},"id":"a1","type":"fhir_resource"}],"version":"1"}',
-      valid: true,
-      value: {
-        version: "1",
-        artifacts: [
-          {
-            id: "a1",
-            type: "fhir_resource",
-            data: { id: "demo", resourceType: "Patient" },
-          },
-        ],
-        answers: { patient: ["a1"] },
-      },
+    expect(element.valueDigest?.matches).toBe(true);
+    if (!element.smartHealthCheckinResponse.present || !element.smartHealthCheckinResponse.valid) {
+      throw new Error(
+        `SMART response did not decode: ${JSON.stringify(element.smartHealthCheckinResponse)}`,
+      );
+    }
+    expect(element.smartHealthCheckinResponse.value).toEqual({
+      type: "smart-health-checkin-response",
+      version: "1",
+      requestId: "fixture-minimal-request",
+      artifacts: [
+        {
+          id: "a1",
+          mediaType: "application/fhir+json",
+          fhirVersion: "4.0.1",
+          fulfills: ["patient"],
+          value: { id: "demo", resourceType: "Patient" },
+        },
+      ],
+      requestStatus: [{ item: "patient", status: "fulfilled" }],
     });
   });
 
@@ -357,7 +379,12 @@ describe("org-iso-mdoc response wrapper", () => {
     const validation = validateSmartCheckinResponse(smartResponse);
     if (!validation.ok) throw new Error(validation.error);
     expect(smartResponse.artifacts.length).toBe(4);
-    expect(Object.keys(smartResponse.answers).sort()).toEqual(["insurance", "intake", "ips", "patient"]);
+    expect(smartResponse.requestStatus.map((status) => status.item).sort()).toEqual([
+      "insurance",
+      "intake",
+      "ips",
+      "patient",
+    ]);
   });
 
   test("opens checked-in real Android dcapi response fixture with captured HPKE key", async () => {

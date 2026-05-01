@@ -9,15 +9,15 @@
     },
     "issuerAuth": {
       "alg": "ES256",
-      "payloadSha256": "9c4f227dce8dbf413718163061fe9979cf0cecb653214a6cc8faa3dfcea59092",
-      "sigStructureSha256": "e62310ce4f024e9fa68d9ff689f215bdb5d9005777341084fdd89c57652ec230",
+      "payloadSha256": "0221ac2a8c1932a0212d95e28aff9496a4f25ac266e6effcb36eb5fbf8607b5e",
+      "sigStructureSha256": "32ea0435a5101277cc012367320148836d8bf754bb76a7f31f2e42603d5b4167",
       "verified": true
     }
   },
-  "documentSha256": "feca2406d57db2d946a06233553d42764e5cfb992fb47ccbcb015a08e0aaebd0",
+  "documentSha256": "432d391e48b41df1a011d75ec2c58387cdda7761e22e7fe1467d97fc1616a50f",
   "issuerCertificateSubject": "CN=SMART Health Check-in Demo",
-  "issuerSignedItemTag24Sha256": "835cda6dccf6fcd2f35b9ec1ccca35209487cf25d52b4592a607902fd37d7f38",
-  "msoSha256": "918f207eecadf8a1b8e76b1871cb6e8e1ff5fd6eef53a3ce58a6d573abc0f935",
+  "issuerSignedItemTag24Sha256": "77f85c7326c20eb0f5ba65318927b55c7669896c0baf9f830a85a84ba545d9cb",
+  "msoSha256": "8ad9300be4887e99f2bfffd60ac67d1f94d9269037d92411ae45d3e64fa3a905",
   "ok": true,
   "walk": {
     "digestID": 0,
@@ -29,27 +29,19 @@
       "docType": "org.smarthealthit.checkin.1",
       "version": "1.0"
     },
-    "msoDigestSha256": "835cda6dccf6fcd2f35b9ec1ccca35209487cf25d52b4592a607902fd37d7f38",
+    "msoDigestSha256": "77f85c7326c20eb0f5ba65318927b55c7669896c0baf9f830a85a84ba545d9cb",
     "namespace": "org.smarthealthit.checkin",
-    "recomputedDigestSha256": "835cda6dccf6fcd2f35b9ec1ccca35209487cf25d52b4592a607902fd37d7f38",
+    "recomputedDigestSha256": "77f85c7326c20eb0f5ba65318927b55c7669896c0baf9f830a85a84ba545d9cb",
     "smartResponse": {
-      "answers": {
-        "clinical": [
-          "artifact-clinical"
-        ],
-        "coverage": [
-          "artifact-coverage"
-        ],
-        "intake": [
-          "artifact-intake"
-        ],
-        "plan": [
-          "artifact-plan"
-        ]
-      },
       "artifacts": [
         {
-          "data": {
+          "fhirVersion": "4.0.1",
+          "fulfills": [
+            "coverage"
+          ],
+          "id": "artifact-coverage",
+          "mediaType": "application/fhir+json",
+          "value": {
             "beneficiary": {
               "display": "Jane Doe",
               "reference": "Patient/patient-1"
@@ -267,12 +259,16 @@
               ],
               "text": "health insurance plan policy"
             }
-          },
-          "id": "artifact-coverage",
-          "type": "fhir_resource"
+          }
         },
         {
-          "data": {
+          "fhirVersion": "4.0.1",
+          "fulfills": [
+            "clinical"
+          ],
+          "id": "artifact-clinical",
+          "mediaType": "application/fhir+json",
+          "value": {
             "entry": [
               {
                 "fullUrl": "urn:uuid:patient-1",
@@ -482,12 +478,16 @@
             "resourceType": "Bundle",
             "timestamp": "2026-04-29T12:00:00Z",
             "type": "collection"
-          },
-          "id": "artifact-clinical",
-          "type": "fhir_resource"
+          }
         },
         {
-          "data": {
+          "fhirVersion": "4.0.1",
+          "fulfills": [
+            "plan"
+          ],
+          "id": "artifact-plan",
+          "mediaType": "application/fhir+json",
+          "value": {
             "administeredBy": {
               "display": "Aetna"
             },
@@ -896,13 +896,17 @@
             ],
             "resourceType": "InsurancePlan",
             "status": "active"
-          },
-          "id": "artifact-plan",
-          "type": "fhir_resource"
+          }
         },
         {
-          "data": {
-            "authored": "2026-05-01T16:39:25.505393475Z",
+          "fhirVersion": "4.0.1",
+          "fulfills": [
+            "intake"
+          ],
+          "id": "artifact-intake",
+          "mediaType": "application/fhir+json",
+          "value": {
+            "authored": "2026-05-01T17:21:32.697962207Z",
             "id": "intake-response",
             "item": [
               {
@@ -972,11 +976,29 @@
             "questionnaire": "https://smart-health-checkin.example.org/fhir/Questionnaire/chronic-migraine-followup|2026.04",
             "resourceType": "QuestionnaireResponse",
             "status": "completed"
-          },
-          "id": "artifact-intake",
-          "type": "fhir_resource"
+          }
         }
       ],
+      "requestId": "fixture-smart-checkin-basic",
+      "requestStatus": [
+        {
+          "item": "coverage",
+          "status": "fulfilled"
+        },
+        {
+          "item": "clinical",
+          "status": "fulfilled"
+        },
+        {
+          "item": "plan",
+          "status": "fulfilled"
+        },
+        {
+          "item": "intake",
+          "status": "fulfilled"
+        }
+      ],
+      "type": "smart-health-checkin-response",
       "version": "1"
     }
   }
