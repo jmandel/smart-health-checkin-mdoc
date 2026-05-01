@@ -389,6 +389,20 @@
       margin: 0;
       overflow-wrap: anywhere;
     }
+    .byte-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-top: 12px;
+    }
+    .byte-actions button {
+      padding: 8px 10px;
+    }
+    .byte-viewer-note {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
     .byte-inspector {
       display: grid;
       gap: 12px;
@@ -554,6 +568,7 @@
       <a href="#mental-model">Mental Model</a>
       <a href="#role-set">Role Set</a>
       <a href="#request">Request Bytes</a>
+      <a href="#payload-language">SMART Payloads</a>
       <a href="#origin">Origin And Transcript</a>
       <a href="#response">DeviceResponse Bytes</a>
       <a href="#hpke">HPKE And Credential Result</a>
@@ -728,6 +743,171 @@
 ]</pre>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section id="payload-language">
+        <h2>SMART Request/Response Payload Language</h2>
+        <p>
+          The mdoc layer only carries and protects bytes. The clinical meaning is
+          the SMART Health Check-in JSON embedded in those bytes. The request says
+          what the verifier wants; the response says what the wallet/user shared
+          and how each shared artifact maps back to the requested items.
+        </p>
+        <div class="two">
+          <div class="mini">
+            <h3>Request envelope</h3>
+            <pre>{
+  "type": "smart-health-checkin-request",
+  "version": "1",
+  "id": "demo-all-of-the-above",
+  "purpose": "Clinic check-in",
+  "fhirVersions": ["4.0.1"],
+  "items": [
+    { "...": "FHIR resources or questionnaire request" }
+  ]
+}</pre>
+            <p class="small">
+              <code>id</code> is echoed by <code>response.requestId</code>.
+              <code>items[]</code> is the clinical task list shown to the user.
+            </p>
+          </div>
+          <div class="mini">
+            <h3>Response envelope</h3>
+            <pre>{
+  "type": "smart-health-checkin-response",
+  "version": "1",
+  "requestId": "demo-all-of-the-above",
+  "artifacts": [
+    { "...": "FHIR JSON, SMART Health Card, or extension artifact" }
+  ],
+  "requestStatus": [
+    { "item": "patient", "status": "fulfilled" }
+  ]
+}</pre>
+            <p class="small">
+              Each request item gets exactly one status. Artifacts can fulfill one
+              or more item ids using <code>fulfills[]</code>.
+            </p>
+          </div>
+        </div>
+
+        <h3>Request item examples</h3>
+        <div class="three">
+          <div class="mini">
+            <h3>Specific FHIR profiles</h3>
+            <pre>{
+  "id": "patient",
+  "title": "Patient demographics",
+  "required": true,
+  "content": {
+    "kind": "fhir.resources",
+    "profiles": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
+    ]
+  },
+  "accept": ["application/fhir+json"]
+}</pre>
+          </div>
+          <div class="mini">
+            <h3>Broad FHIR sharing</h3>
+            <pre>{
+  "id": "anything-useful",
+  "title": "Anything useful for check-in",
+  "summary": "Let the patient pick from available records.",
+  "content": { "kind": "fhir.resources" },
+  "accept": ["application/fhir+json"]
+}</pre>
+            <p class="small">
+              Omitting <code>profiles</code>, <code>profilesFrom</code>, and
+              <code>resourceTypes</code> intentionally means any patient-specific
+              FHIR resources the wallet can offer and the user chooses to share.
+            </p>
+          </div>
+          <div class="mini">
+            <h3>Questionnaire</h3>
+            <pre>{
+  "id": "intake",
+  "title": "Migraine follow-up",
+  "content": {
+    "kind": "questionnaire",
+    "questionnaire": {
+      "canonical": "https://example.org/Questionnaire/migraine|2026.04",
+      "resource": { "resourceType": "Questionnaire", "item": [] }
+    }
+  },
+  "accept": ["application/fhir+json"]
+}</pre>
+            <p class="small">
+              A canonical may include <code>|version</code>. The wallet displays
+              the Questionnaire, accepts user input, and returns a
+              <code>QuestionnaireResponse</code>.
+            </p>
+          </div>
+        </div>
+
+        <h3>Response artifact examples</h3>
+        <div class="three">
+          <div class="mini">
+            <h3>Raw FHIR JSON</h3>
+            <pre>{
+  "id": "artifact-patient",
+  "mediaType": "application/fhir+json",
+  "fhirVersion": "4.0.1",
+  "fulfills": ["patient"],
+  "value": { "resourceType": "Patient", "id": "demo" }
+}</pre>
+            <p class="small">
+              Raw FHIR JSON must declare <code>fhirVersion</code> outside the
+              resource because it is not independently signed as a SMART Health Card.
+            </p>
+          </div>
+          <div class="mini">
+            <h3>SMART Health Card</h3>
+            <pre>{
+  "id": "artifact-ips-shc",
+  "mediaType": "application/smart-health-card",
+  "fulfills": ["ips"],
+  "value": {
+    "verifiableCredential": ["&lt;compact JWS&gt;"]
+  }
+}</pre>
+            <p class="small">
+              A SMART Health Card must not carry an outer
+              <code>fhirVersion</code>; verifiers inspect the signed JWS payload.
+            </p>
+          </div>
+          <div class="mini">
+            <h3>Status without artifact</h3>
+            <pre>{
+  "requestStatus": [
+    {
+      "item": "insurance",
+      "status": "declined",
+      "message": "Patient declined to share this item."
+    },
+    {
+      "item": "labs",
+      "status": "unsupported"
+    }
+  ]
+}</pre>
+            <p class="small">
+              <code>declined</code>, <code>unsupported</code>,
+              <code>unavailable</code>, <code>partial</code>, and
+              <code>error</code> are first-class outcomes.
+            </p>
+          </div>
+        </div>
+
+        <div class="callout">
+          <strong>How this embeds in mdoc:</strong>
+          <code>JSON.stringify(request)</code> becomes
+          <code>ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]</code>.
+          <code>JSON.stringify(response)</code> becomes
+          <code>IssuerSignedItem.elementValue</code> for
+          <code>smart_health_checkin_response</code>. The byte ledger below proves
+          those strings match the decoded request/response fixtures exactly.
         </div>
       </section>
 
@@ -924,8 +1104,10 @@ issuerSignedItemTag24 = Tag(24, bstr .cbor IssuerSignedItem)</pre>
         <p>
           Choose a pulled wallet run directory above. The viewer renders the files the
           wallet writes with <code>HandlerActivity.saveDebugBundle</code> and
-          <code>appendBinaryArtifact</code>. Binary files are shown as complete hex
-          dumps with offsets.
+          <code>appendBinaryArtifact</code>. Binary files stay compact on this page;
+          use each row's blob-backed <strong>Open full byte viewer</strong> button
+          for complete hex dumps, semantic anchors, CBOR tags, and decoded content
+          in a separate tab.
         </p>
         <div id="runSummary" class="callout">No run directory selected yet.</div>
         <div id="byteLedgerOutput"></div>
@@ -1108,10 +1290,14 @@ bun run inspect:response /tmp/shc-handler-runs/run-*/device-response.cbor --out 
     const byteLedgerOutput = document.getElementById("byteLedgerOutput");
     const drillOutput = document.getElementById("drillOutput");
     const output = document.getElementById("artifactOutput");
+    let byteViewerSerial = 0;
+    const byteViewerRows = new Map();
+    const byteViewerUrls = new Set();
 
     window.addEventListener("DOMContentLoaded", () => {
       loadDefaultCapture();
     });
+    window.addEventListener("beforeunload", resetByteViewerRows);
 
     loadExampleButton.addEventListener("click", () => loadDefaultCapture());
     clearRunButton.addEventListener("click", () => {
@@ -1201,6 +1387,7 @@ bun run inspect:response /tmp/shc-handler-runs/run-*/device-response.cbor --out 
     }
 
     async function renderRun(index, label = "") {
+      resetByteViewerRows();
       output.innerHTML = "";
       byteLedgerOutput.innerHTML = "";
       drillOutput.innerHTML = "";
@@ -1460,8 +1647,12 @@ bun run inspect:response /tmp/shc-handler-runs/run-*/device-response.cbor --out 
       const node = document.createElement("div");
       node.className = "byte-row";
       const check = row.check || skipCheck("not checked");
+      const viewerId = row.bytes ? storeByteViewerRow(row) : "";
       const byteHtml = row.bytes
-        ? `<details open><summary>Annotated bytes</summary><div>${renderAnnotatedBytes(row.bytes, row.annotations)}</div></details>`
+        ? `<div class="byte-actions">
+             <button type="button" class="secondary" data-byte-viewer-id="${escapeHtml(viewerId)}">Open full byte viewer in new tab</button>
+             <span class="byte-viewer-note">${(row.annotations?.length || 0).toLocaleString()} semantic anchors; complete hex is generated as a blob URL.</span>
+           </div>`
         : "";
       const readableHtml = row.readable
         ? `<details><summary>Readable decode</summary><div><pre class="wrap-pre">${escapeHtml(row.readable.trim())}</pre></div></details>`
@@ -1486,7 +1677,112 @@ bun run inspect:response /tmp/shc-handler-runs/run-*/device-response.cbor --out 
         ${readableHtml}
         ${nestedHtml}
       `;
+      wireByteViewerButton(node);
       return node;
+    }
+
+    function storeByteViewerRow(row) {
+      const id = `bytes-${++byteViewerSerial}`;
+      byteViewerRows.set(id, row);
+      return id;
+    }
+
+    function wireByteViewerButton(root) {
+      const button = root.querySelector("[data-byte-viewer-id]");
+      if (!button) return;
+      button.addEventListener("click", () => {
+        const row = byteViewerRows.get(button.dataset.byteViewerId);
+        if (row) openByteViewer(row);
+      });
+    }
+
+    function resetByteViewerRows() {
+      byteViewerRows.clear();
+      byteViewerSerial = 0;
+      for (const url of byteViewerUrls) URL.revokeObjectURL(url);
+      byteViewerUrls.clear();
+    }
+
+    function openByteViewer(row) {
+      const blob = new Blob([renderByteViewerDocument(row)], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      byteViewerUrls.add(url);
+      const opened = window.open(url, "_blank");
+      if (opened) opened.opener = null;
+      if (!opened) {
+        const link = document.createElement("a");
+        link.href = url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = "Open byte viewer";
+        link.click();
+      }
+    }
+
+    function renderByteViewerDocument(row) {
+      const check = row.check || skipCheck("not checked");
+      const anchors = row.annotations?.length || 0;
+      return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeHtml(row.title)} byte viewer</title>
+<style>
+  :root { color-scheme: light; --ink:#172033; --muted:#60708a; --line:#d7e1ed; --soft:#f5f8fb; --code:#0e1628; --code-fg:#e9f0ff; --blue:#0072bc; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--ink); background:#eef3f8; }
+  main { max-width:1180px; margin:0 auto; padding:24px; }
+  header { background:#fff; border:1px solid var(--line); border-radius:10px; padding:18px; margin-bottom:14px; }
+  h1 { margin:0 0 8px; font-size:clamp(1.5rem,3vw,2.4rem); line-height:1.12; }
+  p { margin:0 0 10px; }
+  code, pre, .mono { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace; }
+  code { background:#eef2f7; padding:.12em .3em; border-radius:4px; }
+  pre { margin:0; background:var(--code); color:var(--code-fg); padding:14px; border-radius:8px; overflow:auto; tab-size:2; white-space:pre; font-size:.84rem; }
+  .meta { display:grid; grid-template-columns:150px minmax(0,1fr); gap:7px 12px; margin-top:12px; }
+  .meta dt { color:var(--muted); font-weight:800; text-transform:uppercase; letter-spacing:.04em; font-size:.72rem; }
+  .meta dd { margin:0; overflow-wrap:anywhere; }
+  .check { display:inline-flex; border-radius:999px; padding:4px 9px; font-size:.76rem; font-weight:850; white-space:nowrap; background:#eef8ff; color:#005f9e; }
+  .check.pass { color:#0b7c58; background:#ddf8eb; }
+  .check.fail { color:#b42318; background:#ffe7e5; }
+  .check.skip { color:var(--muted); background:#eef2f7; }
+  .byte-inspector { display:grid; gap:12px; margin-top:14px; }
+  .byte-dump-panel { border:1px solid #26324a; border-radius:8px; overflow:auto; background:var(--code); }
+  .byte-dump-panel pre { border-radius:0; max-height:none; margin:0; }
+  .byte-anchor-list { display:grid; gap:8px; }
+  .byte-anchor { display:grid; grid-template-columns:minmax(148px,180px) minmax(0,1fr); gap:12px; border:1px solid #dce6f0; border-radius:6px; padding:10px; background:#fbfdff; }
+  .byte-offset, .byte-hex, .byte-ascii { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace; }
+  .byte-offset { color:var(--muted); font-weight:800; white-space:nowrap; }
+  .byte-hex { overflow-wrap:anywhere; word-break:break-all; margin-bottom:5px; }
+  .byte-ascii { color:var(--muted); overflow-wrap:anywhere; margin-bottom:5px; }
+  .byte-note strong { display:block; margin-bottom:2px; }
+  details { border:1px solid var(--line); border-radius:8px; background:#fff; margin:12px 0; }
+  summary { cursor:pointer; padding:12px 14px; font-weight:800; }
+  details > div { padding:0 14px 14px; }
+  .wrap-pre { white-space:pre-wrap; overflow-wrap:anywhere; word-break:break-word; }
+  @media (max-width:700px) { .byte-anchor, .meta { grid-template-columns:1fr; } main { padding:14px; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>${escapeHtml(row.title)}</h1>
+    <p>${escapeHtml(row.meaning || "")}</p>
+    <dl class="meta">
+      <dt>File</dt><dd>${escapeHtml(row.path || "")}</dd>
+      <dt>Bytes</dt><dd>${row.size ? row.size.toLocaleString() : ""}</dd>
+      <dt>SHA-256</dt><dd class="mono">${escapeHtml(row.sha256 || "")}</dd>
+      <dt>Comes From</dt><dd>${escapeHtml(row.source || "")}</dd>
+      <dt>Check</dt><dd><span class="check ${escapeHtml(check.kind)}">${escapeHtml(check.label)}</span> ${escapeHtml(check.text || "")}</dd>
+      <dt>Anchors</dt><dd>${anchors.toLocaleString()}</dd>
+    </dl>
+  </header>
+  ${renderAnnotatedBytes(row.bytes, row.annotations || [])}
+  ${row.readable ? `<details><summary>Readable decode</summary><div><pre class="wrap-pre">${escapeHtml(row.readable.trim())}</pre></div></details>` : ""}
+  ${row.nestedJson ? `<details><summary>Contained JSON</summary><div><pre class="wrap-pre">${escapeHtml(row.nestedJson.trim())}</pre></div></details>` : ""}
+</main>
+</body>
+</html>`;
     }
 
     function renderAnnotatedBytes(bytes, annotations) {
@@ -2151,19 +2447,32 @@ bun run inspect:response /tmp/shc-handler-runs/run-*/device-response.cbor --out 
 
       const bytes = new Uint8Array(await file.arrayBuffer());
       const b64u = base64Url(bytes);
-      const dump = hexDump(bytes);
       const cborTree = ext === ".cbor" ? renderCborTree(bytes, name) : "";
+      const viewerId = storeByteViewerRow({
+        title: name,
+        path,
+        size: bytes.length,
+        sha256: await sha256Hex(bytes),
+        source: "Artifact file",
+        meaning: description,
+        check: infoCheck("artifact bytes"),
+        bytes,
+        annotations: byteAnnotationsFor(name, bytes),
+        readable: "",
+        nestedJson: "",
+      });
       card.innerHTML = head + `
-        <details open>
-          <summary>Complete hex dump</summary>
-          <div><pre class="byte-pre">${escapeHtml(dump)}</pre></div>
-        </details>
+        <div class="byte-actions">
+          <button type="button" class="secondary" data-byte-viewer-id="${escapeHtml(viewerId)}">Open full byte viewer in new tab</button>
+          <span class="byte-viewer-note">Complete hex dump is generated as a blob URL.</span>
+        </div>
         ${cborTree}
         <details>
           <summary>Base64url</summary>
           <div><pre>${escapeHtml(wrap(b64u, 96))}</pre></div>
         </details>
       `;
+      wireByteViewerButton(card);
       return card;
     }
 
@@ -2173,7 +2482,7 @@ bun run inspect:response /tmp/shc-handler-runs/run-*/device-response.cbor --out 
         return `<details><summary>CBOR/tag decode</summary><div class="bad">${escapeHtml(parsed.error)}</div></details>`;
       }
       return `
-        <details open>
+        <details>
           <summary>CBOR/tag decode</summary>
           <div class="tree">${renderNode(parsed.node, artifactName, "", true)}</div>
         </details>
