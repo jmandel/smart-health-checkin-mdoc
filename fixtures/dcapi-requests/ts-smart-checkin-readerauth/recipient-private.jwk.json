@@ -1,0 +1,11 @@
+{
+  "key_ops": [
+    "deriveBits"
+  ],
+  "ext": true,
+  "kty": "EC",
+  "x": "N5aDZqoKD8ogW-c16y2_2oNenFc49g0T1VdfZFg08wE",
+  "y": "ZkR0HDtltBt0DV-z7KYPTi4t1Pc79giukGsd9_62x-g",
+  "crv": "P-256",
+  "d": "889MrUs4EgNIJzv878XeQz9ygYgfFpJv8mwQCjMoLkM"
+}

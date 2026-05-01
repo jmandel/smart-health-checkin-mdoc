@@ -1,0 +1,6 @@
+{
+    "random":h'a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5',
+    "digestID":0,
+    "elementValue":"{\"answers\":{\"patient\":[\"a1\"]},\"artifacts\":[{\"data\":{\"id\":\"demo\",\"resourceType\":\"Patient\"},\"id\":\"a1\",\"type\":\"fhir_resource\"}],\"version\":\"1\"}",
+    "elementIdentifier":"smart_health_checkin_response"
+}

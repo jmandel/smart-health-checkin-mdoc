@@ -1,0 +1,1168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SMART Health Check-in direct mdoc byte explainer</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172033;
+      --muted: #5e6a7d;
+      --line: #dce3ef;
+      --panel: #ffffff;
+      --soft: #f6f8fc;
+      --brand: #3157d5;
+      --brand2: #7738b8;
+      --good: #127a46;
+      --warn: #a55d00;
+      --bad: #b42318;
+      --code: #0d1220;
+      --code-bg: #101828;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(49, 87, 213, .14), transparent 36rem),
+        radial-gradient(circle at 80% 10%, rgba(119, 56, 184, .10), transparent 30rem),
+        var(--soft);
+      line-height: 1.48;
+    }
+    header {
+      padding: 44px 28px 28px;
+      background: linear-gradient(135deg, #172033, #273c75 62%, #51317d);
+      color: white;
+    }
+    header .eyebrow {
+      display: inline-block;
+      padding: 4px 10px;
+      border: 1px solid rgba(255,255,255,.35);
+      border-radius: 999px;
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #d9e3ff;
+    }
+    h1 {
+      max-width: 1050px;
+      margin: 18px 0 10px;
+      font-size: clamp(34px, 5vw, 62px);
+      line-height: 1.02;
+      letter-spacing: -0.04em;
+    }
+    header p {
+      max-width: 920px;
+      margin: 0;
+      color: #dce6ff;
+      font-size: 18px;
+    }
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 10px 22px;
+      background: rgba(255,255,255,.92);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(12px);
+    }
+    nav a {
+      white-space: nowrap;
+      color: var(--ink);
+      text-decoration: none;
+      font-size: 14px;
+      padding: 8px 12px;
+      border-radius: 999px;
+    }
+    nav a:hover { background: #e9eefb; color: var(--brand); }
+    main { max-width: 1260px; margin: 0 auto; padding: 26px; }
+    section { margin: 24px 0; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: 0 18px 50px rgba(25, 35, 58, .08);
+      padding: 24px;
+    }
+    .panel h2, .panel h3 { margin-top: 0; letter-spacing: -0.02em; }
+    .grid { display: grid; gap: 16px; }
+    .grid.two { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+    .grid.three { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      counter-reset: step;
+    }
+    .step {
+      position: relative;
+      padding: 16px 16px 16px 54px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: linear-gradient(180deg, #fff, #f8faff);
+    }
+    .step:before {
+      counter-increment: step;
+      content: counter(step);
+      position: absolute;
+      left: 14px;
+      top: 15px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--brand);
+      color: white;
+      font-weight: 700;
+    }
+    .step strong { display: block; margin-bottom: 4px; }
+    .muted { color: var(--muted); }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 3px 4px 3px 0;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: #eef3ff;
+      border: 1px solid #dbe5ff;
+      color: #263d88;
+      font-size: 12px;
+      font-weight: 650;
+    }
+    .ok { color: var(--good); }
+    .warn { color: var(--warn); }
+    .bad { color: var(--bad); }
+    button, .file-label {
+      appearance: none;
+      border: 0;
+      border-radius: 12px;
+      background: var(--brand);
+      color: white;
+      font-weight: 750;
+      padding: 10px 14px;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(49, 87, 213, .22);
+    }
+    button.secondary, .file-label {
+      background: #24324a;
+      box-shadow: none;
+    }
+    input[type=file] { display: none; }
+    .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .artifact-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .artifact-card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: #fbfcff;
+      min-height: 94px;
+    }
+    .artifact-card strong { display: block; }
+    .artifact-card code { color: #3652a3; word-break: break-all; }
+    .status-dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      margin-right: 6px;
+      background: #aeb8cc;
+    }
+    .status-dot.ok { background: var(--good); }
+    .status-dot.bad { background: var(--bad); }
+    table { border-collapse: collapse; width: 100%; }
+    th, td {
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid var(--line);
+      padding: 9px 10px;
+      font-size: 14px;
+    }
+    th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+    code, pre, .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    }
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: var(--code-bg);
+      color: #edf2ff;
+      border-radius: 14px;
+      padding: 14px;
+      overflow: auto;
+      max-height: 560px;
+    }
+    .formula {
+      background: #f2f5fb;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+      overflow-x: auto;
+    }
+    .explainer-note {
+      border-left: 4px solid var(--brand);
+      background: #f3f6ff;
+      padding: 12px 14px;
+      border-radius: 12px;
+      margin: 12px 0;
+    }
+    .select-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    select {
+      min-width: min(100%, 520px);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 9px 10px;
+      background: white;
+      color: var(--ink);
+    }
+    .byte-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr);
+      gap: 16px;
+    }
+    @media (max-width: 950px) { .byte-layout { grid-template-columns: 1fr; } }
+    .tree {
+      max-height: 640px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fbfcff;
+      padding: 8px;
+    }
+    .tree details { margin-left: 12px; }
+    .tree summary {
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: 8px;
+    }
+    .tree summary:hover { background: #eef3ff; }
+    .tree .leaf {
+      padding: 4px 6px;
+      margin-left: 12px;
+      border-radius: 8px;
+    }
+    .range { color: #63708a; font-size: 12px; }
+    .value-preview { color: #24324a; }
+    .meaning { color: #3157d5; font-size: 12px; }
+    .hex {
+      font-size: 12px;
+      line-height: 1.45;
+      tab-size: 2;
+      max-height: 640px;
+      overflow: auto;
+      white-space: pre;
+    }
+    .check-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+    }
+    .check {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fbfcff;
+      padding: 12px;
+    }
+    .check strong { display: block; margin-bottom: 6px; }
+    .small { font-size: 13px; }
+    .redacted { filter: blur(3px); }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="eyebrow">SMART Health Check-in direct org-iso-mdoc</span>
+    <h1>Byte-by-byte explainer for the verifier request and Android wallet response</h1>
+    <p>
+      This page follows the data from the browser's <code>navigator.credentials.get()</code>
+      argument into Credential Manager, through the Android wallet, and back as an encrypted
+      mdoc <code>DeviceResponse</code>. It decodes the CBOR, shows the bytes, and names the
+      calculations that make the response verifier-bound and tamper-evident.
+    </p>
+  </header>
+
+  <nav>
+    <a href="#load">Load artifacts</a>
+    <a href="#map">Protocol map</a>
+    <a href="#request">Request bytes</a>
+    <a href="#response">Response bytes</a>
+    <a href="#checks">Calculated checks</a>
+    <a href="#explorer">Byte explorer</a>
+    <a href="#real-capture">Real capture workflow</a>
+  </nav>
+
+  <main>
+    <section id="load" class="panel">
+      <h2>Load artifacts</h2>
+      <p class="muted">
+        This explainer now defaults to checked-in fixtures promoted from the real
+        Chrome/Android handler run at <code>/tmp/shc-handler-runs/run-1777649836829</code>.
+        Open this from the repository <code>smart-health-checkin-mdoc</code> directory
+        through a local web server so relative artifact fetches work.
+      </p>
+      <div class="controls">
+        <button id="load-defaults">Load real Chrome/Android fixtures</button>
+        <label class="file-label" for="file-picker">Load a different real capture bundle</label>
+        <input id="file-picker" type="file" multiple webkitdirectory>
+        <span id="load-status" class="muted small">Not loaded yet.</span>
+      </div>
+      <div id="artifact-list" class="artifact-list"></div>
+    </section>
+
+    <section id="map" class="panel">
+      <h2>Protocol map</h2>
+      <div class="flow">
+        <div class="step">
+          <strong>Verifier builds a request</strong>
+          The web app creates a SMART request JSON object, embeds it inside an mdoc
+          <code>ItemsRequest</code>, and wraps that in a direct <code>org-iso-mdoc</code>
+          Digital Credentials API request.
+        </div>
+        <div class="step">
+          <strong>Browser supplies the origin</strong>
+          Credential Manager hands the wallet both the request JSON and
+          <code>CallingAppInfo.origin</code>. The wallet must use this exact origin in the
+          SessionTranscript.
+        </div>
+        <div class="step">
+          <strong>Wallet parses and renders</strong>
+          Android decodes <code>deviceRequest</code>, pulls
+          <code>requestInfo.smart_health_checkin</code>, fetches any referenced questionnaires,
+          and renders consent.
+        </div>
+        <div class="step">
+          <strong>Wallet creates an mdoc response</strong>
+          The selected SMART/FHIR payload is placed in
+          <code>org.smarthealthit.checkin.smart_health_checkin_response</code>, digested in the
+          MSO, signed by issuer and device keys, and HPKE-encrypted to the verifier key.
+        </div>
+        <div class="step">
+          <strong>Verifier opens and checks</strong>
+          The verifier uses the request's recipient private key and the exact
+          SessionTranscript to open the HPKE ciphertext and inspect the mdoc
+          <code>DeviceResponse</code>.
+        </div>
+      </div>
+    </section>
+
+    <section id="request" class="panel">
+      <h2>Request bytes: browser JSON -> mdoc DeviceRequest</h2>
+      <div id="request-summary" class="grid two"></div>
+      <div class="explainer-note">
+        The request contains two base64url strings. <code>deviceRequest</code> is the mdoc
+        request CBOR. <code>encryptionInfo</code> is the verifier's HPKE recipient key and a
+        nonce. Both strings are visible to the matcher and wallet; the verifier origin is not
+        in the request payload and must come from Credential Manager.
+      </div>
+      <div class="formula">
+DeviceRequest = CBOR({
+  "version": "1.0",
+  "docRequests": [{
+    "itemsRequest": tag24(CBOR({
+      "docType": "org.smarthealthit.checkin.1",
+      "nameSpaces": {"org.smarthealthit.checkin": {"smart_health_checkin_response": false}},
+      "requestInfo": {"smart_health_checkin": JSON.stringify(SMART request)}
+    }))
+  }]
+})
+
+EncryptionInfo = CBOR(["dcapi", {
+  "nonce": 32 random bytes,
+  "recipientPublicKey": COSE_Key(P-256 verifier public key)
+}])
+      </div>
+    </section>
+
+    <section id="response" class="panel">
+      <h2>Response bytes: Android wallet -> encrypted DeviceResponse</h2>
+      <div id="response-summary" class="grid two"></div>
+      <div class="explainer-note">
+        The wallet response is JSON at the Credential Manager boundary, but the meaningful
+        payload is again base64url CBOR: <code>["dcapi", {"enc": ..., "cipherText": ...}]</code>.
+        The ciphertext decrypts to an ISO mdoc <code>DeviceResponse</code>.
+      </div>
+      <div class="formula">
+IssuerSignedItem = {
+  "digestID": 0,
+  "random": 16 bytes,
+  "elementIdentifier": "smart_health_checkin_response",
+  "elementValue": JSON.stringify(SMART response)
+}
+issuerSignedItemTag24 = tag24(CBOR(IssuerSignedItem))
+valueDigest = SHA-256(issuerSignedItemTag24)
+
+MSO.valueDigests["org.smarthealthit.checkin"][0] = valueDigest
+issuerAuth = COSE_Sign1(payload = tag24(CBOR(MSO)), signer = issuer key)
+
+DeviceAuthentication = tag24(CBOR([
+  "DeviceAuthentication",
+  SessionTranscript,
+  "org.smarthealthit.checkin.1",
+  tag24(CBOR(DeviceNameSpaces))
+]))
+deviceSignature = COSE_Sign1(payload = DeviceAuthentication, signer = MSO.deviceKeyInfo.deviceKey)
+
+dcapi response = CBOR(["dcapi", {
+  "enc": ephemeral P-256 public key,
+  "cipherText": HPKE-Seal(DeviceResponse, info = SessionTranscript)
+}])
+      </div>
+    </section>
+
+    <section id="checks" class="panel">
+      <h2>Calculated checks</h2>
+      <p class="muted">
+        These are recomputed in the browser from the loaded bytes where possible, then compared
+        with the validation artifacts produced by the TS and Python oracles.
+      </p>
+      <div id="checks-grid" class="check-grid"></div>
+    </section>
+
+    <section id="explorer" class="panel">
+      <h2>Byte explorer</h2>
+      <p class="muted">
+        Choose any loaded artifact. The left pane is a full hex dump, including every byte.
+        The right pane is a CBOR walk with byte ranges. Tag 24 means "encoded CBOR": the tag
+        wraps a byte string whose contents are themselves CBOR and are decoded inline when
+        possible.
+      </p>
+      <div class="select-row">
+        <label for="artifact-select"><strong>Artifact</strong></label>
+        <select id="artifact-select"></select>
+      </div>
+      <div class="byte-layout">
+        <pre id="hex-view" class="hex">Load artifacts first.</pre>
+        <div id="tree-view" class="tree">Load artifacts first.</div>
+      </div>
+    </section>
+
+    <section id="real-capture" class="panel">
+      <h2>Promoting a real Chrome/Android capture</h2>
+      <div class="grid two">
+        <div>
+          <h3>Pull the handler bundle</h3>
+          <pre>adb -s 10.0.0.30:41119 shell run-as org.smarthealthit.checkin.wallet ls files/handler-runs
+adb -s 10.0.0.30:41119 exec-out run-as org.smarthealthit.checkin.wallet tar c files/handler-runs/&lt;runId&gt; \
+  | tar x -C /tmp/chrome-smart-capture</pre>
+        </div>
+        <div>
+          <h3>Files this page understands</h3>
+          <p class="small">
+            <code>manifest.json</code>, <code>credential-manager-request.json</code>,
+            <code>device-request.b64u</code>, <code>encryption-info.b64u</code>,
+            <code>session-transcript.cbor</code>, <code>smart-request.json</code>,
+            <code>smart-response.json</code>, <code>wallet-response.digital-credential.json</code>,
+            <code>dcapi-response.cbor</code>, <code>device-response.cbor</code>,
+            <code>issuer-signed-item-tag24.cbor</code>, <code>mso.cbor</code>,
+            <code>issuer-auth.cbor</code>, and <code>device-authentication.cbor</code>.
+          </p>
+          <p class="small">
+            For offline HPKE open validation, also keep the verifier's per-request
+            <code>recipient-private.jwk.json</code> from the RP page debug capture. Do not check
+            in real patient identifiers or live private keys; sanitize first.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const REAL_REQUEST_BASE = "fixtures/dcapi-requests/real-chrome-android-smart-checkin";
+    const REAL_RESPONSE_BASE = "fixtures/responses/real-chrome-android-smart-checkin";
+    const DEFAULTS = [
+      { id: "requestMetadata", label: "Real request fixture metadata", path: `${REAL_REQUEST_BASE}/metadata.json`, kind: "json", group: "real request" },
+      { id: "navigatorArg", label: "navigator.credentials.get argument captured by handler", path: `${REAL_REQUEST_BASE}/navigator-credentials-get.arg.json`, kind: "json", group: "real request" },
+      { id: "deviceRequestB64u", label: "deviceRequest base64url decoded to CBOR", path: `${REAL_REQUEST_BASE}/device-request.b64u`, kind: "b64u", group: "real request" },
+      { id: "deviceRequestCbor", label: "device-request.cbor from promoted fixture", path: `${REAL_REQUEST_BASE}/device-request.cbor`, kind: "cbor", group: "real request" },
+      { id: "encryptionInfoB64u", label: "encryptionInfo base64url decoded to CBOR", path: `${REAL_REQUEST_BASE}/encryption-info.b64u`, kind: "b64u", group: "real request" },
+      { id: "encryptionInfoCbor", label: "encryption-info.cbor from promoted fixture", path: `${REAL_REQUEST_BASE}/encryption-info.cbor`, kind: "cbor", group: "real request" },
+      { id: "sessionTranscript", label: "SessionTranscript captured by Android", path: `${REAL_REQUEST_BASE}/session-transcript.cbor`, kind: "cbor", group: "real request" },
+      { id: "smartRequest", label: "SMART request JSON parsed from real DeviceRequest", path: `${REAL_REQUEST_BASE}/smart-request.json`, kind: "json", group: "real request" },
+      { id: "requestInspection", label: "Real request inspection", path: `${REAL_REQUEST_BASE}/inspection.json`, kind: "json", group: "real request" },
+      { id: "responseMetadata", label: "Real response fixture metadata", path: `${REAL_RESPONSE_BASE}/metadata.json`, kind: "json", group: "real response" },
+      { id: "credentialJson", label: "Credential Manager wallet response JSON", path: `${REAL_RESPONSE_BASE}/wallet-response.digital-credential.json`, kind: "json", group: "real response" },
+      { id: "dcapiResponse", label: "dcapi response CBOR from real run", path: `${REAL_RESPONSE_BASE}/dcapi-response.cbor`, kind: "cbor", group: "real response" },
+      { id: "hpkeEnc", label: "HPKE enc ephemeral public key bytes", path: `${REAL_RESPONSE_BASE}/hpke-enc.bin`, kind: "bin", group: "real response" },
+      { id: "hpkeCiphertext", label: "HPKE ciphertext || tag bytes", path: `${REAL_RESPONSE_BASE}/hpke-ciphertext.bin`, kind: "bin", group: "real response" },
+      { id: "deviceResponse", label: "decrypted mdoc DeviceResponse CBOR from real run", path: `${REAL_RESPONSE_BASE}/device-response.cbor`, kind: "cbor", group: "real response" },
+      { id: "issuerSignedItemTag24", label: "IssuerSignedItem tag24 CBOR from real run", path: `${REAL_RESPONSE_BASE}/issuer-signed-item-tag24.cbor`, kind: "cbor", group: "real response" },
+      { id: "valueDigest", label: "valueDigest bytes captured by Android", path: `${REAL_RESPONSE_BASE}/value-digest.bin`, kind: "bin", group: "real response" },
+      { id: "mso", label: "Mobile Security Object CBOR from real run", path: `${REAL_RESPONSE_BASE}/mso.cbor`, kind: "cbor", group: "real response" },
+      { id: "issuerAuth", label: "issuerAuth COSE_Sign1 CBOR from real run", path: `${REAL_RESPONSE_BASE}/issuer-auth.cbor`, kind: "cbor", group: "real response" },
+      { id: "deviceAuthentication", label: "DeviceAuthentication tag24 CBOR from real run", path: `${REAL_RESPONSE_BASE}/device-authentication.cbor`, kind: "cbor", group: "real response" },
+      { id: "smartResponseExpected", label: "SMART response JSON produced by Android", path: `${REAL_RESPONSE_BASE}/smart-response.json`, kind: "json", group: "real response" },
+      { id: "pymdocCheck", label: "Python byte and COSE checks for real run", path: `${REAL_RESPONSE_BASE}/pymdoc-byte-check.json`, kind: "json", group: "real response" },
+    ];
+
+    const FILE_MATCHERS = [
+      ["credential-manager-request.json", "navigatorArg", "json"],
+      ["navigator-credentials-get.arg.json", "navigatorArg", "json"],
+      ["request.json", "navigatorArg", "json"],
+      ["manifest.json", "captureManifest", "json"],
+      ["metadata.json", "requestMetadata", "json"],
+      ["device-request.b64u", "deviceRequestB64u", "b64u"],
+      ["encryption-info.b64u", "encryptionInfoB64u", "b64u"],
+      ["session-transcript.cbor", "sessionTranscript", "cbor"],
+      ["smart-request.json", "smartRequest", "json"],
+      ["smart-request.hydrated.json", "smartRequestHydrated", "json"],
+      ["submit.json", "submitSummary", "json"],
+      ["smart-response.json", "smartResponseExpected", "json"],
+      ["wallet-response.digital-credential.json", "credentialJson", "json"],
+      ["credential.json", "credentialJson", "json"],
+      ["dcapi-response.cbor", "dcapiResponse", "cbor"],
+      ["hpke-enc.bin", "hpkeEnc", "bin"],
+      ["hpke-ciphertext.bin", "hpkeCiphertext", "bin"],
+      ["device-response.cbor", "deviceResponse", "cbor"],
+      ["issuer-signed-item-tag24.cbor", "issuerSignedItemTag24", "cbor"],
+      ["value-digest.bin", "valueDigest", "bin"],
+      ["mso.cbor", "mso", "cbor"],
+      ["issuer-auth.cbor", "issuerAuth", "cbor"],
+      ["device-authentication.cbor", "deviceAuthentication", "cbor"],
+      ["recipient-public.jwk.json", "recipientPublicJwk", "json"],
+      ["recipient-private.jwk.json", "recipientPrivateJwk", "json"],
+      ["opened-response-inspection.json", "openedInspection", "json"],
+      ["pymdoc-byte-check.json", "pymdocCheck", "json"],
+    ];
+
+    const state = { artifacts: new Map(), selected: null };
+    const els = {
+      list: document.getElementById("artifact-list"),
+      status: document.getElementById("load-status"),
+      req: document.getElementById("request-summary"),
+      res: document.getElementById("response-summary"),
+      checks: document.getElementById("checks-grid"),
+      select: document.getElementById("artifact-select"),
+      hex: document.getElementById("hex-view"),
+      tree: document.getElementById("tree-view"),
+    };
+
+    document.getElementById("load-defaults").addEventListener("click", loadDefaults);
+    document.getElementById("file-picker").addEventListener("change", (e) => loadFiles([...e.target.files]));
+    els.select.addEventListener("change", () => {
+      state.selected = els.select.value;
+      renderExplorer();
+    });
+    window.addEventListener("DOMContentLoaded", loadDefaults);
+
+    async function loadDefaults() {
+      state.artifacts.clear();
+      els.status.textContent = "Loading default artifacts...";
+      for (const spec of DEFAULTS) {
+        try {
+          const response = await fetch(spec.path);
+          if (!response.ok) throw new Error(response.status + " " + response.statusText);
+          const buffer = new Uint8Array(await response.arrayBuffer());
+          await putArtifact(spec, buffer);
+        } catch (error) {
+          state.artifacts.set(spec.id, { ...spec, ok: false, error: String(error) });
+        }
+      }
+      await deriveArtifacts();
+      renderAll();
+      els.status.textContent = "Loaded " + [...state.artifacts.values()].filter(a => a.ok).length + " artifacts.";
+    }
+
+    async function loadFiles(files) {
+      for (const file of files) {
+        const name = file.name;
+        const match = FILE_MATCHERS.find(([suffix]) => name === suffix);
+        if (!match) continue;
+        const [, id, kind] = match;
+        const label = id.replace(/([A-Z])/g, " $1");
+        const buffer = new Uint8Array(await file.arrayBuffer());
+        await putArtifact({ id, label, path: file.webkitRelativePath || file.name, kind, group: "capture" }, buffer);
+      }
+      await deriveArtifacts();
+      renderAll();
+      els.status.textContent = "Loaded capture files. " + [...state.artifacts.values()].filter(a => a.ok).length + " artifacts available.";
+    }
+
+    async function putArtifact(spec, buffer) {
+      const artifact = { ...spec, ok: true, bytes: buffer };
+      try {
+        if (spec.kind === "json") {
+          artifact.text = utf8(buffer);
+          artifact.json = JSON.parse(artifact.text);
+        } else if (spec.kind === "b64u") {
+          artifact.text = utf8(buffer).trim();
+          artifact.bytes = base64UrlDecode(artifact.text);
+          artifact.kind = "cbor";
+          artifact.derivedFrom = spec.path;
+        } else if (spec.kind === "hex") {
+          artifact.text = utf8(buffer).trim();
+          artifact.bytes = hexToBytes(artifact.text);
+          artifact.kind = "cbor";
+        }
+        if (artifact.kind === "cbor" && artifact.bytes?.length) {
+          artifact.cbor = parseCborSafe(artifact.bytes);
+        }
+      } catch (error) {
+        artifact.ok = false;
+        artifact.error = String(error);
+      }
+      state.artifacts.set(spec.id, artifact);
+    }
+
+    async function deriveArtifacts() {
+      const nav = art("navigatorArg")?.json;
+      const request = nav?.digital?.requests?.find(r => r.protocol === "org-iso-mdoc") ?? nav?.digital?.requests?.[0];
+      if (request?.data?.deviceRequest && !art("deviceRequestB64u")?.ok) {
+        await putArtifact({ id: "deviceRequestB64u", label: "deviceRequest from navigator JSON", kind: "b64u", group: "derived", path: "derived:navigatorArgument.digital.requests[0].data.deviceRequest" }, textBytes(request.data.deviceRequest));
+      }
+      if (request?.data?.encryptionInfo && !art("encryptionInfoB64u")?.ok) {
+        await putArtifact({ id: "encryptionInfoB64u", label: "encryptionInfo from navigator JSON", kind: "b64u", group: "derived", path: "derived:navigatorArgument.digital.requests[0].data.encryptionInfo" }, textBytes(request.data.encryptionInfo));
+      }
+      const credential = art("credentialJson")?.json;
+      const responseB64u = credential?.data?.response;
+      if (responseB64u) {
+        await putArtifact({ id: "dcapiFromCredential", label: "dcapi response decoded from credential JSON", kind: "b64u", group: "derived", path: "derived:credential.data.response" }, textBytes(responseB64u));
+      }
+      await deriveSessionTranscript();
+    }
+
+    async function deriveSessionTranscript() {
+      const encText = art("encryptionInfoB64u")?.text;
+      const origin = art("requestMetadata")?.json?.origin || art("captureManifest")?.json?.origin || art("requestInspection")?.json?.sessionTranscript?.origin || "https://clinic.example";
+      if (!encText || !crypto.subtle) return;
+      const dcapiInfo = cborEncode([encText, origin]);
+      const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", dcapiInfo));
+      const sessionTranscript = cborEncode([null, null, ["dcapi", digest]]);
+      await putArtifact({ id: "dcapiInfoForTranscript", label: "CBOR([encryptionInfoB64u, origin])", kind: "cbor", group: "derived", path: "derived:sessionTranscript input" }, dcapiInfo);
+      await putArtifact({ id: "computedSessionTranscript", label: "Computed SessionTranscript", kind: "cbor", group: "derived", path: "derived:CBOR([null,null,[dcapi,sha256(dcapiInfo)]])" }, sessionTranscript);
+      state.artifacts.get("computedSessionTranscript").origin = origin;
+      state.artifacts.get("computedSessionTranscript").digestHex = hex(digest);
+    }
+
+    function renderAll() {
+      renderArtifactList();
+      renderSummaries();
+      renderChecks();
+      renderSelect();
+      renderExplorer();
+    }
+
+    function renderArtifactList() {
+      els.list.innerHTML = "";
+      for (const artifact of [...state.artifacts.values()].sort((a,b) => (a.group + a.id).localeCompare(b.group + b.id))) {
+        const div = document.createElement("div");
+        div.className = "artifact-card";
+        div.innerHTML = `
+          <strong><span class="status-dot ${artifact.ok ? "ok" : "bad"}"></span>${escapeHtml(artifact.label || artifact.id)}</strong>
+          <div class="small muted">${escapeHtml(artifact.group || "")} ${artifact.bytes ? " / " + artifact.bytes.length + " bytes" : ""}</div>
+          <code class="small">${escapeHtml(artifact.path || "")}</code>
+          ${artifact.error ? `<div class="small bad">${escapeHtml(artifact.error)}</div>` : ""}
+        `;
+        els.list.appendChild(div);
+      }
+    }
+
+    function renderSummaries() {
+      const meta = art("requestMetadata")?.json || art("captureManifest")?.json || {};
+      const requestInspection = art("requestInspection")?.json || {};
+      const requestDoc = requestInspection.deviceRequest?.docRequests?.[0] || requestInspection.deviceRequest?.docRequests?.[0];
+      const smart = art("smartRequestHydrated")?.json || art("smartRequest")?.json || requestInspection.deviceRequest?.docRequests?.[0]?.smartHealthCheckin?.value;
+      const enc = requestInspection.encryptionInfo;
+      els.req.innerHTML = [
+        card("Digital Credentials API envelope", [
+          ["protocol", "org-iso-mdoc"],
+          ["origin", meta.origin || requestInspection.sessionTranscript?.origin || "from CallingAppInfo.origin"],
+          ["origin source", meta.originSource || "web-origin"],
+          ["calling app", meta.packageName || "com.android.chrome"],
+          ["deviceRequest bytes", byteCount("deviceRequestB64u")],
+          ["encryptionInfo bytes", byteCount("encryptionInfoB64u")],
+        ]),
+        card("SMART request inside ItemsRequest", [
+          ["docType", requestDoc?.docType || "org.smarthealthit.checkin.1"],
+          ["namespace", requestDoc?.requestedElements?.[0]?.namespace || "org.smarthealthit.checkin"],
+          ["element", requestDoc?.requestedElements?.[0]?.elementIdentifier || "smart_health_checkin_response"],
+          ["items requested", Array.isArray(smart?.items) ? smart.items.map(i => i.id).join(", ") : "see smart_health_checkin JSON"],
+        ]),
+        card("EncryptionInfo", [
+          ["nonce", enc?.nonce?.hex || "32 bytes in encryptionInfo.nonce"],
+          ["recipient key", "COSE_Key: kty=EC2, crv=P-256, x=-2, y=-3"],
+          ["purpose", "Verifier public key used by wallet HPKE Seal"],
+        ]),
+        card("SessionTranscript", [
+          ["input", "CBOR([encryptionInfoB64u, origin])"],
+          ["hash", art("computedSessionTranscript")?.digestHex || requestInspection.sessionTranscript?.hex?.slice(20) || "computed in browser"],
+          ["encoded", shortHex(art("computedSessionTranscript")?.bytes) || requestInspection.sessionTranscript?.hex || ""],
+        ]),
+      ].join("");
+
+      const opened = art("openedInspection")?.json || {};
+      const py = art("pymdocCheck")?.json || {};
+      const deviceDoc = opened.deviceResponse?.documents?.[0] || {};
+      els.res.innerHTML = [
+        card("Credential Manager response JSON", [
+          ["protocol", art("credentialJson")?.json?.protocol || "org-iso-mdoc"],
+          ["credential.data.response", byteCount("dcapiFromCredential") + " after base64url decode"],
+          ["dcapi-response.cbor file", byteCount("dcapiResponse")],
+        ]),
+        card("HPKE wrapper", [
+          ["enc", byteCount("hpkeEnc")],
+          ["cipherText", byteCount("hpkeCiphertext")],
+          ["info", "the exact SessionTranscript bytes"],
+        ]),
+        card("DeviceResponse plaintext", [
+          ["version", deviceDoc.version || "1.0"],
+          ["docType", deviceDoc.docType || py.walk?.docType || "org.smarthealthit.checkin.1"],
+          ["status", opened.deviceResponse?.status ?? "0"],
+          ["decrypted bytes", byteCount("deviceResponse")],
+        ]),
+        card("Issuer/device authenticity", [
+          ["value digest", py.walk?.digestMatches === true ? "matches SHA-256(tag24(IssuerSignedItem))" : "see calculated checks"],
+          ["issuerAuth", py.cose?.issuerAuth?.verified ? "COSE_Sign1 verified" : "COSE_Sign1"],
+          ["deviceSignature", py.cose?.deviceSignature?.verified ? "COSE_Sign1 verified" : "COSE_Sign1"],
+        ]),
+      ].join("");
+    }
+
+    async function renderChecks() {
+      const checks = [];
+      const py = art("pymdocCheck")?.json || {};
+      const opened = art("openedInspection")?.json || {};
+      const hasPlainDeviceResponse = !!art("deviceResponse")?.ok;
+      checks.push(["DeviceResponse plaintext", opened.deviceResponse || hasPlainDeviceResponse ? "ok" : "not loaded", opened.deviceResponse ? "RP web opened credential.data.response and decoded DeviceResponse." : hasPlainDeviceResponse ? "Loaded from the real Android handler debug bundle after wallet HPKE seal." : "Load device-response.cbor or opened-response-inspection.json."]);
+      if (crypto.subtle) {
+        const item = art("issuerSignedItemTag24")?.bytes;
+        if (item) {
+          const digest = hex(new Uint8Array(await crypto.subtle.digest("SHA-256", item)));
+          const expected = py.walk?.recomputedDigestSha256 || py.walk?.msoDigestSha256 || shortHex(art("valueDigest")?.bytes, 64);
+          checks.push(["IssuerSignedItem digest", digest === expected ? "ok" : (expected ? "bad" : "warn"), "SHA-256(issuer-signed-item-tag24.cbor) = " + digest + (expected ? " ; expected " + expected : "")]);
+        }
+        const mso = art("mso")?.bytes;
+        if (mso) {
+          const digest = hex(new Uint8Array(await crypto.subtle.digest("SHA-256", mso)));
+          checks.push(["MSO bytes hash", py.msoSha256 === digest ? "ok" : (py.msoSha256 ? "bad" : "warn"), "SHA-256(mso.cbor) = " + digest]);
+        }
+        const computedSt = art("computedSessionTranscript")?.bytes;
+        const loadedSt = art("sessionTranscript")?.bytes;
+        const inspectionSt = art("requestInspection")?.json?.sessionTranscript?.hex;
+        if (computedSt) {
+          const computedHex = hex(computedSt);
+          const matchLoaded = loadedSt ? computedHex === hex(loadedSt) : undefined;
+          const matchInspection = inspectionSt ? computedHex === inspectionSt : undefined;
+          checks.push(["SessionTranscript", (matchLoaded !== false && matchInspection !== false) ? "ok" : "bad", "CBOR([null,null,[\"dcapi\", SHA-256(CBOR([encryptionInfoB64u, origin]))]]) = " + computedHex]);
+        }
+      } else {
+        checks.push(["Browser crypto", "warn", "crypto.subtle is unavailable. Serve over http://127.0.0.1 or https to compute hashes."]);
+      }
+      checks.push(["pyMDOC byte walk", py.ok ? "ok" : "warn", py.ok ? "Python oracle accepted tag-24 digest input, MSO valueDigests, x5chain parseability, and COSE signatures." : "Not part of this live handler bundle; use the decoded CBOR artifacts and valueDigest check above."]);
+      checks.push(["issuerAuth signature", py.cose?.issuerAuth?.verified ? "ok" : "warn", py.cose?.issuerAuth ? "COSE Sig_structure SHA-256 = " + py.cose.issuerAuth.sigStructureSha256 : "Not loaded."]);
+      checks.push(["deviceSignature", py.cose?.deviceSignature?.verified ? "ok" : "warn", py.cose?.deviceSignature ? "Signs exact DeviceAuthentication with exact SessionTranscript. Sig_structure SHA-256 = " + py.cose.deviceSignature.sigStructureSha256 : "Not loaded."]);
+      els.checks.innerHTML = checks.map(([title, status, body]) => `
+        <div class="check">
+          <strong class="${status === "ok" ? "ok" : status === "bad" ? "bad" : "warn"}">${escapeHtml(title)}: ${escapeHtml(status)}</strong>
+          <div class="small">${escapeHtml(body)}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderSelect() {
+      const options = [...state.artifacts.values()]
+        .filter(a => a.ok && a.bytes)
+        .sort((a,b) => (a.group + a.id).localeCompare(b.group + b.id));
+      els.select.innerHTML = options.map(a => `<option value="${escapeAttr(a.id)}">${escapeHtml(a.label || a.id)} (${a.bytes.length} bytes)</option>`).join("");
+      if (!state.selected || !state.artifacts.get(state.selected)?.ok) {
+        state.selected = options[0]?.id || null;
+      }
+      if (state.selected) els.select.value = state.selected;
+    }
+
+    function renderExplorer() {
+      const artifact = art(state.selected);
+      if (!artifact?.ok) {
+        els.hex.textContent = "Load artifacts first.";
+        els.tree.textContent = "Load artifacts first.";
+        return;
+      }
+      els.hex.textContent = hexDump(artifact.bytes);
+      if (artifact.kind === "json") {
+        els.tree.innerHTML = renderJsonValue(artifact.json, artifact.id, artifact.id, true);
+        return;
+      }
+      if (artifact.kind !== "cbor") {
+        els.tree.innerHTML = `<div class="leaf"><span class="range">0-${artifact.bytes.length - 1} (${artifact.bytes.length} bytes)</span> <span class="value-preview">${escapeHtml(artifact.label || artifact.id)}</span> <span class="meaning">Raw bytes. The hex pane shows every byte; this artifact is not a CBOR container.</span></div>`;
+        return;
+      }
+      if (artifact.cbor?.error) {
+        els.tree.innerHTML = `<div class="bad">${escapeHtml(artifact.cbor.error)}</div>`;
+        return;
+      }
+      els.tree.innerHTML = renderNode(artifact.cbor.node, artifact.id, "", true);
+    }
+
+    function card(title, rows) {
+      return `<div class="artifact-card"><strong>${escapeHtml(title)}</strong><table>${rows.map(([k,v]) => `<tr><th>${escapeHtml(k)}</th><td>${escapeHtml(String(v ?? ""))}</td></tr>`).join("")}</table></div>`;
+    }
+
+    function byteCount(id) {
+      const a = art(id);
+      return a?.bytes ? a.bytes.length + " bytes" : "not loaded";
+    }
+
+    function art(id) { return state.artifacts.get(id); }
+
+    function parseCborSafe(bytes) {
+      try {
+        const reader = new CborReader(bytes);
+        const node = reader.readNode();
+        if (reader.pos !== bytes.length) node.trailingBytes = bytes.length - reader.pos;
+        return { node };
+      } catch (error) {
+        return { error: String(error) };
+      }
+    }
+
+    class CborReader {
+      constructor(bytes) { this.bytes = bytes; this.pos = 0; }
+      readNode() {
+        const start = this.pos;
+        if (start >= this.bytes.length) throw new Error("unexpected end of CBOR");
+        const initial = this.bytes[this.pos++];
+        const major = initial >> 5;
+        const ai = initial & 31;
+        const { value: length, bytes: lengthBytes } = this.readArg(ai);
+        const headerEnd = this.pos;
+        const node = { start, headerEnd, initial, major, ai, lengthBytes };
+        const finish = (n, type, value) => {
+          n.type = type;
+          n.value = value;
+          n.end = this.pos;
+          return n;
+        };
+        if (major === 0) return finish(node, "uint", length);
+        if (major === 1) return finish(node, "nint", -1 - Number(length));
+        if (major === 2) {
+          const len = Number(length);
+          const data = this.take(len);
+          return finish(node, "bstr", data);
+        }
+        if (major === 3) {
+          const len = Number(length);
+          const data = this.take(len);
+          return finish(node, "tstr", utf8(data));
+        }
+        if (major === 4) {
+          const len = Number(length);
+          node.type = "array"; node.children = [];
+          for (let i = 0; i < len; i++) node.children.push(this.readNode());
+          node.end = this.pos;
+          return node;
+        }
+        if (major === 5) {
+          const len = Number(length);
+          node.type = "map"; node.pairs = [];
+          for (let i = 0; i < len; i++) node.pairs.push({ key: this.readNode(), value: this.readNode() });
+          node.end = this.pos;
+          return node;
+        }
+        if (major === 6) {
+          node.type = "tag"; node.tag = Number(length); node.child = this.readNode(); node.end = this.pos; return node;
+        }
+        if (major === 7) {
+          if (ai === 20) return finish(node, "simple", false);
+          if (ai === 21) return finish(node, "simple", true);
+          if (ai === 22) return finish(node, "simple", null);
+          if (ai === 23) return finish(node, "simple", undefined);
+          if (ai === 24) return finish(node, "simple", Number(length));
+          if (ai === 25) return finish(node, "float16", "(float16)");
+          if (ai === 26) return finish(node, "float32", "(float32)");
+          if (ai === 27) return finish(node, "float64", "(float64)");
+          throw new Error("unsupported simple value ai=" + ai + " at " + start);
+        }
+        throw new Error("unsupported CBOR major type " + major + " at " + start);
+      }
+      readArg(ai) {
+        if (ai < 24) return { value: ai, bytes: 0 };
+        if (ai === 24) return { value: this.take(1)[0], bytes: 1 };
+        if (ai === 25) { const b = this.take(2); return { value: (b[0] << 8) | b[1], bytes: 2 }; }
+        if (ai === 26) { const b = this.take(4); return { value: ((b[0] * 2 ** 24) + (b[1] << 16) + (b[2] << 8) + b[3]), bytes: 4 }; }
+        if (ai === 27) {
+          const b = this.take(8);
+          let v = 0n;
+          for (const x of b) v = (v << 8n) | BigInt(x);
+          if (v > BigInt(Number.MAX_SAFE_INTEGER)) return { value: v, bytes: 8 };
+          return { value: Number(v), bytes: 8 };
+        }
+        if (ai === 31) throw new Error("indefinite length CBOR is not used in these fixtures");
+        throw new Error("reserved additional info " + ai);
+      }
+      take(len) {
+        if (this.pos + len > this.bytes.length) throw new Error("CBOR truncated at " + this.pos + ", need " + len + " bytes");
+        const out = this.bytes.slice(this.pos, this.pos + len);
+        this.pos += len;
+        return out;
+      }
+    }
+
+    function renderNode(node, artifactId, keyName = "", root = false) {
+      const label = nodeLabel(node, keyName);
+      const meaning = annotate(keyName, node, artifactId);
+      const range = `${node.start}-${node.end - 1} (${node.end - node.start} bytes)`;
+      if (node.type === "array") {
+        return details(label, range, meaning, node.children.map((child, i) => renderNode(child, artifactId, "[" + i + "]")).join(""), root);
+      }
+      if (node.type === "map") {
+        const body = node.pairs.map(pair => {
+          const key = simpleValue(pair.key);
+          return `<div>${renderNode(pair.key, artifactId, "key")}${renderNode(pair.value, artifactId, String(key))}</div>`;
+        }).join("");
+        return details(label, range, meaning, body, root);
+      }
+      if (node.type === "tag") {
+        let extra = renderNode(node.child, artifactId, "tag " + node.tag + " content");
+        if (node.tag === 24 && node.child.type === "bstr") {
+          const inner = parseCborSafe(node.child.value);
+          extra += `<div class="meaning">Decoded tag 24 payload:</div>` + (inner.error ? `<div class="bad">${escapeHtml(inner.error)}</div>` : renderNode(inner.node, artifactId, "tag24 decoded"));
+        }
+        return details(label, range, meaning, extra, root);
+      }
+      const embedded = renderEmbeddedValue(node, artifactId, keyName, range);
+      return `<div class="leaf"><span class="range">${escapeHtml(range)}</span> <span class="value-preview">${escapeHtml(label)}</span>${meaning ? ` <span class="meaning">${escapeHtml(meaning)}</span>` : ""}${embedded}</div>`;
+    }
+
+    function details(label, range, meaning, body, open) {
+      return `<details ${open ? "open" : ""}><summary><span class="range">${escapeHtml(range)}</span> <span class="value-preview">${escapeHtml(label)}</span>${meaning ? ` <span class="meaning">${escapeHtml(meaning)}</span>` : ""}</summary>${body}</details>`;
+    }
+
+    function renderEmbeddedValue(node, artifactId, keyName, byteRange) {
+      let text = null;
+      if (node.type === "tstr") text = node.value;
+      if (node.type === "bstr") {
+        try { text = utf8(node.value); } catch { text = null; }
+      }
+      if (!text) return "";
+      const trimmed = text.trim();
+      const looksJson = trimmed.startsWith("{") || trimmed.startsWith("[");
+      if (!looksJson) return "";
+      try {
+        const parsed = JSON.parse(trimmed);
+        const title = embeddedJsonTitle(keyName, artifactId);
+        return details(
+          title,
+          `contained in ${byteRange}`,
+          embeddedJsonMeaning(keyName),
+          renderJsonValue(parsed, keyName || "embedded JSON", String(keyName || "json"), true),
+          false,
+        );
+      } catch {
+        return "";
+      }
+    }
+
+    function renderJsonValue(value, keyName = "", path = "", root = false) {
+      const label = jsonLabel(value, keyName);
+      const meaning = annotateJson(keyName, value, path);
+      if (Array.isArray(value)) {
+        const body = value.map((item, i) => renderJsonValue(item, `[${i}]`, `${path}[${i}]`, false)).join("");
+        return details(label, "JSON", meaning, body, root);
+      }
+      if (value && typeof value === "object") {
+        const body = Object.entries(value)
+          .map(([key, child]) => renderJsonValue(child, key, path ? `${path}.${key}` : key, false))
+          .join("");
+        return details(label, "JSON", meaning, body, root);
+      }
+      return `<div class="leaf"><span class="range">JSON</span> <span class="value-preview">${escapeHtml(label)}</span>${meaning ? ` <span class="meaning">${escapeHtml(meaning)}</span>` : ""}</div>`;
+    }
+
+    function jsonLabel(value, keyName) {
+      const prefix = keyName ? keyName + ": " : "";
+      if (Array.isArray(value)) return `${prefix}array(${value.length})`;
+      if (value && typeof value === "object") return `${prefix}object(${Object.keys(value).length})`;
+      if (typeof value === "string") return `${prefix}"${truncate(value, 180)}"`;
+      return `${prefix}${String(value)}`;
+    }
+
+    function embeddedJsonTitle(keyName, artifactId) {
+      if (keyName === "smart_health_checkin") return "Decoded contained SMART Health Check-in request JSON";
+      if (keyName === "elementValue") return "Decoded contained SMART Health Check-in response JSON";
+      if (artifactId === "deviceResponse") return "Decoded contained JSON string";
+      return "Decoded embedded JSON string";
+    }
+
+    function embeddedJsonMeaning(keyName) {
+      if (keyName === "smart_health_checkin") return "This is the verifier's high-level data request carried inside mdoc ItemsRequest.requestInfo.";
+      if (keyName === "elementValue") return "This is the wallet's SMART response carried as the mdoc element value.";
+      return "This text string is itself parsed as JSON for drilldown.";
+    }
+
+    function nodeLabel(node, keyName) {
+      if (node.type === "array") return `${keyName ? keyName + ": " : ""}array(${node.children.length})`;
+      if (node.type === "map") return `${keyName ? keyName + ": " : ""}map(${node.pairs.length})`;
+      if (node.type === "tag") return `${keyName ? keyName + ": " : ""}tag(${node.tag})`;
+      if (node.type === "bstr") return `${keyName ? keyName + ": " : ""}bstr(${node.value.length}) h'${shortHex(node.value)}'`;
+      if (node.type === "tstr") return `${keyName ? keyName + ": " : ""}"${truncate(node.value, 160)}"`;
+      return `${keyName ? keyName + ": " : ""}${String(node.value)}`;
+    }
+
+    function simpleValue(node) {
+      if (node.type === "tstr") return node.value;
+      if (node.type === "uint" || node.type === "nint") return node.value;
+      return node.type;
+    }
+
+    function annotate(key, node, artifactId) {
+      const k = String(key || "");
+      const dictionary = {
+        version: "mdoc object version",
+        docRequests: "DeviceRequest list of requested documents",
+        itemsRequest: "tag 24 wrapped ItemsRequest CBOR",
+        docType: "mdoc document type",
+        nameSpaces: "requested or returned mdoc namespaces",
+        requestInfo: "extension map carrying SMART Health Check-in JSON",
+        smart_health_checkin: "SMART request JSON string",
+        smart_health_checkin_response: "the mdoc element the wallet will return",
+        nonce: "verifier nonce in EncryptionInfo",
+        recipientPublicKey: "COSE_Key for verifier HPKE recipient public key",
+        enc: "HPKE ephemeral public key sent by wallet",
+        cipherText: "HPKE ciphertext of DeviceResponse plus GCM tag",
+        documents: "mdoc documents returned by wallet",
+        status: "0 means success",
+        issuerSigned: "issuer-authenticated data section",
+        issuerAuth: "COSE_Sign1 over tag24(MSO)",
+        deviceSigned: "device-authenticated data section",
+        deviceAuth: "device authentication method map",
+        deviceSignature: "COSE_Sign1 over DeviceAuthentication",
+        digestID: "index used by MSO.valueDigests",
+        random: "per-item random bytes included in digest input",
+        elementIdentifier: "name of the returned mdoc element",
+        elementValue: "SMART response JSON string",
+        digestAlgorithm: "hash algorithm used by MSO valueDigests",
+        valueDigests: "MSO map of namespace -> digestID -> SHA-256(tag24(IssuerSignedItem))",
+        deviceKeyInfo: "MSO public key used to verify deviceSignature",
+        deviceKey: "COSE_Key for device authentication",
+        validityInfo: "MSO signed/validFrom/validUntil timestamps",
+      };
+      if (dictionary[k]) return dictionary[k];
+      if (node.type === "tag" && node.tag === 24) return "CBOR tag 24: encoded CBOR byte string";
+      if (artifactId === "issuerAuth" && node.type === "array") return "COSE_Sign1 = [protected, unprotected, payload, signature]";
+      if (artifactId === "deviceAuthentication" && node.type === "tag") return "DeviceAuthentication is itself tag24-wrapped before signing";
+      return "";
+    }
+
+    function annotateJson(key, value, path) {
+      const k = String(key || "");
+      const dictionary = {
+        version: "SMART Health Check-in payload version or mdoc envelope version",
+        items: "The verifier's requested SMART/FHIR items; each child can be rendered as a consent row.",
+        id: "Stable request/answer identifier used to match user choices and wallet data.",
+        profile: "FHIR profile URL requested from the wallet store.",
+        questionnaireUrl: "FHIR Questionnaire URL that the Android app hydrates and renders for user input.",
+        questionnaire: "Inline FHIR Questionnaire resource rendered by the Android app.",
+        required: "Whether the verifier marks this item as required.",
+        description: "Human-readable verifier explanation displayed to the user.",
+        answers: "Selected request items and questionnaire answers returned by the wallet.",
+        artifacts: "FHIR resources or bundles the wallet agreed to share.",
+        data: "FHIR payload loaded from the demo wallet store.",
+        resourceType: "FHIR resource type.",
+        linkId: "FHIR Questionnaire item identifier used to map canned/user answers.",
+        response: "Base64url CBOR direct dcapi response returned to Credential Manager.",
+        protocol: "Digital Credentials protocol identifier.",
+        origin: "Verifier web origin used for SessionTranscript binding.",
+        packageName: "Calling Android app package observed by Credential Manager.",
+        selectedEntryId: "Credential entry id selected in the Credential Manager picker.",
+      };
+      if (dictionary[k]) return dictionary[k];
+      if (path.includes("smart_health_checkin")) return "Nested field inside the verifier's contained SMART request.";
+      if (path.includes("elementValue") || path.includes("smartResponse")) return "Nested field inside the wallet's contained SMART response.";
+      if (Array.isArray(value) && k === "coding") return "FHIR Coding array.";
+      return "";
+    }
+
+    function cborEncode(value) {
+      if (value === null) return Uint8Array.of(0xf6);
+      if (value === false) return Uint8Array.of(0xf4);
+      if (value === true) return Uint8Array.of(0xf5);
+      if (typeof value === "number") return encodeInt(value);
+      if (typeof value === "string") {
+        const b = textBytes(value);
+        return concat([encodeHead(3, b.length), b]);
+      }
+      if (value instanceof Uint8Array) return concat([encodeHead(2, value.length), value]);
+      if (Array.isArray(value)) return concat([encodeHead(4, value.length), ...value.map(cborEncode)]);
+      throw new Error("unsupported cborEncode value");
+    }
+
+    function encodeInt(value) {
+      if (value >= 0) return encodeHead(0, value);
+      return encodeHead(1, -1 - value);
+    }
+
+    function encodeHead(major, value) {
+      if (value < 24) return Uint8Array.of((major << 5) | value);
+      if (value < 256) return Uint8Array.of((major << 5) | 24, value);
+      if (value < 65536) return Uint8Array.of((major << 5) | 25, value >> 8, value & 255);
+      return Uint8Array.of((major << 5) | 26, (value >>> 24) & 255, (value >>> 16) & 255, (value >>> 8) & 255, value & 255);
+    }
+
+    function base64UrlDecode(s) {
+      const padded = s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4);
+      const bin = atob(padded);
+      const out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      return out;
+    }
+
+    function hexToBytes(s) {
+      const clean = s.replace(/[^0-9a-f]/gi, "");
+      const out = new Uint8Array(clean.length / 2);
+      for (let i = 0; i < out.length; i++) out[i] = parseInt(clean.slice(i * 2, i * 2 + 2), 16);
+      return out;
+    }
+
+    function hex(bytes) { return [...(bytes || [])].map(b => b.toString(16).padStart(2, "0")).join(""); }
+    function shortHex(bytes, max = 80) {
+      if (!bytes) return "";
+      const h = hex(bytes);
+      return h.length > max ? h.slice(0, max) + "..." : h;
+    }
+    function hexDump(bytes) {
+      if (!bytes) return "";
+      const lines = [];
+      for (let i = 0; i < bytes.length; i += 16) {
+        const chunk = bytes.slice(i, i + 16);
+        const h = [...chunk].map(b => b.toString(16).padStart(2, "0")).join(" ").padEnd(47, " ");
+        const a = [...chunk].map(b => b >= 32 && b <= 126 ? String.fromCharCode(b) : ".").join("");
+        lines.push(i.toString(16).padStart(8, "0") + "  " + h + "  |" + a + "|");
+      }
+      return lines.join("\n");
+    }
+    function concat(parts) {
+      const len = parts.reduce((n, p) => n + p.length, 0);
+      const out = new Uint8Array(len);
+      let pos = 0;
+      for (const p of parts) { out.set(p, pos); pos += p.length; }
+      return out;
+    }
+    function textBytes(s) { return new TextEncoder().encode(s); }
+    function utf8(bytes) { return new TextDecoder().decode(bytes); }
+    function truncate(s, n) { return s.length > n ? s.slice(0, n) + "..." : s; }
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+    function escapeAttr(s) { return escapeHtml(s); }
+  </script>
+</body>
+</html>

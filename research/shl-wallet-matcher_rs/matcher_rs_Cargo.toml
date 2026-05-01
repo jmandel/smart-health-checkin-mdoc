@@ -1,0 +1,16 @@
+[package]
+name = "matcher_rs"
+version = "0.1.0"
+edition = "2021"
+
+[profile.release]
+lto = true          # Link-Time Optimization
+opt-level = 's'     # Optimize for size
+strip = true        # Strip symbols to reduce size further
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+once_cell  = "1.19"
+
+# std::ffi::CString is part of the standard library.

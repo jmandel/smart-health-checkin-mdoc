@@ -1,0 +1,24 @@
+{
+  "docType": "org.smarthealthit.checkin.1",
+  "elementIdentifier": "smart_health_checkin_response",
+  "namespace": "org.smarthealthit.checkin",
+  "smartResponse": {
+    "answers": {
+      "patient": [
+        "a1"
+      ]
+    },
+    "artifacts": [
+      {
+        "data": {
+          "id": "demo",
+          "resourceType": "Patient"
+        },
+        "id": "a1",
+        "type": "fhir_resource"
+      }
+    ],
+    "version": "1"
+  },
+  "smartResponseJson": "{\"answers\":{\"patient\":[\"a1\"]},\"artifacts\":[{\"data\":{\"id\":\"demo\",\"resourceType\":\"Patient\"},\"id\":\"a1\",\"type\":\"fhir_resource\"}],\"version\":\"1\"}"
+}

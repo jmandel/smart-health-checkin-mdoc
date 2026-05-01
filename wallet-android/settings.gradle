@@ -1,0 +1,22 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        // androidx.credentials.registry artifacts are not yet in stable.
+        // Pinned to the same dated AndroidX snapshot repo as the CMWallet POC
+        // so Credential Manager transitive dependencies do not drift.
+        maven { url = "https://androidx.dev/snapshots/builds/14903984/artifacts/repository" }
+    }
+}
+
+rootProject.name = "SmartHealthCheckinWallet"
+include ":app"

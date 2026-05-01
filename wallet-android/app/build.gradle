@@ -1,0 +1,146 @@
+plugins {
+    id "com.android.application"
+    id "org.jetbrains.kotlin.android"
+    id "org.jetbrains.kotlin.plugin.compose"
+}
+
+def registrationMode = (project.findProperty("registration-mode") ?: "both").toString()
+def validRegistrationModes = ["both", "legacy-only", "modern-only"]
+if (!validRegistrationModes.contains(registrationMode)) {
+    throw new GradleException("registration-mode must be one of ${validRegistrationModes}; got '${registrationMode}'")
+}
+
+android {
+    namespace "org.smarthealthit.checkin.wallet"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "org.smarthealthit.checkin.wallet"
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName "0.1.0"
+        buildConfigField "String", "REGISTRATION_MODE", "\"${registrationMode}\""
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
+    buildFeatures {
+        compose true
+        buildConfig true
+    }
+
+    packaging {
+        resources {
+            excludes += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+        }
+    }
+}
+
+// Build the Rust WASM matcher and copy it into Android assets before any
+// Android task that needs the assets dir.
+//
+// The matcher source lives at `../matcher/` (sibling to wallet-android,
+// inside the same project). `matcher/build.sh` invokes
+// `cargo +nightly -Z panic-immediate-abort -Z build-std --target
+// wasm32-unknown-unknown` and post-processes with wasm-opt -Oz.
+//
+// Set `-Pskip-matcher` (e.g. `./gradlew assembleDebug -Pskip-matcher`) to
+// reuse whatever matcher.wasm is already in place — useful when the Rust
+// nightly toolchain isn't available locally.
+// Set `-Pmatcher-always-match` for the diagnostic matcher that always emits
+// one entry, regardless of the request bytes.
+// Set `-Pregistration-mode=legacy-only` or `modern-only` to isolate Credential
+// Manager registration type behavior. Default `both` keeps the modern
+// AndroidX path plus the legacy magic-string fallback visible during device
+// diagnostics.
+def matcherDir = rootProject.file("../matcher")
+def matcherBin = project.hasProperty("matcher-always-match") ? "yes" : "checkin"
+def matcherWasm = file("$matcherDir/target/wasm32-unknown-unknown/release/${matcherBin}.wasm")
+def matcherAsset = file("src/main/assets/matcher.wasm")
+
+tasks.register("buildMatcherWasm", Exec) {
+    workingDir matcherDir
+    commandLine "bash", "build.sh", matcherBin
+    inputs.dir(file("$matcherDir/src"))
+    inputs.dir(file("$matcherDir/assets"))
+    inputs.file(file("$matcherDir/Cargo.toml"))
+    inputs.file(file("$matcherDir/build.sh"))
+    inputs.property("matcherBin", matcherBin)
+    outputs.file(matcherWasm)
+    onlyIf {
+        if (project.hasProperty("skip-matcher")) {
+            logger.lifecycle("skip-matcher set; reusing existing matcher.wasm")
+            return false
+        }
+        true
+    }
+    doFirst {
+        logger.lifecycle("building ${matcherBin} matcher")
+    }
+}
+
+tasks.register("copyMatcherWasm", Copy) {
+    dependsOn "buildMatcherWasm"
+    from matcherWasm
+    into matcherAsset.parentFile
+    rename { _ -> matcherAsset.name }
+    onlyIf {
+        if (project.hasProperty("skip-matcher")) {
+            logger.lifecycle("skip-matcher set; preserving existing ${matcherAsset}")
+            return false
+        }
+        true
+    }
+    doLast {
+        if (!matcherAsset.exists()) {
+            throw new GradleException("matcher.wasm not produced; expected ${matcherWasm}")
+        }
+        logger.lifecycle("copied matcher.wasm (${matcherAsset.length()} B) → ${matcherAsset}")
+    }
+}
+
+afterEvaluate {
+    tasks.named("preBuild").configure {
+        dependsOn "copyMatcherWasm"
+    }
+}
+
+dependencies {
+    implementation platform("androidx.compose:compose-bom:2024.12.01")
+    implementation "androidx.activity:activity-compose:1.10.0"
+    implementation "androidx.compose.foundation:foundation"
+    implementation "androidx.compose.material3:material3"
+    implementation "androidx.compose.ui:ui"
+    implementation "androidx.compose.ui:ui-tooling-preview"
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.8.7"
+    implementation "androidx.fragment:fragment:1.8.5"
+
+    // Digital Credentials API (Credential Manager) — registry-provider is in
+    // androidx.dev snapshots; matched to the parent CMWallet POC.
+    implementation "androidx.credentials:credentials:1.6.0-SNAPSHOT"
+    implementation "androidx.credentials.registry:registry-provider:1.0.0-SNAPSHOT"
+    implementation "androidx.credentials.registry:registry-digitalcredentials-mdoc:1.0.0-SNAPSHOT"
+    implementation "androidx.credentials.registry:registry-provider-play-services:1.0.0-SNAPSHOT"
+    implementation "com.google.android.gms:play-services-identity-credentials:16.0.0-alpha08"
+    implementation "org.bouncycastle:bcprov-jdk18on:1.79"
+    implementation "org.bouncycastle:bcpkix-jdk18on:1.79"
+
+    debugImplementation "androidx.compose.ui:ui-tooling"
+    testImplementation "junit:junit:4.13.2"
+    testImplementation "org.json:json:20240303"
+}
+
+configurations.all {
+    resolutionStrategy {
+        force "androidx.credentials:credentials:1.6.0-SNAPSHOT"
+        force "com.google.android.gms:play-services-identity-credentials:16.0.0-alpha08"
+    }
+}

@@ -1,0 +1,21 @@
+{
+  "label": "mattr-safari-org-iso-mdoc",
+  "createdAt": "2026-04-30T19:08:07Z",
+  "source": "external-capture",
+  "capturedFrom": "https://tools.mattrlabs.com/verify-credentials",
+  "capturedVia": "capture/probe-browser-branching.mjs --profile safari-macos --mode stub",
+  "browser": "Chromium with Safari macOS UA spoof",
+  "notes": [
+    "Mattr's verifier UA-branches: Chrome→openid4vp; Safari (macOS+iOS)→org-iso-mdoc.",
+    "Captures the real on-the-wire shape Mattr emits when it thinks it's talking to Safari.",
+    "Doctype/namespace are mDL (org.iso.18013.5.1.mDL); we adopt the same envelope for SMART Check-in."
+  ],
+  "protocol": "org-iso-mdoc",
+  "containsPhi": false,
+  "sha256": {
+    "device-request.cbor": "a61d52e8c29325c35330c7d9a348be6a2378747217d4fed76e924137ff682c76",
+    "items-request.cbor": "c2b1040d5d8ac9db53e9eb8d6abf6b32914eb86f6efc66eb9364b85cb5f37728",
+    "encryption-info.cbor": "abf09a6184226cc255bde416c255f5ac4833398477baa55522af5f3ad04f8ceb",
+    "navigator-credentials-get.arg.json": "977484916d2830b7f77cbf5d40f16d9bc6e4a117186b02d3cc222426ac831e3a"
+  }
+}

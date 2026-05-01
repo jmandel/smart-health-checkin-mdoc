@@ -1,0 +1,23 @@
+{
+  "name": "rp-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun index.html",
+    "build": "bun build ./index.html --outdir=./dist",
+    "inspect:mdoc": "bun scripts/inspect-mdoc-request.ts",
+    "inspect:response": "bun scripts/inspect-mdoc-response.ts",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zustand": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/bun": "latest",
+    "typescript": "^5.7.0"
+  }
+}

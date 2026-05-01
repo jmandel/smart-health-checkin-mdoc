@@ -1,0 +1,29 @@
+{
+  "version": "1",
+  "items": [
+    {
+      "id": "coverage",
+      "profile": "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage",
+      "required": true,
+      "description": "Member coverage and payer details."
+    },
+    {
+      "id": "clinical",
+      "profile": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
+      "required": true,
+      "description": "Patient demographics and clinical summary."
+    },
+    {
+      "id": "plan",
+      "profile": "http://hl7.org/fhir/us/insurance-card/StructureDefinition/sbc-insurance-plan",
+      "required": false,
+      "description": "Summary of Benefits and Coverage."
+    },
+    {
+      "id": "intake",
+      "questionnaireUrl": "https://smart-health-checkin.example.org/fhir/Questionnaire/chronic-migraine-followup",
+      "required": false,
+      "description": "Migraine follow-up form."
+    }
+  ]
+}

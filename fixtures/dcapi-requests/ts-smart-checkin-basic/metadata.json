@@ -1,0 +1,9 @@
+{
+  "id": "ts-smart-checkin-basic",
+  "kind": "positive-smart-health-checkin",
+  "source": "rp-web/scripts/generate-dcapi-request-fixtures.ts",
+  "origin": "https://clinic.example",
+  "protocol": "org-iso-mdoc",
+  "note": "Synthetic deterministic request fixture. Private key is a test vector only.",
+  "containsQuestionnaireUrl": true
+}

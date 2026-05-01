@@ -1,0 +1,11 @@
+{
+  "requests": [
+    {
+      "protocol": "org-iso-mdoc",
+      "data": {
+        "deviceRequest": "omd2ZXJzaW9uYzEuMGtkb2NSZXF1ZXN0c4GhbGl0ZW1zUmVxdWVzdNgYWQGqo2dkb2NUeXBleBtvcmcuc21hcnRoZWFsdGhpdC5jaGVja2luLjFqbmFtZVNwYWNlc6F4GW9yZy5zbWFydGhlYWx0aGl0LmNoZWNraW6heB1zbWFydF9oZWFsdGhfY2hlY2tpbl9yZXNwb25zZfRrcmVxdWVzdEluZm-hdHNtYXJ0X2hlYWx0aF9jaGVja2lueQEXeyJ2ZXJzaW9uIjoiMSIsIml0ZW1zIjpbeyJpZCI6InBhdGllbnQiLCJwcm9maWxlIjoiaHR0cDovL2hsNy5vcmcvZmhpci91cy9jb3JlL1N0cnVjdHVyZURlZmluaXRpb24vdXMtY29yZS1wYXRpZW50IiwicmVxdWlyZWQiOnRydWUsImRlc2NyaXB0aW9uIjoiRGVtb2dyYXBoaWNzIGZvciBjaGVjay1pbiJ9LHsiaWQiOiJjb3ZlcmFnZSIsInByb2ZpbGUiOiJodHRwOi8vaGw3Lm9yZy9maGlyL3VzL2luc3VyYW5jZS1jYXJkL1N0cnVjdHVyZURlZmluaXRpb24vQzRESUMtQ292ZXJhZ2UifV19",
+        "encryptionInfo": ""
+      }
+    }
+  ]
+}

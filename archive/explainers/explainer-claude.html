@@ -1,0 +1,1471 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SMART Health Check-in over org-iso-mdoc — byte-level walkthrough</title>
+<style>
+  :root {
+    --page: #f6f8fb;
+    --surface: #ffffff;
+    --surface-soft: #f8fafc;
+    --ink: #172033;
+    --muted: #64748b;
+    --border: #d8e0ea;
+    --blue: #0369a1;
+    --blue-2: #0284c7;
+    --blue-soft: #e0f2fe;
+    --green: #047857;
+    --green-soft: #dff7eb;
+    --amber: #b45309;
+    --amber-soft: #fff3cd;
+    --purple: #6d28d9;
+    --purple-soft: #ede9fe;
+    --red: #b42318;
+    --red-soft: #fee4e2;
+    --pink: #be185d;
+    --pink-soft: #fce7f3;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--page); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    line-height: 1.55;
+  }
+  header.page {
+    background: linear-gradient(135deg, var(--blue-2), var(--blue));
+    color: white; padding: 36px 24px;
+  }
+  header.page .inner { max-width: 980px; margin: 0 auto; }
+  header.page h1 { margin: 0; font-size: 28px; font-weight: 800; }
+  header.page p { margin: 6px 0 0; opacity: 0.85; max-width: 720px; }
+  main { max-width: 980px; margin: 28px auto 80px; padding: 0 24px; display: grid; gap: 24px; }
+  nav.toc {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px 18px; box-shadow: 0 1px 3px rgba(15,23,42,0.06);
+  }
+  nav.toc h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 8px; }
+  nav.toc ol { margin: 0; padding-left: 22px; }
+  nav.toc li { margin: 3px 0; font-size: 14px; }
+  nav.toc a { color: var(--blue); text-decoration: none; }
+  nav.toc a:hover { text-decoration: underline; }
+  section.step {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px 22px; box-shadow: 0 1px 3px rgba(15,23,42,0.06);
+    scroll-margin-top: 24px; min-width: 0;
+  }
+  section.step > h2 {
+    margin: 0 0 8px; font-size: 22px;
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  section.step > h2 .num {
+    background: var(--blue-soft); color: var(--blue); padding: 2px 10px;
+    border-radius: 999px; font-size: 13px; font-weight: 800;
+  }
+  section.step > h3 {
+    margin: 18px 0 6px; font-size: 15px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--muted); font-weight: 700;
+  }
+  section.step p { margin: 8px 0; }
+  section.step code { font-family: var(--mono); font-size: 13px; }
+  section.step .meta {
+    color: var(--muted); font-size: 13px;
+    border-left: 3px solid var(--border); padding: 4px 12px;
+    background: var(--surface-soft); border-radius: 0 6px 6px 0;
+    margin: 8px 0;
+  }
+  section.step .meta a { color: var(--blue); }
+  section.step pre {
+    background: #0f172a; color: #e2e8f0;
+    padding: 12px 14px; border-radius: 8px;
+    margin: 10px 0; overflow-x: auto;
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.55;
+    max-width: 100%; min-width: 0;
+  }
+  table.bytes {
+    width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px;
+    margin: 10px 0;
+  }
+  table.bytes thead th {
+    background: var(--surface-soft); color: var(--muted);
+    padding: 6px 8px; text-align: left;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--border);
+  }
+  table.bytes tbody td {
+    padding: 5px 8px; border-bottom: 1px solid #eef2f7;
+    vertical-align: top;
+  }
+  table.bytes td.off { color: var(--muted); white-space: nowrap; width: 4ch; }
+  table.bytes td.hex { white-space: pre; color: #1e293b; }
+  table.bytes td.note { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #334155; font-size: 13px; }
+  table.bytes td.note b { color: #0f172a; font-weight: 700; }
+  table.bytes tr.major td { background: var(--surface-soft); }
+  table.bytes tr.note-row td { padding-top: 0; padding-bottom: 8px; color: var(--muted); font-size: 12.5px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  table.bytes tr.indent-2 td.hex,
+  table.bytes tr.indent-2 td.note { padding-left: 24px; }
+  table.bytes tr.indent-3 td.hex,
+  table.bytes tr.indent-3 td.note { padding-left: 36px; }
+  table.bytes tr.indent-4 td.hex,
+  table.bytes tr.indent-4 td.note { padding-left: 48px; }
+  table.bytes tr.indent-5 td.hex,
+  table.bytes tr.indent-5 td.note { padding-left: 60px; }
+  details.field {
+    margin: 10px 0; border: 1px solid var(--border);
+    border-radius: 8px; background: var(--surface-soft);
+  }
+  details.field > summary {
+    padding: 8px 14px; cursor: pointer; font-weight: 700;
+    color: var(--ink); list-style: revert;
+  }
+  details.field[open] > summary { border-bottom: 1px solid var(--border); }
+  details.field > div.body { padding: 8px 14px 12px; }
+
+  /* Drill-down: a clickable handle that expands the contained bytes inline.
+     Used wherever one byte sequence wraps another (DC-API arg → DeviceRequest →
+     ItemsRequest → SMART JSON; EncryptionInfo → COSE_Key; etc.) so the reader
+     can chase a value all the way down without scrolling between sections. */
+  details.drill {
+    margin: 6px 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+  }
+  details.drill > summary {
+    padding: 8px 12px; cursor: pointer;
+    color: var(--blue); font-weight: 600; font-size: 13px;
+    list-style: none;
+    display: flex; align-items: center; gap: 8px;
+  }
+  details.drill > summary::before {
+    content: "▸"; color: var(--blue-2); font-size: 11px;
+    transition: transform 0.15s ease;
+  }
+  details.drill[open] > summary::before { transform: rotate(90deg); }
+  details.drill[open] > summary { border-bottom: 1px solid var(--border); }
+  details.drill > div.drill-body { padding: 10px 12px 12px; }
+  details.drill .crumb {
+    color: var(--muted); font-size: 12px; font-weight: 500;
+  }
+  /* Drill rows inside a bytes table: span all three columns with an embedded
+     details handle. */
+  table.bytes tr.drill-row td { background: #fafbfd; padding: 0; }
+  table.bytes tr.drill-row details.drill { margin: 0; border: 0; border-top: 1px dashed var(--border); border-radius: 0; background: transparent; }
+  table.bytes tr.drill-row details.drill > summary { padding: 8px 12px 8px 36px; }
+  table.bytes tr.drill-row details.drill[open] > summary { border-bottom: 1px dashed var(--border); }
+
+  /* Run-directory picker + live regions. */
+  aside.picker {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px 20px; box-shadow: 0 1px 3px rgba(15,23,42,0.06);
+    display: grid; gap: 10px;
+  }
+  aside.picker h2 { margin: 0; font-size: 18px; }
+  aside.picker p { margin: 0; color: var(--muted); font-size: 14px; }
+  aside.picker pre {
+    background: #0f172a; color: #e2e8f0; margin: 4px 0;
+    padding: 10px 12px; border-radius: 6px;
+    overflow-x: auto; max-width: 100%; min-width: 0;
+    font-family: var(--mono); font-size: 12.5px;
+  }
+  aside.picker .picker-row {
+    display: flex; gap: 12px; align-items: center;
+    flex-wrap: wrap;
+  }
+  aside.picker label.file-input {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 14px; border-radius: 8px;
+    background: var(--blue-2); color: white; cursor: pointer;
+    font-weight: 700; font-size: 14px; border: 0;
+  }
+  aside.picker label.file-input:hover { background: var(--blue); }
+  aside.picker input[type=file] { display: none; }
+  aside.picker .clear {
+    padding: 8px 12px; border-radius: 8px;
+    background: var(--surface); color: var(--muted); cursor: pointer;
+    font-weight: 600; font-size: 13px; border: 1px solid var(--border);
+  }
+  aside.picker .clear:hover { color: var(--ink); border-color: var(--muted); }
+  aside.picker #run-status {
+    color: var(--muted); font-size: 13px;
+    padding: 6px 10px; background: var(--surface-soft);
+    border-radius: 6px; border: 1px solid var(--border);
+  }
+  aside.picker #run-status.loaded { color: var(--green); border-color: #b7ebcf; background: var(--green-soft); }
+  aside.picker #run-status.error  { color: var(--red);   border-color: #fecdca; background: var(--red-soft); }
+
+  .manifest-grid {
+    display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px;
+    font-size: 13px;
+  }
+  .manifest-grid dt { color: var(--muted); }
+  .manifest-grid dd { margin: 0; font-family: var(--mono); word-break: break-all; min-width: 0; }
+
+  div.live-region {
+    border: 1px solid #b7d4ea; background: #f0f9ff;
+    border-radius: 8px; padding: 12px 14px; margin: 12px 0;
+    min-width: 0;
+  }
+  div.live-region > h3 {
+    margin: 0 0 8px; font-size: 13px; color: var(--blue);
+    text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700;
+    display: flex; align-items: center; gap: 8px;
+  }
+  div.live-region > h3::before {
+    content: "●"; color: var(--blue-2); font-size: 10px;
+  }
+  div.live-region .src {
+    color: var(--muted); font-size: 12px; font-family: var(--mono);
+    margin-bottom: 6px;
+  }
+  div.live-region table.bytes { margin: 0; }
+  div.live-region pre.json {
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--border); padding: 10px 12px;
+    border-radius: 6px; font-size: 12px;
+    max-height: 280px; overflow: auto;
+    white-space: pre-wrap; word-break: break-all;
+  }
+  div.live-region.empty { display: none; }
+  .actor {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.04em; vertical-align: middle;
+  }
+  .actor.verifier { background: var(--blue-soft); color: var(--blue); }
+  .actor.host     { background: var(--purple-soft); color: var(--purple); }
+  .actor.matcher  { background: var(--amber-soft); color: var(--amber); }
+  .actor.wallet   { background: var(--green-soft); color: var(--green); }
+  .actor.crypto   { background: var(--pink-soft); color: var(--pink); }
+  .flow {
+    display: grid; gap: 6px; margin: 16px 0;
+    grid-template-columns: 1fr; max-width: 100%;
+  }
+  .flow .arrow {
+    border: 1px solid var(--border); padding: 10px 14px; border-radius: 8px;
+    display: flex; gap: 12px; align-items: center;
+    background: var(--surface-soft); font-size: 13.5px;
+  }
+  .flow .arrow b { font-size: 16px; color: var(--ink); }
+  kbd {
+    background: #0f172a; color: #e2e8f0; padding: 1px 6px;
+    border-radius: 4px; font-family: var(--mono); font-size: 12px;
+  }
+  .pill {
+    display: inline-block; padding: 2px 7px; border-radius: 4px;
+    background: var(--surface-soft); border: 1px solid var(--border);
+    font-family: var(--mono); font-size: 11.5px; color: #334155;
+  }
+  .ok { color: var(--green); font-weight: 700; }
+  .warn { color: var(--amber); font-weight: 700; }
+  ul.tight { margin: 6px 0; padding-left: 20px; }
+  ul.tight li { margin: 3px 0; }
+  hr { border: 0; border-top: 1px solid var(--border); margin: 16px 0; }
+  .small { font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<header class="page">
+  <div class="inner">
+    <h1>SMART Health Check-in over <code>org-iso-mdoc</code></h1>
+    <p>A byte-level walkthrough of every part of the request and response — what each byte means, where it came from, who emitted it, and how the next stage consumes it. The example used throughout is the <b>Patient-only</b> request from <code>wallet-android/app/src/test/resources/test-vectors.json</code>, which is itself generated from <code>rp-web/src/protocol/index.ts</code>.</p>
+  </div>
+</header>
+
+<main>
+
+<aside class="picker" id="run-picker">
+  <h2>Use with a real run</h2>
+  <p>Pull the latest Android handler bundle off the device, then point this page at the run directory. Every byte table below switches from the synthetic example to the bytes your wallet actually emitted.</p>
+  <pre>adb shell run-as org.smarthealthit.checkin.wallet ls files/handler-runs/
+adb exec-out run-as org.smarthealthit.checkin.wallet \
+  tar c files/handler-runs/&lt;runId&gt; | tar x -C /tmp</pre>
+  <p>Pick a directory like <code>/tmp/shc-handler-runs/run-1777607005998</code>.</p>
+  <div class="picker-row">
+    <label class="file-input" for="run-dir">Choose run directory</label>
+    <input id="run-dir" type="file" webkitdirectory directory multiple />
+    <button class="clear" type="button" id="run-clear">Clear</button>
+    <span id="run-status">No run loaded — synthetic example shown.</span>
+  </div>
+  <div id="run-manifest" class="live-region empty">
+    <h3>Run manifest</h3>
+    <dl class="manifest-grid" id="run-manifest-grid"></dl>
+  </div>
+</aside>
+
+<nav class="toc">
+  <h2>Walkthrough</h2>
+  <ol>
+    <li><a href="#cast">Cast of characters and the request/response data flow</a></li>
+    <li><a href="#smart-request">The SMART Health Check-in request JSON</a></li>
+    <li><a href="#items-request">CBOR <code>ItemsRequest</code> — every byte annotated</a></li>
+    <li><a href="#device-request">CBOR <code>DeviceRequest</code> — wrapping <code>ItemsRequest</code></a></li>
+    <li><a href="#encryption-info">CBOR <code>EncryptionInfo</code> — the verifier's HPKE pub key</a></li>
+    <li><a href="#dcapi-arg">The <code>navigator.credentials.get</code> argument</a></li>
+    <li><a href="#matcher-input">What the WASM matcher actually sees</a></li>
+    <li><a href="#matcher-emit">What the matcher emits and why</a></li>
+    <li><a href="#handler-input">The wallet handler's input from Credential Manager</a></li>
+    <li><a href="#smart-response">The SMART response JSON the wallet builds</a></li>
+    <li><a href="#issuer-signed-item">mdoc <code>IssuerSignedItem</code> and its tag-24 digest</a></li>
+    <li><a href="#mso">The <code>MobileSecurityObject</code> and <code>issuerAuth</code> COSE_Sign1</a></li>
+    <li><a href="#session-transcript">The <code>SessionTranscript</code> — bytes signed and AAD'd</a></li>
+    <li><a href="#device-auth">The <code>deviceSignature</code> COSE_Sign1</a></li>
+    <li><a href="#device-response">The full mdoc <code>DeviceResponse</code></a></li>
+    <li><a href="#hpke-seal">HPKE-sealing the response</a></li>
+    <li><a href="#dcapi-response">The <code>DigitalCredential</code> the wallet returns</a></li>
+    <li><a href="#verifier-open">The verifier opens the response</a></li>
+  </ol>
+</nav>
+
+<!-- ============================================================ -->
+<section class="step" id="cast">
+  <h2><span class="num">0</span> Cast of characters &amp; request/response data flow</h2>
+
+  <p>Five entities collaborate to deliver one SMART Health Check-in exchange. Knowing who emits which bytes is the single biggest aid to reading the rest of this doc.</p>
+
+  <ul class="tight">
+    <li><span class="actor verifier">verifier</span> <b>rp-web</b> — the relying-party browser app at <code>rp-web/</code>. Builds the request, opens the encrypted response, renders the FHIR data.</li>
+    <li><span class="actor host">browser + host</span> <b>Chrome / Safari + Android Credential Manager</b> — bridges <code>navigator.credentials.get(...)</code> from the page into the on-device picker, runs WASM matchers, dispatches a <code>PendingIntent</code> to the chosen wallet.</li>
+    <li><span class="actor matcher">matcher</span> <b>shc-matcher.wasm</b> — a 19 KB Rust WASM module at <code>matcher/</code>. Decides whether to surface our wallet entry by byte-searching the request.</li>
+    <li><span class="actor wallet">wallet</span> <b>wallet-android</b> — the holder app. Receives the request, drives the consent UI, builds the mdoc <code>DeviceResponse</code>, HPKE-seals it.</li>
+    <li><span class="actor crypto">crypto</span> <b>cryptography</b> — host crypto primitives invoked at multiple stages: ECDH P-256, SHA-256, HKDF, AES-128-GCM, ECDSA over P-256 (COSE_Sign1).</li>
+  </ul>
+
+  <h3>Request / response data flow</h3>
+  <div class="flow">
+    <div class="arrow"><b>1.</b> <span class="actor verifier">verifier</span> builds <code>DeviceRequest</code> CBOR + <code>EncryptionInfo</code> CBOR; base64url-encodes both into <code>navigator.credentials.get(...)</code>.</div>
+    <div class="arrow"><b>2.</b> <span class="actor host">browser + host</span> route the call to Android Credential Manager.</div>
+    <div class="arrow"><b>3.</b> <span class="actor host">host</span> invokes every registered WASM matcher of the matching <code>type</code>; the matcher byte-searches and emits one entry to the v2 picker surface.</div>
+    <div class="arrow"><b>4.</b> User picks the SMART Health Check-in entry; <span class="actor host">host</span> launches the wallet's <code>HandlerActivity</code>.</div>
+    <div class="arrow"><b>5.</b> <span class="actor wallet">wallet</span> CBOR-decodes the request, hydrates the consent UI from <code>requestInfo.smart_health_checkin</code>.</div>
+    <div class="arrow"><b>6.</b> User picks what to share; <span class="actor wallet">wallet</span> builds the SMART response JSON, packages it as the <code>elementValue</code> of a single mdoc <code>IssuerSignedItem</code>, signs the MSO and DeviceAuth, HPKE-seals the result against the verifier's key.</div>
+    <div class="arrow"><b>7.</b> <span class="actor host">host</span> hands the sealed bytes back to the page as a <code>DigitalCredential</code>.</div>
+    <div class="arrow"><b>8.</b> <span class="actor verifier">verifier</span> HPKE-opens, CBOR-decodes, walks down to the <code>elementValue</code>, parses the SMART response JSON, renders FHIR cards.</div>
+  </div>
+
+  <p class="small">Reference protocol description: <code>profiles/org-iso-mdoc.md</code>. Reference implementations: <code>rp-web/src/protocol/index.ts</code> (TS), <code>wallet-android/app/src/main/java/.../{DirectMdocRequest,SmartHealthMdocResponder,SmartMdocCrypto}.kt</code> (wallet), <code>matcher/src/lib.rs</code> (matcher).</p>
+
+  <details class="drill">
+    <summary>How to drill into a wrapped value <span class="crumb">— click any ▸ triangle to expand the bytes nested inside</span></summary>
+    <div class="drill-body">
+      <p>Each layer of this protocol wraps the next: the page-level JSON envelope wraps a base64url string that decodes to <code>DeviceRequest</code> CBOR that wraps a tag-24 byte string containing the inner <code>ItemsRequest</code> CBOR whose <code>requestInfo</code> map contains a tstr that, parsed as JSON, is the SMART request items.</p>
+      <p>Where this explainer crosses a layer boundary, the row carries a ▸ triangle. Clicking expands the contained bytes inline so you can drill from the outer JSON arg all the way down to a single SMART item field without leaving the section. Top targets:</p>
+      <ul class="tight">
+        <li>§5 DC-API arg → §3 <code>DeviceRequest</code> → §2 <code>ItemsRequest</code> → §1 SMART JSON</li>
+        <li>§5 DC-API arg → §4 <code>EncryptionInfo</code> → COSE_Key labels</li>
+        <li>§14 <code>DeviceResponse</code> → §10 <code>IssuerSignedItem</code> → §9 SMART response JSON</li>
+        <li>§14 <code>DeviceResponse</code> → §11 <code>issuerAuth</code> COSE_Sign1 → MSO map</li>
+      </ul>
+      <p>Sibling sections also remain navigable through the table-of-contents at the top.</p>
+    </div>
+  </details>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="smart-request">
+  <h2><span class="num">1</span> The SMART Health Check-in request JSON</h2>
+
+  <p><span class="actor verifier">verifier</span> The verifier's UI lets the user pick a preset SMART request. For this walkthrough we use the simplest one — a single FHIR profile ask for a US Core Patient.</p>
+
+  <p class="meta">Source: <code>rp-web/src/store.ts</code> presets[<code>patient-only</code>]. JSON serialized via <code>JSON.stringify(...)</code> — no whitespace, the bytes the wallet sees are exactly these.</p>
+
+  <div class="live-region empty" data-live="smart-request">
+    <h3>From your captured run</h3>
+    <div class="src"></div>
+    <pre class="json"></pre>
+  </div>
+
+<pre>{"version":"1","items":[{"id":"patient","profile":"http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient","required":true,"description":"Demographics for check-in"}]}</pre>
+
+  <p>That's <b>176 bytes</b> of UTF-8. Two top-level keys per the SMART Check-in spec:</p>
+  <ul class="tight">
+    <li><code>version</code> — <code>"1"</code>. Lets future SMART revs add fields without breaking old wallets.</li>
+    <li><code>items</code> — an array of asks. Each item has an opaque <code>id</code> (verifier-defined) and exactly one of <code>profile</code> / <code>questionnaire</code> / <code>questionnaireUrl</code>.</li>
+  </ul>
+
+  <p>The wallet treats this JSON as opaque from the point of view of the mdoc layer — at the wire level it travels as a single tstr inside <code>ItemsRequest.requestInfo.smart_health_checkin</code>. The <em>handler</em> parses it after the matcher has surfaced the entry.</p>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="items-request">
+  <h2><span class="num">2</span> CBOR <code>ItemsRequest</code> — every byte annotated</h2>
+
+  <p><span class="actor verifier">verifier</span> The SMART JSON above is wrapped into a CBOR <code>ItemsRequest</code> structure (ISO 18013-5 §8.3.2.1.2). For Profile B + the SMART Check-in convention, that structure has exactly three top-level fields.</p>
+
+  <p class="meta">Code: <a href="rp-web/src/protocol/index.ts"><code>rp-web/src/protocol/index.ts</code></a> → <code>buildDeviceRequestBytes</code> (around line 300). Wallet-side decoder: <a href="wallet-android/app/src/main/java/org/smarthealthit/checkin/wallet/MdocCbor.kt"><code>MdocCbor.kt</code></a> → <code>DeviceRequestParser.parseBytes</code>.</p>
+
+  <div class="live-region empty" data-live="items-request">
+    <h3>From your captured run</h3>
+    <div class="src"></div>
+    <table class="bytes"></table>
+  </div>
+
+  <h3>The 3-entry top-level map</h3>
+  <table class="bytes">
+    <thead><tr><th>off</th><th>hex</th><th>meaning</th></tr></thead>
+    <tbody>
+      <tr class="major"><td class="off">0</td><td class="hex">a3</td><td class="note"><b>map(3)</b> — three key/value pairs follow</td></tr>
+      <tr><td class="off">1</td><td class="hex">67</td><td class="note">tstr(7) — major type 3, length 7</td></tr>
+      <tr><td class="off">2</td><td class="hex">64 6f 63 54 79 70 65</td><td class="note">UTF-8 <code>"docType"</code> (key #1)</td></tr>
+      <tr><td class="off">9</td><td class="hex">78 1b</td><td class="note">tstr(27) — type 3, ai=24 (1-byte length follows), length 0x1b = 27</td></tr>
+      <tr><td class="off">11</td><td class="hex">6f 72 67 2e 73 6d 61 72 74 68 65 61 6c 74 68 69 74 2e 63 68 65 63 6b 69 6e 2e 31</td><td class="note">UTF-8 <code>"org.smarthealthit.checkin.1"</code> — our doctype</td></tr>
+      <tr><td class="off">38</td><td class="hex">6a</td><td class="note">tstr(10)</td></tr>
+      <tr><td class="off">39</td><td class="hex">6e 61 6d 65 53 70 61 63 65 73</td><td class="note">UTF-8 <code>"nameSpaces"</code> (key #2)</td></tr>
+      <tr><td class="off">49</td><td class="hex">a1</td><td class="note"><b>map(1)</b> — one namespace block</td></tr>
+      <tr class="indent-2"><td class="off">50</td><td class="hex">78 19</td><td class="note">tstr(25)</td></tr>
+      <tr class="indent-2"><td class="off">52</td><td class="hex">6f 72 67 2e 73 6d 61 72 74 68 65 61 6c 74 68 69 74 2e 63 68 65 63 6b 69 6e</td><td class="note">UTF-8 <code>"org.smarthealthit.checkin"</code> — our namespace</td></tr>
+      <tr class="indent-2"><td class="off">77</td><td class="hex">a1</td><td class="note"><b>map(1)</b> — one element ask</td></tr>
+      <tr class="indent-3"><td class="off">78</td><td class="hex">78 1d</td><td class="note">tstr(29)</td></tr>
+      <tr class="indent-3"><td class="off">80</td><td class="hex">73 6d 61 72 74 5f 68 65 61 6c 74 68 5f 63 68 65 63 6b 69 6e 5f 72 65 73 70 6f 6e 73 65</td><td class="note">UTF-8 <code>"smart_health_checkin_response"</code> — the static element identifier the wallet must echo back in the response</td></tr>
+      <tr class="indent-3"><td class="off">109</td><td class="hex">f4</td><td class="note">simple value <b>false</b> — the mdoc <code>intentToRetain</code> flag (we don't intend to retain across sessions; the wallet may choose to honor or surface this)</td></tr>
+      <tr><td class="off">110</td><td class="hex">6b</td><td class="note">tstr(11)</td></tr>
+      <tr><td class="off">111</td><td class="hex">72 65 71 75 65 73 74 49 6e 66 6f</td><td class="note">UTF-8 <code>"requestInfo"</code> (key #3) — open extension point per ISO 18013-5 §8.3.2.1.2.1</td></tr>
+      <tr><td class="off">122</td><td class="hex">a1</td><td class="note"><b>map(1)</b> — one verifier-defined extension</td></tr>
+      <tr class="indent-2"><td class="off">123</td><td class="hex">74</td><td class="note">tstr(20)</td></tr>
+      <tr class="indent-2"><td class="off">124</td><td class="hex">73 6d 61 72 74 5f 68 65 61 6c 74 68 5f 63 68 65 63 6b 69 6e</td><td class="note">UTF-8 <code>"smart_health_checkin"</code> — our verifier-defined requestInfo key</td></tr>
+      <tr class="indent-2"><td class="off">144</td><td class="hex">78 b0</td><td class="note">tstr(176) — exactly the SMART JSON's UTF-8 length from §1</td></tr>
+      <tr class="indent-2"><td class="off">146</td><td class="hex">7b 22 76 65 72 73 69 6f 6e 22 …</td><td class="note">The 176 bytes of SMART JSON, byte-for-byte (a CBOR text string is just length-prefixed UTF-8)</td></tr>
+      <tr class="drill-row"><td colspan="3">
+        <details class="drill">
+          <summary>Drill into the SMART JSON tstr <span class="crumb">— parse those 176 bytes as JSON and walk the items array</span></summary>
+          <div class="drill-body">
+<pre>{
+  "version": "1",                                       // SMART Check-in profile version
+  "items": [                                            // array of asks
+    {
+      "id": "patient",                                  // verifier-defined opaque key,
+                                                        // echoed back in answers map
+      "profile":     "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
+                                                        // FHIR profile the wallet should
+                                                        // satisfy with one or more resources
+      "required":    true,                              // UX hint — required asks shown
+                                                        // first, optional ones can be skipped
+      "description": "Demographics for check-in"        // verifier-supplied UI label
+    }
+  ]
+}</pre>
+            <p class="small">Per SMART Health Check-in spec, exactly one of <code>profile</code>, <code>questionnaire</code>, or <code>questionnaireUrl</code> must appear per item. Fields like <code>required</code>, <code>signing</code>, and <code>description</code> are optional UX/policy hints — the wallet decides how to honor them.</p>
+            <p class="small">Wallet code that consumes this: <code>wallet-android/.../SmartRequest.kt</code> → <code>SmartRequestAdapter.build</code> turns each item into a UI <code>RequestItem</code> with a typed <code>RequestKind</code> (Coverage / Plan / Clinical / Questionnaire / Unknown).</p>
+          </div>
+        </details>
+      </td></tr>
+    </tbody>
+  </table>
+
+  <p class="meta">Total: <b>322 bytes</b>. CBOR text strings store UTF-8 verbatim, so the SMART JSON survives the trip without escaping or transformation. That's also exactly why the matcher's substring search for the doctype works on the raw CBOR bytes — the text we're searching for appears literally.</p>
+
+  <h3>Why this exact shape?</h3>
+  <ul class="tight">
+    <li><b>One doctype</b>, one namespace, one static element id. Stability of these strings is what lets the matcher key off byte search and the wallet handler off a single hard-coded element name.</li>
+    <li><b>Dynamic content</b> lives in <code>requestInfo.smart_health_checkin</code> — the only field where the verifier's per-call ask appears. mdoc's <code>requestInfo</code> map is defined by the spec as an open extension point; we register the key <code>smart_health_checkin</code>.</li>
+    <li><b>CBOR canonicalization</b> isn't required at this layer because <code>ItemsRequest</code> bytes are not signed by the verifier. The wallet's <em>response</em> later signs over canonicalized tag-24 wrapped bytes — see §11.</li>
+  </ul>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="device-request">
+  <h2><span class="num">3</span> CBOR <code>DeviceRequest</code> — wrapping <code>ItemsRequest</code></h2>
+
+  <p>The <code>ItemsRequest</code> is wrapped twice: once in CBOR tag 24 (encoded-CBOR-data-item) so the matcher and wallet can see the exact bytes used elsewhere in mdoc digest computations, and once in a <code>DeviceRequest</code> envelope per ISO 18013-5 §8.3.2.1.</p>
+
+  <div class="live-region empty" data-live="device-request">
+    <h3>From your captured run</h3>
+    <div class="src"></div>
+    <table class="bytes"></table>
+  </div>
+
+  <table class="bytes">
+    <thead><tr><th>off</th><th>hex</th><th>meaning</th></tr></thead>
+    <tbody>
+      <tr class="major"><td class="off">0</td><td class="hex">a2</td><td class="note"><b>map(2)</b> — DeviceRequest has two fields</td></tr>
+      <tr><td class="off">1</td><td class="hex">67</td><td class="note">tstr(7)</td></tr>
+      <tr><td class="off">2</td><td class="hex">76 65 72 73 69 6f 6e</td><td class="note">UTF-8 <code>"version"</code></td></tr>
+      <tr><td class="off">9</td><td class="hex">63</td><td class="note">tstr(3)</td></tr>
+      <tr><td class="off">10</td><td class="hex">31 2e 30</td><td class="note">UTF-8 <code>"1.0"</code> — DeviceRequest schema version</td></tr>
+      <tr><td class="off">13</td><td class="hex">6b</td><td class="note">tstr(11)</td></tr>
+      <tr><td class="off">14</td><td class="hex">64 6f 63 52 65 71 75 65 73 74 73</td><td class="note">UTF-8 <code>"docRequests"</code></td></tr>
+      <tr><td class="off">25</td><td class="hex">81</td><td class="note"><b>array(1)</b> — exactly one DocRequest</td></tr>
+      <tr class="indent-2"><td class="off">26</td><td class="hex">a1</td><td class="note"><b>map(1)</b> — DocRequest has only the <code>itemsRequest</code> field (no <code>readerAuth</code> on the DC API path)</td></tr>
+      <tr class="indent-3"><td class="off">27</td><td class="hex">6c</td><td class="note">tstr(12)</td></tr>
+      <tr class="indent-3"><td class="off">28</td><td class="hex">69 74 65 6d 73 52 65 71 75 65 73 74</td><td class="note">UTF-8 <code>"itemsRequest"</code></td></tr>
+      <tr class="indent-3"><td class="off">40</td><td class="hex">d8 18</td><td class="note"><b>tag(24)</b> — RFC 8949 §3.4.5.1, "Encoded CBOR data item"</td></tr>
+      <tr class="indent-4"><td class="off">42</td><td class="hex">59 01 42</td><td class="note">bstr(322) — the byte string that wraps the inner <code>ItemsRequest</code>. ai=25 (2-byte length), 0x0142 = 322</td></tr>
+      <tr class="indent-4"><td class="off">45</td><td class="hex">[ 322 bytes from §2 ]</td><td class="note">The exact bytes annotated in §2 — drill ▸ to expand here</td></tr>
+      <tr class="drill-row"><td colspan="3">
+        <details class="drill">
+          <summary>Drill into the 322-byte tag-24 payload <span class="crumb">— inline the §2 <code>ItemsRequest</code> annotation</span></summary>
+          <div class="drill-body">
+            <p class="small">The bytes between offsets 45 and 366 are exactly the <code>ItemsRequest</code> map annotated in §2. Same hex, same meanings. Reproducing the table here so you can chase the pointer in place:</p>
+            <table class="bytes">
+              <thead><tr><th>off (within tag-24)</th><th>hex</th><th>meaning</th></tr></thead>
+              <tbody>
+                <tr class="major"><td class="off">0</td><td class="hex">a3</td><td class="note"><b>map(3)</b> — three fields: docType, nameSpaces, requestInfo</td></tr>
+                <tr><td class="off">1</td><td class="hex">67 64 6f 63 54 79 70 65</td><td class="note">tstr(7) <code>"docType"</code></td></tr>
+                <tr><td class="off">9</td><td class="hex">78 1b 6f 72 67 2e 73 6d 61 72 74 68 65 61 6c 74 68 69 74 2e 63 68 65 63 6b 69 6e 2e 31</td><td class="note">tstr(27) <code>"org.smarthealthit.checkin.1"</code></td></tr>
+                <tr><td class="off">38</td><td class="hex">6a 6e 61 6d 65 53 70 61 63 65 73</td><td class="note">tstr(10) <code>"nameSpaces"</code></td></tr>
+                <tr><td class="off">49</td><td class="hex">a1</td><td class="note">map(1) — one namespace</td></tr>
+                <tr class="indent-2"><td class="off">50</td><td class="hex">78 19 6f 72 67 2e 73 6d 61 72 74 68 65 61 6c 74 68 69 74 2e 63 68 65 63 6b 69 6e</td><td class="note">tstr(25) <code>"org.smarthealthit.checkin"</code></td></tr>
+                <tr class="indent-2"><td class="off">77</td><td class="hex">a1</td><td class="note">map(1) — one element ask</td></tr>
+                <tr class="indent-3"><td class="off">78</td><td class="hex">78 1d 73 6d 61 72 74 5f 68 65 61 6c 74 68 5f 63 68 65 63 6b 69 6e 5f 72 65 73 70 6f 6e 73 65</td><td class="note">tstr(29) <code>"smart_health_checkin_response"</code> — static element id</td></tr>
+                <tr class="indent-3"><td class="off">109</td><td class="hex">f4</td><td class="note">simple <b>false</b> — <code>intentToRetain</code></td></tr>
+                <tr><td class="off">110</td><td class="hex">6b 72 65 71 75 65 73 74 49 6e 66 6f</td><td class="note">tstr(11) <code>"requestInfo"</code></td></tr>
+                <tr><td class="off">122</td><td class="hex">a1</td><td class="note">map(1)</td></tr>
+                <tr class="indent-2"><td class="off">123</td><td class="hex">74 73 6d 61 72 74 5f 68 65 61 6c 74 68 5f 63 68 65 63 6b 69 6e</td><td class="note">tstr(20) <code>"smart_health_checkin"</code></td></tr>
+                <tr class="indent-2"><td class="off">144</td><td class="hex">78 b0</td><td class="note">tstr(176) — the SMART JSON</td></tr>
+                <tr class="indent-2"><td class="off">146</td><td class="hex">7b 22 76 65 72 73 69 6f 6e 22 …</td><td class="note">176 bytes of SMART JSON</td></tr>
+                <tr class="drill-row"><td colspan="3">
+                  <details class="drill">
+                    <summary>And drill once more into the SMART JSON <span class="crumb">— same as §1 / §2 inner expansion</span></summary>
+                    <div class="drill-body">
+<pre>{
+  "version": "1",
+  "items": [
+    {
+      "id":          "patient",
+      "profile":     "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
+      "required":    true,
+      "description": "Demographics for check-in"
+    }
+  ]
+}</pre>
+                    </div>
+                  </details>
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </td></tr>
+    </tbody>
+  </table>
+
+  <p class="meta">Total: <b>367 bytes</b>. The tag-24 wrap is deliberate: the wallet computes the response's MSO valueDigest over the IssuerSignedItem's tag-24 bytes (see §11), and the <em>same encoding rule</em> is used here so verifier and wallet both produce reproducible bytes.</p>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="encryption-info">
+  <h2><span class="num">4</span> CBOR <code>EncryptionInfo</code> — the verifier's HPKE pub key</h2>
+
+  <p><span class="actor verifier">verifier</span> The verifier needs to tell the wallet "encrypt the response so only I can read it." It does that by emitting an <code>EncryptionInfo</code> CBOR alongside the <code>DeviceRequest</code>. Field shape and byte layout were captured directly from <code>tools.mattrlabs.com/verify-credentials</code> (Safari-UA branch) — see <code>fixtures/captures/2026-04-30-mattr-safari-org-iso-mdoc/encryption-info.diag</code>.</p>
+
+  <p class="meta">Code: <a href="rp-web/src/protocol/index.ts"><code>rp-web/src/protocol/index.ts</code></a> → <code>buildEncryptionInfoBytes</code>. The verifier creates a fresh ECDH P-256 key pair via WebCrypto for each <code>navigator.credentials.get</code> call; the private half is retained on the page and used to open the response.</p>
+
+  <div class="live-region empty" data-live="encryption-info">
+    <h3>From your captured run</h3>
+    <div class="src"></div>
+    <table class="bytes"></table>
+  </div>
+
+  <table class="bytes">
+    <thead><tr><th>off</th><th>hex</th><th>meaning</th></tr></thead>
+    <tbody>
+      <tr class="major"><td class="off">0</td><td class="hex">82</td><td class="note"><b>array(2)</b> — EncryptionInfo is a two-element array</td></tr>
+      <tr><td class="off">1</td><td class="hex">65</td><td class="note">tstr(5)</td></tr>
+      <tr><td class="off">2</td><td class="hex">64 63 61 70 69</td><td class="note">UTF-8 <code>"dcapi"</code> — string literal identifying the DC API context (per ISO 18013-7 Annex C)</td></tr>
+      <tr><td class="off">7</td><td class="hex">a2</td><td class="note"><b>map(2)</b> — two fields: nonce + recipientPublicKey</td></tr>
+      <tr class="indent-2"><td class="off">8</td><td class="hex">65</td><td class="note">tstr(5)</td></tr>
+      <tr class="indent-2"><td class="off">9</td><td class="hex">6e 6f 6e 63 65</td><td class="note">UTF-8 <code>"nonce"</code></td></tr>
+      <tr class="indent-2"><td class="off">14</td><td class="hex">58 20</td><td class="note">bstr(32) — ai=24 (1-byte length), 0x20 = 32</td></tr>
+      <tr class="indent-2"><td class="off">16</td><td class="hex">00 01 02 03 04 … 1d 1e 1f</td><td class="note">32 bytes of nonce. <b>In production</b> these are <code>crypto.getRandomValues(new Uint8Array(32))</code>; in this fixture they're <code>0x00..0x1f</code> for reproducibility.</td></tr>
+      <tr class="indent-2"><td class="off">48</td><td class="hex">72</td><td class="note">tstr(18)</td></tr>
+      <tr class="indent-2"><td class="off">49</td><td class="hex">72 65 63 69 70 69 65 6e 74 50 75 62 6c 69 63 4b 65 79</td><td class="note">UTF-8 <code>"recipientPublicKey"</code></td></tr>
+      <tr class="indent-2"><td class="off">67</td><td class="hex">a4</td><td class="note"><b>map(4)</b> — a minimal COSE_Key with exactly four fields</td></tr>
+      <tr class="indent-3"><td class="off">68</td><td class="hex">01</td><td class="note">uint(1) — COSE label for <b>kty</b> (key type)</td></tr>
+      <tr class="indent-3"><td class="off">69</td><td class="hex">02</td><td class="note">uint(2) — value <b>EC2</b> (elliptic curve, x/y coords)</td></tr>
+      <tr class="indent-3"><td class="off">70</td><td class="hex">20</td><td class="note">neg(-1) — COSE label for <b>crv</b> (curve)</td></tr>
+      <tr class="indent-3"><td class="off">71</td><td class="hex">01</td><td class="note">uint(1) — value <b>P-256</b></td></tr>
+      <tr class="indent-3"><td class="off">72</td><td class="hex">21</td><td class="note">neg(-2) — COSE label for <b>x</b> coordinate</td></tr>
+      <tr class="indent-3"><td class="off">73</td><td class="hex">58 20</td><td class="note">bstr(32)</td></tr>
+      <tr class="indent-3"><td class="off">75</td><td class="hex">0f 18 87 e5 0e 18 c7 75 …</td><td class="note">32 bytes of x-coordinate (from RFC 7515 example key)</td></tr>
+      <tr class="indent-3"><td class="off">107</td><td class="hex">22</td><td class="note">neg(-3) — COSE label for <b>y</b> coordinate</td></tr>
+      <tr class="indent-3"><td class="off">108</td><td class="hex">58 20</td><td class="note">bstr(32)</td></tr>
+      <tr class="indent-3"><td class="off">110</td><td class="hex">5e d2 cc e3 ed e1 e6 8d …</td><td class="note">32 bytes of y-coordinate</td></tr>
+      <tr class="drill-row"><td colspan="3">
+        <details class="drill">
+          <summary>Drill into the <code>recipientPublicKey</code> COSE_Key <span class="crumb">— turn the four CBOR fields into a parsed JWK</span></summary>
+          <div class="drill-body">
+<pre>{
+  "kty": "EC",                              // CBOR label  1 → 2 = EC2
+  "crv": "P-256",                           // CBOR label -1 → 1 = P-256
+  "x":   "DxiH5Q4Yx3UrukE2lWCErq8N8bqC9CHLLrAwLz5BmE0",   // -2 → bstr → base64url
+  "y":   "XtLM4-3h5o3HUH0MHVJV0kyq0iBlrBwlh8qEDMZ4-Pc"    // -3 → bstr → base64url
+}</pre>
+            <p class="small">Per RFC 8152, COSE_Key labels are negative integers for curve-specific fields and positive integers for generic ones. <code>kty=2</code> means EC2 (uncompressed (x, y) with implicit length per curve); <code>crv=1</code> is P-256 with 32-byte coordinates. The x and y bstrs are exactly 32 bytes each (no leading 0x04 / no SEC1 prefix).</p>
+            <p class="small">Verifier code that builds this: <code>rp-web/src/protocol/index.ts</code> → <code>publicJwkToCoseKey</code> (encodes a JWK as a 4-entry CBOR map). Wallet code that consumes it: <code>wallet-android/.../SmartMdocCrypto.kt</code> → <code>publicKeyFromCose(cose)</code> (rebuilds an <code>ECPublicKey</code> from the (x, y) bstrs to feed into HPKE).</p>
+            <p class="small">Why no <code>alg</code> and no <code>kid</code>? The encryption purpose is implicit from the key being inside <code>EncryptionInfo[1].recipientPublicKey</code>. <code>alg</code> would constrain the wallet to a specific HPKE suite, but the suite is fixed by the protocol (DHKEM-P256 + HKDF-SHA256 + AES-128-GCM) so the field is redundant. The captured Safari-UA Mattr request confirms 4 fields exactly.</p>
+          </div>
+        </details>
+      </td></tr>
+    </tbody>
+  </table>
+
+  <p class="meta">Total: <b>142 bytes</b>. Notice the COSE_Key has <em>only</em> kty/crv/x/y — no <code>alg</code>, no <code>kid</code>, no <code>use</code>. That's confirmed by the captured Mattr Safari request and the wallet code accepts it as-is. Older docs that demanded a 6-field COSE_Key with <code>alg=-25</code> (ECDH-ES) are wrong for this profile.</p>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="dcapi-arg">
+  <h2><span class="num">5</span> The <code>navigator.credentials.get</code> argument</h2>
+
+  <p><span class="actor verifier">verifier</span> The two CBOR blobs above (DeviceRequest + EncryptionInfo) get base64url-no-pad encoded and packed into an outer JSON envelope that the verifier hands to <code>navigator.credentials.get</code>. That envelope is what flows over the <span class="actor host">browser → host</span> bridge.</p>
+
+  <p class="meta">Code: <code>rp-web/src/protocol/index.ts</code> → <code>buildOrgIsoMdocRequest</code>. The shape exactly mirrors what was captured from the Safari-UA branch of <code>tools.mattrlabs.com/verify-credentials</code>.</p>
+
+<pre>{
+  "mediation": "required",
+  "digital": {
+    "requests": [
+      {
+        "protocol": "org-iso-mdoc",
+        "data": {
+          "deviceRequest":  "&lt;base64url(no-pad) of 367 CBOR bytes — see drill below&gt;",
+          "encryptionInfo": "&lt;base64url(no-pad) of 142 CBOR bytes — see drill below&gt;"
+        }
+      }
+    ]
+  },
+  "signal": {}
+}</pre>
+
+  <details class="drill">
+    <summary>Drill into <code>data.deviceRequest</code> <span class="crumb">— base64url-decode and walk the 367 CBOR bytes from §3</span></summary>
+    <div class="drill-body">
+      <p class="small">After base64url-no-pad decode, the bytes are exactly the <code>DeviceRequest</code> map from §3:</p>
+      <table class="bytes">
+        <thead><tr><th>off</th><th>hex</th><th>meaning</th></tr></thead>
+        <tbody>
+          <tr class="major"><td class="off">0</td><td class="hex">a2</td><td class="note"><b>map(2)</b> — DeviceRequest</td></tr>
+          <tr><td class="off">1</td><td class="hex">67 76 65 72 73 69 6f 6e 63 31 2e 30</td><td class="note">tstr(7) <code>"version"</code> → tstr(3) <code>"1.0"</code></td></tr>
+          <tr><td class="off">13</td><td class="hex">6b 64 6f 63 52 65 71 75 65 73 74 73</td><td class="note">tstr(11) <code>"docRequests"</code></td></tr>
+          <tr><td class="off">25</td><td class="hex">81 a1</td><td class="note">array(1) → map(1) — single DocRequest with single field</td></tr>
+          <tr><td class="off">27</td><td class="hex">6c 69 74 65 6d 73 52 65 71 75 65 73 74</td><td class="note">tstr(12) <code>"itemsRequest"</code></td></tr>
+          <tr><td class="off">40</td><td class="hex">d8 18 59 01 42</td><td class="note"><b>tag(24)</b> wrapping <b>bstr(322)</b> — drill once more ↓</td></tr>
+          <tr class="drill-row"><td colspan="3">
+            <details class="drill">
+              <summary>Drill into the tag-24 payload <span class="crumb">— the inner 322-byte <code>ItemsRequest</code> map from §2</span></summary>
+              <div class="drill-body">
+                <p class="small">All the ItemsRequest fields come into view here. See §2 for the full per-row annotation; the highlights:</p>
+                <ul class="tight">
+                  <li><code>docType</code> = <code>"org.smarthealthit.checkin.1"</code></li>
+                  <li><code>nameSpaces["org.smarthealthit.checkin"]["smart_health_checkin_response"]</code> = <code>false</code> (intentToRetain)</li>
+                  <li><code>requestInfo["smart_health_checkin"]</code> = the SMART JSON tstr ↓</li>
+                </ul>
+                <details class="drill">
+                  <summary>Drill into the SMART JSON tstr <span class="crumb">— parse 176 UTF-8 bytes</span></summary>
+                  <div class="drill-body">
+<pre>{
+  "version": "1",
+  "items": [
+    {
+      "id":          "patient",
+      "profile":     "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
+      "required":    true,
+      "description": "Demographics for check-in"
+    }
+  ]
+}</pre>
+                  </div>
+                </details>
+              </div>
+            </details>
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <details class="drill">
+    <summary>Drill into <code>data.encryptionInfo</code> <span class="crumb">— base64url-decode and walk the 142 CBOR bytes from §4</span></summary>
+    <div class="drill-body">
+      <p class="small">Decoded bytes are the <code>["dcapi", { nonce, recipientPublicKey }]</code> array from §4. Highlights:</p>
+      <ul class="tight">
+        <li><code>nonce</code> = 32 random bytes (the verifier's per-request entropy that ends up baked into the SessionTranscript hash, §12).</li>
+        <li><code>recipientPublicKey</code> = a 4-field COSE_Key (kty=EC2, crv=P-256, x, y). Drill ↓ to see it.</li>
+      </ul>
+      <details class="drill">
+        <summary>Drill into <code>recipientPublicKey</code> <span class="crumb">— COSE_Key labels → JWK form</span></summary>
+        <div class="drill-body">
+<pre>{
+  "kty": "EC",     "crv": "P-256",
+  "x":   "DxiH5Q4Yx3UrukE2lWCErq8N8bqC9CHLLrAwLz5BmE0",
+  "y":   "XtLM4-3h5o3HUH0MHVJV0kyq0iBlrBwlh8qEDMZ4-Pc"
+}</pre>
+          <p class="small">No <code>alg</code>, no <code>kid</code>. Suite is fixed at the protocol layer.</p>
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <ul class="tight">
+    <li><code>mediation: "required"</code> — Web Authentication-style hint asking the host to always ask the user (vs silently auto-fill).</li>
+    <li><code>digital.requests[]</code> — an array because a single <code>navigator.credentials.get</code> can ask for multiple credentials in parallel. We always send one entry.</li>
+    <li><code>protocol: "org-iso-mdoc"</code> — the W3C-FedID closed-enum value for the ISO 18013-7 Annex C native profile. <b>This string is a registry routing convention, not a host filter</b> — see §7.</li>
+    <li><code>data.deviceRequest</code>, <code>data.encryptionInfo</code> — the two base64url payloads. <em>Camelcase</em>, no padding (<code>=</code>) — captured byte-for-byte from a real browser.</li>
+    <li><code>signal: {}</code> — Web Platform abort-signal slot, empty in the simple flow.</li>
+  </ul>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="matcher-input">
+  <h2><span class="num">6</span> What the WASM matcher actually sees</h2>
+
+  <p><span class="actor host">host</span> Credential Manager invokes <em>every</em> registered DC matcher of the matching <code>type</code> for every <code>digital</code> request. There is <b>no host-side protocol pre-filter</b> on the AndroidX <code>registry-provider</code> path — verified by decompiling <code>RegistryManagerProviderPlayServicesImpl</code> (passes <code>protocolTypes = emptyList()</code> to GMS).</p>
+
+  <p>So our matcher must self-filter. The bytes it gets via the <code>credman</code> import functions are roughly the JSON above, plus whatever the host wraps around it.</p>
+
+  <p class="meta">Concrete imports the matcher calls (matcher/src/bindings.rs):</p>
+  <ul class="tight">
+    <li><code>credman::GetWasmVersion(&amp;mut u32)</code> — probe the host's ABI version. <code>≥ 2</code> means we can use the v2 set surface; <code>0</code>/<code>1</code> means v1 only.</li>
+    <li><code>credman::GetRequestSize(&amp;mut u32)</code> + <code>GetRequestBuffer(*mut u8)</code> — read the JSON body.</li>
+    <li><code>credman::GetCredentialsSize(...)</code> + <code>ReadCredentialsBuffer(...)</code> — read the wallet's registered credentials blob (a small JSON we control).</li>
+  </ul>
+
+  <p>What the matcher does with the request bytes (matcher/src/lib.rs::<code>request_is_eligible</code>):</p>
+  <ol>
+    <li>Substring-search the raw bytes for the literal <code>"org-iso-mdoc"</code>. If absent, bail. (Defensive — the host doesn't pre-filter, but real DC API requests will have this string when the verifier asked for our protocol.)</li>
+    <li>Find the value of any <code>"deviceRequest"</code> JSON string field — both the plain shape (<code>"deviceRequest":"..."</code>) and the legacy escaped-wrapper shape (<code>\"deviceRequest\":\"...\"</code>) are accepted.</li>
+    <li>Base64url-decode that value into bytes.</li>
+    <li>Substring-search those bytes for the literal UTF-8 of the doctype <code>"org.smarthealthit.checkin.1"</code>. CBOR text strings encode UTF-8 verbatim, so the doctype appears as a contiguous byte run inside the decoded CBOR.</li>
+    <li>If found, the matcher is eligible; otherwise zero entries.</li>
+  </ol>
+
+  <p class="meta">Why no real CBOR parser? Because we don't need one. The doctype is unique enough that any false-positive match is implausible, and a parser would balloon the WASM binary, pull in a hashing-default-hashmap dependency, and risk the WASI entropy trap that bit early SHL wallets.</p>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="matcher-emit">
+  <h2><span class="num">7</span> What the matcher emits and why</h2>
+
+  <p><span class="actor matcher">matcher</span> Eligibility check passes → the matcher emits one entry. <em>How</em> it emits depends on the host's WASM ABI version, probed via <code>GetWasmVersion</code>.</p>
+
+  <h3>v2 (modern Credential Manager)</h3>
+  <ol>
+    <li><code>credman_v2::AddEntrySet(set_id="smart-health-checkin-set", set_length=1)</code> — declare a credential set.</li>
+    <li><code>credman_v2::AddEntryToSet(...)</code> — title, subtitle, disclaimer, embedded 192×192 PNG icon (the SMART starburst), metadata JSON.</li>
+    <li><code>credman_v2::AddFieldToEntrySet(...)</code> — one row of preview text shown in the picker ("Your health info: You choose what to share. Continue to review details in SMART Health Check-in.")</li>
+  </ol>
+
+  <h3>v1 fallback (legacy hosts only)</h3>
+  <ol>
+    <li><code>credman::AddStringIdEntry(cred_id, icon, ..., title, subtitle, disclaimer, NULL)</code></li>
+    <li><code>credman::AddFieldForStringIdEntry(cred_id, name, value)</code></li>
+  </ol>
+
+  <p class="meta">Why both paths? Because the modern AndroidX picker UI <b>only reads from the v2 surface</b>. A matcher that emits via v1 only is silently dropped on current devices — exactly the bug that produced "Your info wasn't found" until we added the version probe (see <code>matcher/src/lib.rs::emit_one_entry</code>).</p>
+
+  <h3>Embedded icon</h3>
+  <p>The <code>icon</code> argument is a raw PNG byte slice — <code>matcher/assets/icon.png</code>, a 192×192 RGBA rendering of the SMART starburst, generated by <code>matcher/assets/build-icon.ts</code> from the upstream <code>smarthealthit.org</code> SVG. The WASM module embeds it via <code>include_bytes!("../assets/icon.png")</code>; ~7.3 KB of the 19 KB matcher is just the icon.</p>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="handler-input">
+  <h2><span class="num">8</span> The wallet handler's input from Credential Manager</h2>
+
+  <p><span class="actor wallet">wallet</span> User taps the entry in the picker → host fires the <code>PendingIntent</code> we registered → <code>HandlerActivity.onCreate</code> runs in our app process. The activity calls <code>PendingIntentHandler.retrieveProviderGetCredentialRequest(intent)</code> and gets back a <code>ProviderGetCredentialRequest</code>.</p>
+
+  <p class="meta">Code: <code>wallet-android/app/src/main/java/.../HandlerActivity.kt</code>. The decoder/walker for the request is <code>DirectMdocRequestParser</code> in <code>DirectMdocRequest.kt</code>.</p>
+
+  <p>From the <code>ProviderGetCredentialRequest</code> the handler pulls:</p>
+  <ul class="tight">
+    <li><code>callingAppInfo.packageName</code> — Android-verified, e.g. <code>com.android.chrome</code>. Always trustworthy.</li>
+    <li><code>callingAppInfo.getOrigin(privAppsJson)</code> — verified web origin <em>only</em> if the calling app's signing cert matches an entry in our allowlist. With <code>"{}"</code> it returns <code>null</code> for every caller, and we fall back to <code>android-app:&lt;packageName&gt;</code>.</li>
+    <li><code>req.selectedEntryId</code> — the metadata JSON we emitted in <code>AddEntryToSet</code>, echoed back. Lets the wallet remember which credential the user picked when there are several.</li>
+    <li><code>req.credentialOptions</code> — list of <code>GetDigitalCredentialOption</code>. Each carries a <code>requestJson</code> string identical to the <code>data</code> field of the original <code>navigator.credentials.get</code> argument.</li>
+  </ul>
+
+  <p>The handler walks <code>requestJson</code> looking for an <code>org-iso-mdoc</code> entry, base64-decodes <code>deviceRequest</code> and <code>encryptionInfo</code>, CBOR-decodes them, and pulls out <code>requestInfo.smart_health_checkin</code> — that's the SMART JSON from §1 again.</p>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="smart-response">
+  <h2><span class="num">9</span> The SMART response JSON the wallet builds</h2>
+
+  <p><span class="actor wallet">wallet</span> User picks what to share in the consent UI → <code>SmartCheckinResponseFactory.build</code> assembles the response JSON. Two-part shape:</p>
+
+  <ul class="tight">
+    <li><code>artifacts</code> — flat de-duplicated list. Each artifact has a wallet-generated <code>id</code> (scoped to this response), a <code>type</code> (<code>fhir_resource</code> | <code>shc</code> | <code>shl</code> | <code>opaque</code>), and <code>data</code> (the actual FHIR resource / SHC JWS / SHL pointer).</li>
+    <li><code>answers</code> — map from each request item's <code>id</code> back to the array of artifact ids satisfying it. Decline an item → omit its key.</li>
+  </ul>
+
+  <div class="live-region empty" data-live="smart-response">
+    <h3>From your captured run</h3>
+    <div class="src"></div>
+    <pre class="json"></pre>
+  </div>
+
+  <p>For our Patient-only demo, the wallet emits something like:</p>
+<pre>{
+  "version": "1",
+  "artifacts": [
+    {
+      "id": "artifact-patient",
+      "type": "fhir_resource",
+      "data": { "resourceType": "Patient", "id": "patient", ... }
+    }
+  ],
+  "answers": {
+    "patient": [ "artifact-patient" ]
+  }
+}</pre>
+
+  <p>This JSON is treated as opaque content from the mdoc layer's perspective. It travels as the <code>elementValue</code> of a single <code>IssuerSignedItem</code> — see §10.</p>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="issuer-signed-item">
+  <h2><span class="num">10</span> mdoc <code>IssuerSignedItem</code> and its tag-24 digest</h2>
+
+  <p><span class="actor wallet">wallet</span> The SMART response JSON from §9 gets wrapped in an <code>IssuerSignedItem</code> per ISO 18013-5 §8.3.2.1.2.2, then tag-24-wrapped, then SHA-256-hashed. That hash goes into the MSO (next section).</p>
+
+<pre>IssuerSignedItem = {
+  "digestID":         0,                     // index in MSO.valueDigests[ns]
+  "random":           &lt;bstr 16+ bytes&gt;,    // unpredictable, per item
+  "elementIdentifier": "smart_health_checkin_response",
+  "elementValue":      "&lt;the SMART response JSON tstr from §9&gt;"
+}</pre>
+
+  <p>The matched static element name from §2 is <em>echoed</em> here: the verifier asked for <code>smart_health_checkin_response</code> in the request namespace, and the wallet replies with an item whose <code>elementIdentifier</code> is exactly that string. The verifier knows what to walk to.</p>
+
+  <h3>tag-24 wrap</h3>
+  <p>The encoded IssuerSignedItem CBOR is then wrapped in CBOR tag 24 (i.e. <code>d8 18</code> followed by a bstr containing the IssuerSignedItem bytes). The reasons:</p>
+  <ul class="tight">
+    <li>The MSO's <code>valueDigests</code> map stores SHA-256 over the <em>tag-24-wrapped</em> bytes, not the inner item alone.</li>
+    <li>The DeviceResponse later transports the same tag-24 wrap as the actual on-the-wire entry, so the verifier hashes the bytes it received and compares to the MSO's digest entry — no separate canonicalization step.</li>
+  </ul>
+
+  <p class="meta">Code: <code>wallet-android/app/src/main/java/.../SmartHealthMdocResponder.kt</code> — see <code>issuerSignedItemTag24Bytes = MdocCbor.tag24Bytes(MdocCbor.encode(issuerSignedItem))</code>. The MSO digest is then <code>SmartMdocCrypto.sha256(issuerSignedItemTag24Bytes)</code>.</p>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="mso">
+  <h2><span class="num">11</span> The <code>MobileSecurityObject</code> and <code>issuerAuth</code> COSE_Sign1</h2>
+
+  <p>The MobileSecurityObject (MSO) is the issuer-signed manifest that lets a verifier check that no element value has been tampered with.</p>
+
+<pre>MSO = {
+  "version":         "1.0",
+  "digestAlgorithm": "SHA-256",
+  "docType":         "org.smarthealthit.checkin.1",
+  "valueDigests": {
+    "org.smarthealthit.checkin": {
+      0: &lt;sha-256 of the tag-24-wrapped IssuerSignedItem from §10&gt;
+    }
+  },
+  "deviceKeyInfo": {
+    "deviceKey": &lt;COSE_Key for the device-signed signature key&gt;
+  },
+  "validityInfo": {
+    "signed":     "2023-11-14T22:13:20Z",
+    "validFrom":  "2023-11-14T22:13:20Z",
+    "validUntil": "2023-11-15T22:13:20Z"
+  }
+}</pre>
+
+  <p>The MSO is then tag-24-wrapped and signed by the <em>issuer</em> key as a COSE_Sign1:</p>
+
+<pre>issuerAuth = COSE_Sign1[
+  protected:    bstr .cbor { 1: -7 },                  // ES256
+  unprotected:  { 33: [&lt;DER-encoded x509 cert chain&gt;] },
+  payload:      bstr .cbor (tag-24 of the MSO above),
+  signature:    bstr ECDSA-P256-SHA256
+]</pre>
+
+  <p>For this debug harness the wallet generates an <em>ephemeral</em> issuer key pair per response and ships a self-signed cert in the x5chain. Verifiers report "issuer untrusted" but that's fine for demos.</p>
+
+  <p class="meta">Why two key pairs (issuer + device)? Per ISO 18013-5 the issuer key signs the static credential structure once at issuance time; the device key proves possession at presentation time and is bound by being included in <code>deviceKeyInfo.deviceKey</code> of the issuer-signed MSO. We collapse both into ephemeral wallet-side keys for the demo.</p>
+
+  <p>Code: <code>SmartMdocCrypto.signCoseSign1(...)</code> in <code>SmartMdocCrypto.kt</code>. The Sig_structure bytes signed are: <code>cbor.encode([ "Signature1", protected_header_bstr, external_aad=h'', payload_bstr ])</code>.</p>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="session-transcript">
+  <h2><span class="num">12</span> The <code>SessionTranscript</code> — bytes signed and AAD'd</h2>
+
+  <p><span class="actor crypto">crypto</span> The SessionTranscript is the byte sequence that <em>both</em> the wallet's <code>deviceSignature</code> and HPKE seal commit to. It binds the response to (origin, encryption info bytes) — change either side and signatures fail, encryption AAD fails.</p>
+
+  <p>Three-step construction (matches both <code>rp-web/src/protocol/index.ts::buildDcapiSessionTranscript</code> and <code>wallet-android/.../DirectMdocRequestParser::buildSessionTranscript</code>):</p>
+
+  <h3>Step 12.1 — <code>handoverInfo</code> CBOR</h3>
+<pre>handoverInfo = cbor.encode([
+  base64url_no_pad(encryptionInfoBytes),    // tstr
+  origin                                    // tstr, e.g. "https://example.com"
+])</pre>
+
+  <p>For our test vector, <code>handoverInfo</code> is exactly <b>213 bytes</b>:</p>
+
+<pre>82
+  78 be     // tstr(190) — the base64url of the 142 EncryptionInfo bytes
+  67 6d 56 6b 59 32 46 77 61 61 4a 6c 62 6d 39 75
+  59 32 56 59 49 41 41 42 41 67 4d 45 42 51 59 48
+  43 41 6b 4b 43 77 77 4e 44 67 38 51 45 52 49 54
+  46 42 55 57 46 78 67 5a 47 68 73 63 48 52 34 66
+  63 6e 4a 6c 59 32 6c 77 61 57 56 75 64 46 42 31
+  59 6d 78 70 59 30 74 6c 65 61 51 42 41 69 41 42
+  49 56 67 67 44 78 69 48 35 51 34 59 78 33 55 72
+  75 6b 45 32 6c 57 43 45 72 71 38 4e 38 62 71 43
+  39 43 48 4c 4c 72 41 77 4c 7a 35 42 6d 45 30 69
+  57 43 42 65 30 73 7a 6a 37 65 48 6d 6a 63 64 51
+  66 51 77 64 55 6c 58 53 54 4b 72 53 49 47 57 73
+  48 43 57 48 79 6f 51 4d 78 6e 6a 34 39 77
+
+  73 68 74 74 70 73 3a 2f 2f 65 78 61 6d 70 6c 65 2e 63 6f 6d
+  // tstr(19) "https://example.com"</pre>
+
+  <h3>Step 12.2 — SHA-256 of <code>handoverInfo</code></h3>
+<pre>sha256(handoverInfo) = 5a 25 f4 d8 f9 08 19 65 31 ef be ab 91 db ec 31
+                       ed 30 28 69 ca 51 db 96 f9 ab e9 db 1b a0 43 34</pre>
+
+  <h3>Step 12.3 — wrap as <code>SessionTranscript</code></h3>
+<pre>SessionTranscript = [
+  null,                                         // DeviceEngagementBytes — unused on DC API path
+  null,                                         // EReaderKeyBytes       — unused on DC API path
+  [ "dcapi", &lt;sha256(handoverInfo) bstr&gt; ]    // Handover (Annex C "online" form)
+]</pre>
+
+  <div class="live-region empty" data-live="session-transcript">
+    <h3>From your captured run</h3>
+    <div class="src"></div>
+    <table class="bytes"></table>
+  </div>
+
+  <table class="bytes">
+    <thead><tr><th>off</th><th>hex</th><th>meaning</th></tr></thead>
+    <tbody>
+      <tr class="major"><td class="off">0</td><td class="hex">83</td><td class="note"><b>array(3)</b></td></tr>
+      <tr><td class="off">1</td><td class="hex">f6</td><td class="note">simple <b>null</b></td></tr>
+      <tr><td class="off">2</td><td class="hex">f6</td><td class="note">simple <b>null</b></td></tr>
+      <tr><td class="off">3</td><td class="hex">82</td><td class="note">array(2)</td></tr>
+      <tr class="indent-2"><td class="off">4</td><td class="hex">65</td><td class="note">tstr(5)</td></tr>
+      <tr class="indent-2"><td class="off">5</td><td class="hex">64 63 61 70 69</td><td class="note">UTF-8 <code>"dcapi"</code></td></tr>
+      <tr class="indent-2"><td class="off">10</td><td class="hex">58 20</td><td class="note">bstr(32)</td></tr>
+      <tr class="indent-2"><td class="off">12</td><td class="hex">5a 25 f4 d8 f9 08 19 65 31 ef be ab 91 db ec 31 ed 30 28 69 ca 51 db 96 f9 ab e9 db 1b a0 43 34</td><td class="note">SHA-256 of <code>handoverInfo</code></td></tr>
+    </tbody>
+  </table>
+
+  <p class="meta">Total: <b>44 bytes</b>. The full hex is checked into <code>wallet-android/app/src/test/resources/test-vectors.json</code> as <code>sessionTranscriptVectors[0].sessionTranscriptHex</code> and asserted against by both <code>rp-web/src/protocol/index.test.ts</code> and <code>wallet-android/.../DirectMdocProtocolTest.kt</code>. If either side's CBOR encoder drifts from the canonical encoding, that test fails.</p>
+
+  <h3>Why this layout?</h3>
+  <ul class="tight">
+    <li>The two leading <code>null</code>s are mandated by ISO 18013-5's SessionTranscript schema. They're slots for offline-presentation engagement bytes that don't apply to the DC API.</li>
+    <li>The handover is <code>["dcapi", hash]</code> — the Annex C "online" form. (Profile A's <code>OpenID4VPDCAPIHandover</code> form is byte-different and a wallet that mixes them up fails deviceSignature verification.)</li>
+    <li>Hashing <code>handoverInfo</code> commits to <em>exactly</em> the encryptionInfo bytes the wallet decoded — change a single nonce byte and the wallet's signature and the verifier's recomputation diverge.</li>
+    <li><code>origin</code> is included indirectly via <code>handoverInfo</code>. The Profile B "dcapi" handover is sometimes described as <em>not</em> origin-binding — this is a slight simplification: we hash origin into the transcript, so the wallet's signature and the verifier's AAD <em>do</em> commit to a verifier-supplied origin string. (The wallet has to trust the host that origin belongs to the calling app, since without an allowlist it can't independently verify.)</li>
+  </ul>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="device-auth">
+  <h2><span class="num">13</span> The <code>deviceSignature</code> COSE_Sign1</h2>
+
+  <p>The wallet's device key signs over a CBOR array containing the SessionTranscript bytes, the doctype, and an empty DeviceNameSpaces map. This is what proves "the holder of the device key authorized this presentation, in this session."</p>
+
+<pre>deviceAuthentication = cbor.encode([
+  "DeviceAuthentication",
+  &lt;SessionTranscript bytes from §12&gt;,
+  "org.smarthealthit.checkin.1",                  // doctype
+  cbor.tag24(cbor.encode({}))                     // empty DeviceNameSpaces
+])
+
+deviceAuthenticationBytes = cbor.tag24(deviceAuthentication)
+
+deviceSignature = COSE_Sign1[
+  protected:    bstr .cbor { 1: -7 },             // ES256
+  unprotected:  { },                              // none
+  payload:      deviceAuthenticationBytes,
+  signature:    ECDSA-P256-SHA256(deviceKey, sig_structure)
+]</pre>
+
+  <p>Where <code>sig_structure = cbor.encode([ "Signature1", protected_bstr, h'', deviceAuthenticationBytes ])</code> per RFC 9052.</p>
+
+  <p>This is the <em>second</em> COSE_Sign1 in the response (the first was <code>issuerAuth</code> in §11). The two are independent: <code>issuerAuth</code> proves the credential is intact, <code>deviceSignature</code> proves the holder agreed to present it now to this verifier.</p>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="device-response">
+  <h2><span class="num">14</span> The full mdoc <code>DeviceResponse</code></h2>
+
+  <p>All the pieces from §10–§13 nest into one <code>DeviceResponse</code> CBOR. This is the plaintext that goes into the HPKE seal next.</p>
+
+<pre>DeviceResponse = {
+  "version":   "1.0",
+  "documents": [
+    {
+      "docType": "org.smarthealthit.checkin.1",
+      "issuerSigned": {
+        "nameSpaces": {
+          "org.smarthealthit.checkin": [
+            &lt;tag-24-wrapped IssuerSignedItem from §10&gt;
+          ]
+        },
+        "issuerAuth": &lt;COSE_Sign1 from §11&gt;
+      },
+      "deviceSigned": {
+        "nameSpaces": cbor.tag24(cbor.encode({})),     // empty
+        "deviceAuth": {
+          "deviceSignature": &lt;COSE_Sign1 from §13&gt;
+        }
+      }
+    }
+  ],
+  "status": 0   // OK
+}</pre>
+
+  <details class="drill">
+    <summary>Drill into <code>documents[0].issuerSigned.nameSpaces[ns][0]</code> <span class="crumb">— the tag-24-wrapped <code>IssuerSignedItem</code></span></summary>
+    <div class="drill-body">
+      <p class="small">After stripping the tag(24) + bstr length prefix, the bytes are a 4-entry CBOR map (the <code>IssuerSignedItem</code> from §10):</p>
+<pre>{
+  "digestID":          0,
+  "random":            h'…16+ random bytes…',
+  "elementIdentifier": "smart_health_checkin_response",
+  "elementValue":      "&lt;tstr containing the SMART response JSON&gt;"
+}</pre>
+      <details class="drill">
+        <summary>Drill into <code>elementValue</code> <span class="crumb">— parse the SMART response JSON tstr</span></summary>
+        <div class="drill-body">
+<pre>{
+  "version": "1",
+  "artifacts": [
+    {
+      "id":   "artifact-patient",
+      "type": "fhir_resource",
+      "data": {
+        "resourceType": "Patient",
+        "id":           "patient",
+        "name":         [ { "text": "Sample Patient" } ],
+        "birthDate":    "1980-01-01",
+        "gender":       "unknown"
+      }
+    }
+  ],
+  "answers": {
+    "patient": [ "artifact-patient" ]
+  }
+}</pre>
+          <p class="small">This is the bytes the verifier ultimately renders as a <code>&lt;ResourceCard&gt;</code> in <code>rp-web/src/app/ResourceCards.tsx</code>. <code>resourceType</code> drives the dispatch — <code>Patient</code> here, <code>Coverage</code>/<code>InsurancePlan</code>/<code>Bundle</code>/<code>QuestionnaireResponse</code> for other asks. The <code>answers</code> map ties each request item id back to the artifact id(s) that satisfy it; declined items are simply absent.</p>
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details class="drill">
+    <summary>Drill into <code>documents[0].issuerSigned.issuerAuth</code> <span class="crumb">— COSE_Sign1 structure with MSO payload</span></summary>
+    <div class="drill-body">
+<pre>[
+  h'a10126',                    // protected header CBOR: { 1: -7 } = ES256
+  { 33: [ &lt;DER cert chain&gt; ] }, // unprotected: x5chain (self-signed for the demo)
+  &lt;tag(24, bstr(MSO))&gt;,         // payload — drill ↓
+  h'…64-byte ECDSA signature…'  // signature over Sig_structure
+]</pre>
+      <details class="drill">
+        <summary>Drill into the payload <span class="crumb">— tag-24 wrapped <code>MobileSecurityObject</code></span></summary>
+        <div class="drill-body">
+<pre>MSO = {
+  "version":         "1.0",
+  "digestAlgorithm": "SHA-256",
+  "docType":         "org.smarthealthit.checkin.1",
+  "valueDigests": {
+    "org.smarthealthit.checkin": {
+      0: h'…sha256 of the tag-24 IssuerSignedItem above…'
+    }
+  },
+  "deviceKeyInfo": {
+    "deviceKey": { 1: 2, -1: 1, -2: h'…x…', -3: h'…y…' }   // wallet's device pub key
+  },
+  "validityInfo": {
+    "signed":     0("2023-11-14T22:13:20Z"),
+    "validFrom":  0("2023-11-14T22:13:20Z"),
+    "validUntil": 0("2023-11-15T22:13:20Z")
+  }
+}</pre>
+          <p class="small">The MSO is what the verifier hashes against to detect tampering: it recomputes <code>sha256(IssuerSignedItem-tag24-bytes)</code> and compares against <code>valueDigests[ns][0]</code>. The <code>deviceKey</code> COSE_Key inside is what <code>deviceSignature</code> verifies under (§13).</p>
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <p class="meta">A single document, in a single namespace, with a single element whose value is the SMART response JSON tstr. From an mdoc-layer perspective the response is structurally identical to a one-claim mDL; what makes it ours is the doctype + namespace + element-name triple.</p>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="hpke-seal">
+  <h2><span class="num">15</span> HPKE-sealing the response</h2>
+
+  <p><span class="actor crypto">crypto</span> The DeviceResponse plaintext is sealed with HPKE base mode (RFC 9180) under the verifier's recipient public key from §4.</p>
+
+  <p class="meta">Code: <code>SmartMdocCrypto.hpkeSeal(...)</code> in <code>SmartMdocCrypto.kt</code>. Hand-rolled (no JOSE / no HPKE library on Android) — about 100 lines of boilerplate over <code>java.security</code> primitives.</p>
+
+  <h3>Suite</h3>
+  <ul class="tight">
+    <li><b>KEM</b>: DHKEM(P-256, HKDF-SHA256) — kemId 0x0010</li>
+    <li><b>KDF</b>: HKDF-SHA256 — kdfId 0x0001</li>
+    <li><b>AEAD</b>: AES-128-GCM — aeadId 0x0001</li>
+    <li><b>info</b>: <code>SessionTranscript</code> bytes from §12 (binds the seal to this exact session)</li>
+    <li><b>aad</b>: empty</li>
+  </ul>
+
+  <h3>Algorithm</h3>
+  <ol>
+    <li>Generate ephemeral wallet key pair (P-256). Public point in raw uncompressed form is the 65-byte <code>enc</code>.</li>
+    <li>ECDH(<code>walletEphemeralPriv</code>, <code>recipientPub</code>) → 32-byte <code>dh</code>.</li>
+    <li>HKDF-Extract / -Expand per RFC 9180 with KEM and HPKE labeled-extract/expand. Output: 16-byte AES key + 12-byte base nonce.</li>
+    <li>AES-128-GCM encrypt the DeviceResponse plaintext with that key + nonce + empty AAD. Output: <code>ciphertext</code> = body || 16-byte tag.</li>
+  </ol>
+
+<pre>HpkeSealResult = {
+  enc:        &lt;65 bytes — ephemeral wallet public point, 0x04 || X || Y&gt;,
+  cipherText: &lt;DeviceResponse plaintext length + 16 byte tag&gt;
+}</pre>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="dcapi-response">
+  <h2><span class="num">16</span> The <code>DigitalCredential</code> the wallet returns</h2>
+
+  <p><span class="actor wallet">wallet</span> The two HPKE outputs are wrapped in another small CBOR array and base64url-encoded into the response envelope.</p>
+
+<pre>dcapiResponse = cbor.encode([
+  "dcapi",
+  {
+    "enc":        &lt;the 65 bytes from §15&gt;,
+    "cipherText": &lt;the cipherText bytes from §15&gt;
+  }
+])
+
+walletJson = {
+  "protocol": "org-iso-mdoc",
+  "data": {
+    "response": "&lt;base64url no-pad of dcapiResponse&gt;"
+  }
+}</pre>
+
+  <p>The wallet calls <code>PendingIntentHandler.setGetCredentialResponse(intent, GetCredentialResponse(DigitalCredential(walletJson)))</code>, finishes the activity, and the host hands the JSON back to the page that called <code>navigator.credentials.get</code>.</p>
+
+  <p class="meta">Code: <code>SmartHealthMdocResponder.kt</code> assembles <code>credentialJson</code>; <code>HandlerActivity.submit</code> writes it back via <code>PendingIntentHandler.setGetCredentialResponse</code>.</p>
+</section>
+
+<!-- ============================================================ -->
+<section class="step" id="verifier-open">
+  <h2><span class="num">17</span> The verifier opens the response</h2>
+
+  <p><span class="actor verifier">verifier</span> The page that fired <code>navigator.credentials.get</code> awaits the promise and gets back a <code>DigitalCredential</code> object whose <code>data</code> is the JSON above. From there:</p>
+
+  <p class="meta">Code: <code>rp-web/src/protocol/index.ts</code> → <code>openWalletResponse</code>, <code>inspectDcapiMdocResponse</code>, <code>inspectDeviceResponseBytes</code>. The UI code in <code>App.tsx</code> walks the resulting structure into <code>artifacts</code> + <code>answers</code> and feeds each artifact's <code>data</code> to <code>ResourceCard</code> from <code>app/ResourceCards.tsx</code>.</p>
+
+  <ol>
+    <li>Verify <code>credential.protocol === "org-iso-mdoc"</code>.</li>
+    <li>Base64url-decode <code>data.response</code> → CBOR bytes → walk: <code>["dcapi", { enc, cipherText }]</code>.</li>
+    <li>Recompute the <code>SessionTranscript</code> from the same <code>(origin, encryptionInfo bytes)</code> the page retained from request build. Same code path as §12 — <code>buildDcapiSessionTranscript</code>.</li>
+    <li>HPKE.Open(<code>enc</code>, <code>cipherText</code>, info=SessionTranscript, aad=empty) using the recipient private key the page retained from request build.</li>
+    <li>The decrypted plaintext is the <code>DeviceResponse</code> CBOR from §14. CBOR-decode → walk to the single document.</li>
+    <li>Validate the structural envelope:
+      <ul class="tight">
+        <li><code>document.docType</code> matches <code>"org.smarthealthit.checkin.1"</code>.</li>
+        <li><code>issuerAuth</code> COSE_Sign1 verifies under the cert in <code>x5chain</code>. (Self-signed → issuer is "untrusted" but signature is intact — UI shows that distinction.)</li>
+        <li>Recompute SHA-256 over the tag-24 IssuerSignedItem bytes; compare against <code>MSO.valueDigests[ns][0]</code>.</li>
+        <li><code>deviceSignature</code> COSE_Sign1 verifies under <code>MSO.deviceKeyInfo.deviceKey</code>, signing over <code>cbor.tag24(["DeviceAuthentication", SessionTranscript, docType, deviceNameSpacesBytes])</code>.</li>
+      </ul>
+    </li>
+    <li>Pull <code>elementValue</code> out of the lone IssuerSignedItem — that's the SMART response JSON.</li>
+    <li>For each <code>artifact</code> in <code>smartResponse.artifacts</code>, call <code>&lt;ResourceCard credentialId={artifact.id} resource={artifact.data} /&gt;</code>. The renderer dispatches on <code>resource.resourceType</code> — Coverage gets a card-image grid (front/back from C4DIC <code>SupportingImage</code> extensions), Bundle gets a per-entry summary, QuestionnaireResponse gets a recursive Q&amp;A walk, etc. Below the typed cards, the existing artifact-by-artifact JSON debug <code>&lt;details&gt;</code> blocks remain available for low-level inspection.</li>
+  </ol>
+
+  <hr />
+  <p class="small">End of byte-level walkthrough. For comparison with Profile A (<code>openid4vp</code> + <code>dc_api.jwt</code> + JWE), see <a href="profiles/openid4vp-dc-api-jwt.md"><code>profiles/openid4vp-dc-api-jwt.md</code></a>. The two profiles share the same SMART JSON shapes but differ in protocol value, request envelope, SessionTranscript handover variant (<code>OpenID4VPDCAPIHandover</code> vs <code>dcapi</code>), and response envelope (compact JWE vs HPKE).</p>
+</section>
+
+</main>
+
+<script>
+// =============================================================
+// Run-directory loader. Pick a /tmp/shc-handler-runs/run-NNN
+// directory and the live-region panels above each static byte
+// table fill in with the actual captured bytes.
+// =============================================================
+(() => {
+  const $ = (sel) => document.querySelector(sel);
+  const status = $("#run-status");
+  const manifestPanel = $("#run-manifest");
+  const manifestGrid = $("#run-manifest-grid");
+
+  const FILES_BY_LIVE = {
+    "smart-request":     { kind: "json",  src: "smart-request.json" },
+    "smart-response":    { kind: "json",  src: "smart-response.json" },
+    "items-request":     { kind: "cbor",  src: "device-request.cbor.hex", inner: "items-request" },
+    "device-request":    { kind: "cbor",  src: "device-request.cbor.hex" },
+    "encryption-info":   { kind: "cbor",  src: "encryption-info.cbor.hex" },
+    "session-transcript":{ kind: "cbor",  src: "session-transcript.cbor.hex" },
+  };
+
+  $("#run-dir").addEventListener("change", async (ev) => {
+    const files = Array.from(ev.target.files || []);
+    if (!files.length) { setStatus("No files chosen.", "error"); return; }
+    try {
+      await loadRun(files);
+    } catch (e) {
+      console.error(e);
+      setStatus(`Failed: ${e.message ?? e}`, "error");
+    }
+  });
+
+  $("#run-clear").addEventListener("click", () => {
+    document.querySelectorAll(".live-region").forEach(el => {
+      el.classList.add("empty");
+      el.querySelectorAll(".src").forEach(s => s.textContent = "");
+      el.querySelectorAll("table.bytes").forEach(t => t.innerHTML = "");
+      el.querySelectorAll("pre.json").forEach(p => p.textContent = "");
+    });
+    manifestPanel.classList.add("empty");
+    manifestGrid.innerHTML = "";
+    $("#run-dir").value = "";
+    setStatus("No run loaded — synthetic example shown.", "");
+  });
+
+  function setStatus(msg, cls) {
+    status.textContent = msg;
+    status.className = cls || "";
+  }
+
+  async function loadRun(files) {
+    const map = new Map();
+    for (const f of files) {
+      // webkitRelativePath is "<dirname>/<rest>"; strip the leading dir.
+      const rel = (f.webkitRelativePath || f.name).split("/").slice(1).join("/");
+      map.set(rel || f.name, f);
+    }
+
+    let dirName = files[0].webkitRelativePath?.split("/")[0] || "(unknown)";
+
+    // Manifest first.
+    if (map.has("manifest.json")) {
+      const m = JSON.parse(await map.get("manifest.json").text());
+      renderManifest(m);
+    }
+
+    // SMART request and response — easy.
+    for (const [target, info] of Object.entries(FILES_BY_LIVE)) {
+      if (info.kind !== "json") continue;
+      const f = map.get(info.src);
+      if (!f) continue;
+      const txt = await f.text();
+      let pretty = txt;
+      try { pretty = JSON.stringify(JSON.parse(txt), null, 2); } catch {}
+      fillJson(target, info.src, pretty);
+    }
+
+    // CBOR pieces.
+    for (const [target, info] of Object.entries(FILES_BY_LIVE)) {
+      if (info.kind !== "cbor") continue;
+      const f = map.get(info.src);
+      if (!f) continue;
+      const hex = (await f.text()).trim().replace(/\s+/g, "");
+      const bytes = hexToBytes(hex);
+      let toAnnotate = bytes;
+      let label = info.src;
+      // The "items-request" live target is the *inner* tag-24 payload —
+      // walk into the DeviceRequest, find docRequests[0].itemsRequest, and
+      // emit the inner ItemsRequest annotation.
+      if (info.inner === "items-request") {
+        const inner = extractItemsRequest(bytes);
+        if (!inner) continue;
+        toAnnotate = inner;
+        label = `${info.src} → tag-24 inner ItemsRequest (${inner.length} B)`;
+      }
+      fillCbor(target, label, toAnnotate);
+    }
+
+    setStatus(`Loaded ${dirName} (${files.length} files).`, "loaded");
+  }
+
+  function renderManifest(m) {
+    const fields = [
+      ["runId", m.runId],
+      ["captured", m.at],
+      ["origin", m.origin],
+      ["package", m.packageName],
+      ["protocol", m.protocol],
+      ["originSource", m.originSource],
+      ["selectedEntryId", m.selectedEntryId ?? "(none)"],
+      ["deviceRequest", `${m.deviceRequestByteSize ?? "?"} B (${m.deviceRequestB64uSize ?? "?"} b64u chars)`],
+      ["encryptionInfo", `${m.encryptionInfoByteSize ?? "?"} B`],
+      ["sessionTranscript", `${m.sessionTranscriptByteSize ?? "?"} B`],
+    ];
+    manifestGrid.innerHTML = "";
+    for (const [k, v] of fields) {
+      if (v === undefined || v === null) continue;
+      const dt = document.createElement("dt"); dt.textContent = k;
+      const dd = document.createElement("dd"); dd.textContent = String(v);
+      manifestGrid.appendChild(dt); manifestGrid.appendChild(dd);
+    }
+    manifestPanel.classList.remove("empty");
+  }
+
+  function fillJson(target, src, body) {
+    const region = document.querySelector(`.live-region[data-live="${target}"]`);
+    if (!region) return;
+    region.querySelector(".src").textContent = `from ${src}`;
+    region.querySelector("pre.json").textContent = body;
+    region.classList.remove("empty");
+  }
+
+  function fillCbor(target, src, bytes) {
+    const region = document.querySelector(`.live-region[data-live="${target}"]`);
+    if (!region) return;
+    region.querySelector(".src").textContent = `from ${src} — ${bytes.length} bytes`;
+    const table = region.querySelector("table.bytes");
+    table.innerHTML = renderAnnotation(bytes);
+    region.classList.remove("empty");
+  }
+
+  // ---- hex utils -------------------------------------------------------
+  function hexToBytes(hex) {
+    const out = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.slice(i*2, i*2+2), 16);
+    return out;
+  }
+  function bytesHexJoined(bytes, max = 24) {
+    const slice = bytes.subarray(0, Math.min(bytes.length, max));
+    let s = Array.from(slice, b => b.toString(16).padStart(2, "0")).join(" ");
+    if (bytes.length > max) s += " …";
+    return s;
+  }
+  function tdEsc(s) {
+    return String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+  }
+
+  // ---- minimal CBOR decoder + annotator -------------------------------
+  // Returns a flat list of { offset, len, depth, hex, note } so the caller
+  // can render the same row-shape my static byte tables use.
+  const TEXT = new TextDecoder();
+
+  function readHead(bytes, pos) {
+    const head = bytes[pos]; const major = head >> 5; const ai = head & 0x1f;
+    let len = ai, headLen = 1;
+    if (ai === 24) { len = bytes[pos+1]; headLen = 2; }
+    else if (ai === 25) { len = (bytes[pos+1]<<8) | bytes[pos+2]; headLen = 3; }
+    else if (ai === 26) {
+      len = (bytes[pos+1]*0x1000000) + ((bytes[pos+2]<<16)|(bytes[pos+3]<<8)|bytes[pos+4]);
+      headLen = 5;
+    }
+    return { major, ai, len, headLen };
+  }
+
+  function* walk(bytes, start = 0, depth = 0) {
+    let pos = start;
+    const head = readHead(bytes, pos);
+    const { major, ai, len, headLen } = head;
+    switch (major) {
+      case 0: yield { offset: pos, len: headLen, depth, hex: bytesHexJoined(bytes.subarray(pos, pos+headLen)), note: `<b>uint(${len})</b>` }; pos += headLen; break;
+      case 1: yield { offset: pos, len: headLen, depth, hex: bytesHexJoined(bytes.subarray(pos, pos+headLen)), note: `<b>neg(${-1-len})</b>` }; pos += headLen; break;
+      case 2: {
+        yield { offset: pos, len: headLen, depth, hex: bytesHexJoined(bytes.subarray(pos, pos+headLen)), note: `<b>bstr(${len})</b>` };
+        yield { offset: pos+headLen, len: len, depth: depth+1, hex: bytesHexJoined(bytes.subarray(pos+headLen, pos+headLen+len)), note: `(${len} bytes)` };
+        pos += headLen + len; break;
+      }
+      case 3: {
+        const text = TEXT.decode(bytes.subarray(pos+headLen, pos+headLen+len));
+        const preview = text.length > 60 ? JSON.stringify(text.slice(0,60))+" …" : JSON.stringify(text);
+        yield { offset: pos, len: headLen, depth, hex: bytesHexJoined(bytes.subarray(pos, pos+headLen)), note: `<b>tstr(${len})</b>` };
+        yield { offset: pos+headLen, len: len, depth: depth+1, hex: bytesHexJoined(bytes.subarray(pos+headLen, pos+headLen+len)), note: tdEsc(preview) };
+        pos += headLen + len; break;
+      }
+      case 4: {
+        yield { offset: pos, len: headLen, depth, hex: bytesHexJoined(bytes.subarray(pos, pos+headLen)), note: `<b>array(${len})</b>` };
+        pos += headLen;
+        for (let i = 0; i < len; i++) for (const r of walk(bytes, pos, depth+1)) { pos = r.offset + r.len; yield r; }
+        break;
+      }
+      case 5: {
+        yield { offset: pos, len: headLen, depth, hex: bytesHexJoined(bytes.subarray(pos, pos+headLen)), note: `<b>map(${len})</b>` };
+        pos += headLen;
+        for (let i = 0; i < len; i++) {
+          for (const r of walk(bytes, pos, depth+1)) { pos = r.offset + r.len; yield r; }
+          for (const r of walk(bytes, pos, depth+1)) { pos = r.offset + r.len; yield r; }
+        }
+        break;
+      }
+      case 6: {
+        yield { offset: pos, len: headLen, depth, hex: bytesHexJoined(bytes.subarray(pos, pos+headLen)), note: `<b>tag(${len})</b>` };
+        pos += headLen;
+        for (const r of walk(bytes, pos, depth+1)) { pos = r.offset + r.len; yield r; }
+        break;
+      }
+      case 7: {
+        let label = `simple(${ai})`;
+        if (ai === 20) label = "<b>false</b>";
+        else if (ai === 21) label = "<b>true</b>";
+        else if (ai === 22) label = "<b>null</b>";
+        yield { offset: pos, len: headLen, depth, hex: bytesHexJoined(bytes.subarray(pos, pos+headLen)), note: label };
+        pos += headLen; break;
+      }
+    }
+  }
+
+  function renderAnnotation(bytes) {
+    const rows = ["<thead><tr><th>off</th><th>hex</th><th>meaning</th></tr></thead><tbody>"];
+    let count = 0;
+    const MAX_ROWS = 400;
+    for (const r of walk(bytes)) {
+      if (count >= MAX_ROWS) {
+        rows.push(`<tr><td colspan="3" style="color:var(--muted);font-style:italic">… truncated after ${MAX_ROWS} rows; full bytes available in the captured file ...</td></tr>`);
+        break;
+      }
+      const indent = r.depth > 0 ? `indent-${Math.min(r.depth, 5)}` : "major";
+      rows.push(`<tr class="${indent}"><td class="off">${r.offset}</td><td class="hex">${tdEsc(r.hex)}</td><td class="note">${r.note}</td></tr>`);
+      count++;
+    }
+    rows.push("</tbody>");
+    return rows.join("");
+  }
+
+  // Walk a DeviceRequest CBOR and pull out the inner ItemsRequest bytes
+  // (the bstr inside docRequests[0].itemsRequest's tag-24 wrap).
+  function extractItemsRequest(bytes) {
+    try {
+      // Outer is map(2) — version, docRequests
+      let pos = 0;
+      const outer = readHead(bytes, pos); if (outer.major !== 5) return null;
+      pos += outer.headLen;
+      for (let i = 0; i < outer.len; i++) {
+        // key
+        const keyHead = readHead(bytes, pos);
+        const keyText = TEXT.decode(bytes.subarray(pos+keyHead.headLen, pos+keyHead.headLen+keyHead.len));
+        pos += keyHead.headLen + keyHead.len;
+        if (keyText === "docRequests") {
+          const arrHead = readHead(bytes, pos);
+          pos += arrHead.headLen;
+          // first DocRequest map
+          const docHead = readHead(bytes, pos);
+          pos += docHead.headLen;
+          for (let j = 0; j < docHead.len; j++) {
+            const k2 = readHead(bytes, pos);
+            const k2text = TEXT.decode(bytes.subarray(pos+k2.headLen, pos+k2.headLen+k2.len));
+            pos += k2.headLen + k2.len;
+            if (k2text === "itemsRequest") {
+              // Expect tag(24) → bstr
+              const tagHead = readHead(bytes, pos);
+              if (tagHead.major !== 6 || tagHead.len !== 24) return null;
+              pos += tagHead.headLen;
+              const bstrHead = readHead(bytes, pos);
+              if (bstrHead.major !== 2) return null;
+              pos += bstrHead.headLen;
+              return bytes.subarray(pos, pos + bstrHead.len);
+            }
+            // skip non-itemsRequest values — only one expected here, bail otherwise
+            return null;
+          }
+        } else {
+          // skip value
+          const v = readHead(bytes, pos); pos += v.headLen + (v.major === 2 || v.major === 3 ? v.len : 0);
+        }
+      }
+    } catch { return null; }
+    return null;
+  }
+})();
+</script>
+
+</body>
+</html>

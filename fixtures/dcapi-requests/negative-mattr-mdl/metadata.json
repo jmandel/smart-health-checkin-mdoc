@@ -1,0 +1,7 @@
+{
+  "id": "negative-mattr-mdl",
+  "kind": "negative-mdoc-request",
+  "source": "fixtures/captures/2026-04-30-mattr-safari-org-iso-mdoc/navigator-credentials-get.arg.json",
+  "protocol": "org-iso-mdoc",
+  "expectedSmartHealthCheckin": false
+}

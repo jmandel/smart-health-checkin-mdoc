@@ -1,0 +1,18 @@
+{
+  "answers": {
+    "patient": [
+      "a1"
+    ]
+  },
+  "artifacts": [
+    {
+      "data": {
+        "id": "demo",
+        "resourceType": "Patient"
+      },
+      "id": "a1",
+      "type": "fhir_resource"
+    }
+  ],
+  "version": "1"
+}

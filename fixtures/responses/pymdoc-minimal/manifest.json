@@ -1,0 +1,25 @@
+{
+  "containsPhi": false,
+  "docType": "org.smarthealthit.checkin.1",
+  "element": "smart_health_checkin_response",
+  "label": "pymdoc-minimal",
+  "namespace": "org.smarthealthit.checkin",
+  "notes": [
+    "document.cbor may contain nondeterministic ECDSA signature bytes.",
+    "value-digest-input.cbor is the exact tag-24 issuer item digest input."
+  ],
+  "protocol": "org-iso-mdoc",
+  "pymdoccbor": "1.3.0",
+  "sha256": {
+    "document.cbor": "99600409de9919896af8ab98a66a1635eac27f892ba6a83da09eaefe340b6c91",
+    "expected-walk.json": "c6800d946ad4480082e93b1ebfe3d883dc5e40111acfd31d6f6e11e504571ecd",
+    "issuer-auth.cbor": "ff4031df266909f4f168b7bfebc288dbccf117fe18932191ed9a9a665806ed71",
+    "issuer-signed-item-tag24.cbor": "8f7b1f307aacd205224e10ce2b3857fa2dc48186b04655c118d7810e55d0d93c",
+    "issuer-signed-item.cbor": "3b19a8c9cd67f28adc6e26dc72b4b6f60b707762ea5d6ac3f6225fc40fc0192b",
+    "mso-tag24.cbor": "33fef428b8ce22c399cf618fba856a85dbbdc1230f668496f21be7592d233273",
+    "mso.cbor": "c196086493a10fadfe45478a9ffa927a3efb8bf2c36277dd361c8367177a67dc",
+    "smart-response.json": "eed0afc55999aa4d13e1c5d9fe54095f42db00eebe4b5841162722e7fe34531f",
+    "value-digest-input.cbor": "8f7b1f307aacd205224e10ce2b3857fa2dc48186b04655c118d7810e55d0d93c"
+  },
+  "source": "fixtures-tool/pyMDOC-CBOR"
+}

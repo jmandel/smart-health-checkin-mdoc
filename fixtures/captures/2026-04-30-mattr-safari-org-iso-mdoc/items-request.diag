@@ -1,0 +1,34 @@
+{
+  "docType": "org.iso.18013.5.1.mDL",
+  "nameSpaces": {
+    "org.iso.18013.5.1": {
+      "family_name": false,
+      "given_name": false,
+      "birth_date": false,
+      "sex": false,
+      "portrait": false,
+      "age_over_18": false,
+      "age_over_21": false,
+      "document_number": false,
+      "issue_date": false,
+      "expiry_date": false,
+      "issuing_country": false,
+      "issuing_authority": false,
+      "un_distinguishing_sign": false,
+      "driving_privileges": false,
+      "resident_address": false,
+      "resident_city": false,
+      "resident_state": false,
+      "resident_postal_code": false,
+      "resident_country": false
+    },
+    "org.iso.18013.5.1.aamva": {
+      "sex": false,
+      "version": false,
+      "DHS_compliance": false,
+      "EDL_credential": false,
+      "given_name_truncation": false,
+      "family_name_truncation": false
+    }
+  }
+}

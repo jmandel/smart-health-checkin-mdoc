@@ -1,0 +1,48 @@
+[package]
+name = "shc-matcher"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "checkin"
+path = "src/bin/checkin.rs"
+
+[[bin]]
+name = "checkin-cli"
+path = "src/bin/cli.rs"
+required-features = ["cli"]
+
+# Diagnostic-only matcher: always emits an entry, ignores the request.
+# Build via `bash build.sh yes`; copy `target/.../yes.wasm` into the wallet's
+# matcher.wasm slot to localize "Your info wasn't found" issues to either
+# registration (entry still missing → registration fault) or eligibility
+# (entry now appears → real matcher's eligibility logic is too strict).
+[[bin]]
+name = "yes"
+path = "src/bin/yes.rs"
+
+[dependencies]
+# No third-party deps. The matcher is pure byte-search + a tiny base64url
+# decoder. Adding crates here costs WASM bytes and brings WASI-trap risk
+# (HashMap default hasher pulls entropy that the credman sandbox doesn't
+# provide). If we ever need real JSON parsing, prefer `nanoserde` per the
+# upstream matcher-rs pattern.
+
+[features]
+default = []
+# `cli` enables a native (non-wasm) test harness binary that mocks the credman
+# host imports against on-disk fixtures.
+cli = []
+# `logging` enables stderr logging during native runs. No-op on WASM (the
+# credman sandbox has no stderr).
+logging = []
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

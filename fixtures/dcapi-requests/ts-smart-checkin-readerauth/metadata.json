@@ -1,0 +1,13 @@
+{
+  "id": "ts-smart-checkin-readerauth",
+  "kind": "positive-smart-health-checkin-readerauth",
+  "source": "rp-web/scripts/generate-dcapi-request-fixtures.ts",
+  "origin": "https://clinic.example",
+  "protocol": "org-iso-mdoc",
+  "note": "Synthetic request fixture with per-DocRequest readerAuth. Private keys and the reader certificate are test vectors only.",
+  "containsQuestionnaireUrl": true,
+  "readerAuth": {
+    "present": true,
+    "certificateDerBase64Url": "MIIBUjCB-QIQBmHRjIG-J7EaKKbVGPwdIjAKBggqhkjOPQQDAjAuMSwwKgYDVQQDDCNTTUFSVCBIZWFsdGggQ2hlY2staW4gRGVtbyBWZXJpZmllcjAeFw0yNjA1MDExNjM3NTJaFw0yNjA1MzExNjM4NTJaMC4xLDAqBgNVBAMMI1NNQVJUIEhlYWx0aCBDaGVjay1pbiBEZW1vIFZlcmlmaWVyMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEYP-dCztCaxU3JIHFhbb49DioyNJOcD0MsUGfEohynqGJvXz9U2E_U4R6ALxg2lV-IQgrnSSczx7DY5TmXaZc9zAKBggqhkjOPQQDAgNIADBFAiByBmSHAojn04q53LbG_0u3dywmES-RtyNa9_nUiHwDFgIhAKBltzNj0Nk-xJX_YZvW5RDbJt6se2gDvnT60brXAKxx"
+  }
+}

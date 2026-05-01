@@ -1,0 +1,494 @@
+@@DC-CAPTURE-HOOK-INSTALLED@@
+@@DC-CAPTURE-HOOK-INSTALLED@@
+@@DC-CAPTURE@@credentials.get@@{
+  "mediation": "required",
+  "digital": {
+    "requests": [
+      {
+        "protocol": "openid4vp",
+        "data": {
+          "response_type": "vp_token",
+          "response_mode": "dc_api.jwt",
+          "nonce": "3JyNk_RcVmKofe15jxci6d-P83mt8fSURosOQcQsgNQ=",
+          "dcql_query": {
+            "credentials": [
+              {
+                "id": "0-org.iso.18013.5.1.mDL",
+                "format": "mso_mdoc",
+                "meta": {
+                  "doctype_value": "org.iso.18013.5.1.mDL"
+                },
+                "claims": [
+                  {
+                    "id": "family_name",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "family_name"
+                    ]
+                  },
+                  {
+                    "id": "given_name",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "given_name"
+                    ]
+                  },
+                  {
+                    "id": "birth_date",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "birth_date"
+                    ]
+                  },
+                  {
+                    "id": "sex",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "sex"
+                    ]
+                  },
+                  {
+                    "id": "portrait",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "portrait"
+                    ]
+                  },
+                  {
+                    "id": "age_over_18",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "age_over_18"
+                    ]
+                  },
+                  {
+                    "id": "age_over_21",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "age_over_21"
+                    ]
+                  },
+                  {
+                    "id": "document_number",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "document_number"
+                    ]
+                  },
+                  {
+                    "id": "issue_date",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "issue_date"
+                    ]
+                  },
+                  {
+                    "id": "expiry_date",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "expiry_date"
+                    ]
+                  },
+                  {
+                    "id": "issuing_country",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "issuing_country"
+                    ]
+                  },
+                  {
+                    "id": "issuing_authority",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "issuing_authority"
+                    ]
+                  },
+                  {
+                    "id": "un_distinguishing_sign",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "un_distinguishing_sign"
+                    ]
+                  },
+                  {
+                    "id": "driving_privileges",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "driving_privileges"
+                    ]
+                  },
+                  {
+                    "id": "resident_address",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "resident_address"
+                    ]
+                  },
+                  {
+                    "id": "resident_city",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "resident_city"
+                    ]
+                  },
+                  {
+                    "id": "resident_state",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "resident_state"
+                    ]
+                  },
+                  {
+                    "id": "resident_postal_code",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "resident_postal_code"
+                    ]
+                  },
+                  {
+                    "id": "resident_country",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "resident_country"
+                    ]
+                  },
+                  {
+                    "id": "sex",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1.aamva",
+                      "sex"
+                    ]
+                  },
+                  {
+                    "id": "version",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1.aamva",
+                      "version"
+                    ]
+                  },
+                  {
+                    "id": "DHS_compliance",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1.aamva",
+                      "DHS_compliance"
+                    ]
+                  },
+                  {
+                    "id": "EDL_credential",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1.aamva",
+                      "EDL_credential"
+                    ]
+                  },
+                  {
+                    "id": "given_name_truncation",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1.aamva",
+                      "given_name_truncation"
+                    ]
+                  },
+                  {
+                    "id": "family_name_truncation",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1.aamva",
+                      "family_name_truncation"
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "client_metadata": {
+            "authorization_encrypted_response_alg": "ECDH-ES",
+            "authorization_encrypted_response_enc": "A128GCM",
+            "jwks": {
+              "keys": [
+                {
+                  "kty": "EC",
+                  "crv": "P-256",
+                  "x": "qgZSKOf_f5Oy7iDwwkEA69nqTauw1Ew0Lci9SMhgvE8",
+                  "y": "NvzFsWQhubrxd97LO8L7nq0kqlCVbUldwBZ_Xh4A97g",
+                  "use": "enc",
+                  "alg": "ECDH-ES",
+                  "kid": "8eed5f8b-8efa-4236-9de4-d4813bad5e3b"
+                }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  },
+  "signal": {}
+}
+@@DC-CAPTURE@@credentials.get@@{
+  "mediation": "required",
+  "digital": {
+    "requests": [
+      {
+        "protocol": "openid4vp",
+        "data": {
+          "response_type": "vp_token",
+          "response_mode": "dc_api.jwt",
+          "nonce": "3JyNk_RcVmKofe15jxci6d-P83mt8fSURosOQcQsgNQ=",
+          "dcql_query": {
+            "credentials": [
+              {
+                "id": "0-org.iso.18013.5.1.mDL",
+                "format": "mso_mdoc",
+                "meta": {
+                  "doctype_value": "org.iso.18013.5.1.mDL"
+                },
+                "claims": [
+                  {
+                    "id": "family_name",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "family_name"
+                    ]
+                  },
+                  {
+                    "id": "given_name",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "given_name"
+                    ]
+                  },
+                  {
+                    "id": "birth_date",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "birth_date"
+                    ]
+                  },
+                  {
+                    "id": "sex",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "sex"
+                    ]
+                  },
+                  {
+                    "id": "portrait",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "portrait"
+                    ]
+                  },
+                  {
+                    "id": "age_over_18",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "age_over_18"
+                    ]
+                  },
+                  {
+                    "id": "age_over_21",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "age_over_21"
+                    ]
+                  },
+                  {
+                    "id": "document_number",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "document_number"
+                    ]
+                  },
+                  {
+                    "id": "issue_date",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "issue_date"
+                    ]
+                  },
+                  {
+                    "id": "expiry_date",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "expiry_date"
+                    ]
+                  },
+                  {
+                    "id": "issuing_country",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "issuing_country"
+                    ]
+                  },
+                  {
+                    "id": "issuing_authority",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "issuing_authority"
+                    ]
+                  },
+                  {
+                    "id": "un_distinguishing_sign",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "un_distinguishing_sign"
+                    ]
+                  },
+                  {
+                    "id": "driving_privileges",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "driving_privileges"
+                    ]
+                  },
+                  {
+                    "id": "resident_address",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "resident_address"
+                    ]
+                  },
+                  {
+                    "id": "resident_city",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "resident_city"
+                    ]
+                  },
+                  {
+                    "id": "resident_state",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "resident_state"
+                    ]
+                  },
+                  {
+                    "id": "resident_postal_code",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "resident_postal_code"
+                    ]
+                  },
+                  {
+                    "id": "resident_country",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1",
+                      "resident_country"
+                    ]
+                  },
+                  {
+                    "id": "sex",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1.aamva",
+                      "sex"
+                    ]
+                  },
+                  {
+                    "id": "version",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1.aamva",
+                      "version"
+                    ]
+                  },
+                  {
+                    "id": "DHS_compliance",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1.aamva",
+                      "DHS_compliance"
+                    ]
+                  },
+                  {
+                    "id": "EDL_credential",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1.aamva",
+                      "EDL_credential"
+                    ]
+                  },
+                  {
+                    "id": "given_name_truncation",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1.aamva",
+                      "given_name_truncation"
+                    ]
+                  },
+                  {
+                    "id": "family_name_truncation",
+                    "intent_to_retain": false,
+                    "path": [
+                      "org.iso.18013.5.1.aamva",
+                      "family_name_truncation"
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "client_metadata": {
+            "authorization_encrypted_response_alg": "ECDH-ES",
+            "authorization_encrypted_response_enc": "A128GCM",
+            "jwks": {
+              "keys": [
+                {
+                  "kty": "EC",
+                  "crv": "P-256",
+                  "x": "qgZSKOf_f5Oy7iDwwkEA69nqTauw1Ew0Lci9SMhgvE8",
+                  "y": "NvzFsWQhubrxd97LO8L7nq0kqlCVbUldwBZ_Xh4A97g",
+                  "use": "enc",
+                  "alg": "ECDH-ES",
+                  "kid": "8eed5f8b-8efa-4236-9de4-d4813bad5e3b"
+                }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  },
+  "signal": {}
+}

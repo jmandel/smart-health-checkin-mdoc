@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">SMART Health Check-in</string>
+    <string name="handler_activity_label">SMART Health Check-in Wallet</string>
+</resources>

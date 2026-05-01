@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "sources": [
+    {
+      "id": "multipaz",
+      "name": "OpenWallet Foundation Multipaz",
+      "url": "https://github.com/openwallet-foundation/multipaz.git",
+      "commit": "4b2e75139d9e7add9cc3821676ab6cf5b79df3af",
+      "license": "Apache-2.0",
+      "role": "Primary Android/Kotlin reference for direct org-iso-mdoc, DeviceResponse, SessionTranscript, and HPKE wrapping"
+    },
+    {
+      "id": "pymdoc-cbor",
+      "name": "IdentityPython pyMDOC-CBOR",
+      "url": "https://github.com/IdentityPython/pyMDOC-CBOR.git",
+      "commit": "22198bb95cf8d35feb1671d04dbd0164ed713de5",
+      "license": "Apache-2.0",
+      "role": "Independent byte oracle for IssuerSignedItem, MSO valueDigests, and issuerAuth"
+    },
+    {
+      "id": "auth0-mdl",
+      "name": "Auth0 Lab @auth0/mdl",
+      "url": "https://github.com/auth0-lab/mdl.git",
+      "commit": "5cc139cfbcbc3d96c982efb0e7ea9f1b8027ffbf",
+      "license": "Apache-2.0",
+      "role": "TypeScript mdoc model and DeviceAuth sanity reference"
+    },
+    {
+      "id": "google-mdoc-credential",
+      "name": "Google mdoc-credential",
+      "url": "https://github.com/google/mdoc-credential.git",
+      "commit": "84180d83aaa7ea9f1fe1b3f836cbb17b7d95cb98",
+      "license": "Apache-2.0",
+      "role": "Archived Android Credential Manager and HPKE/Tink reference with Annex D vector"
+    }
+  ]
+}

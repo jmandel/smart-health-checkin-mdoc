@@ -1,0 +1,11 @@
+{
+  "crv": "P-256",
+  "d": "KjWFOK85TJpsiGI9dDZdPS4iVtwECkAv99dIqr06qZs",
+  "ext": true,
+  "key_ops": [
+    "deriveBits"
+  ],
+  "kty": "EC",
+  "x": "gw2AGljhjMT-usP-1OkKhUnviIBvlb_-vpoDEvkska4",
+  "y": "H0bYDJFkdwVfWMVLGYWVdEn5GsNa9KGpiDio6vF4GRs"
+}

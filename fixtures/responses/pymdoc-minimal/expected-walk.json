@@ -1,0 +1,32 @@
+{
+  "digestID": 0,
+  "digestMatches": true,
+  "docType": "org.smarthealthit.checkin.1",
+  "elementIdentifier": "smart_health_checkin_response",
+  "mso": {
+    "digestAlgorithm": "SHA-256",
+    "docType": "org.smarthealthit.checkin.1",
+    "version": "1.0"
+  },
+  "msoDigestSha256": "8f7b1f307aacd205224e10ce2b3857fa2dc48186b04655c118d7810e55d0d93c",
+  "namespace": "org.smarthealthit.checkin",
+  "recomputedDigestSha256": "8f7b1f307aacd205224e10ce2b3857fa2dc48186b04655c118d7810e55d0d93c",
+  "smartResponse": {
+    "answers": {
+      "patient": [
+        "a1"
+      ]
+    },
+    "artifacts": [
+      {
+        "data": {
+          "id": "demo",
+          "resourceType": "Patient"
+        },
+        "id": "a1",
+        "type": "fhir_resource"
+      }
+    ],
+    "version": "1"
+  }
+}

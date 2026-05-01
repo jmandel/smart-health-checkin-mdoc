@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Tight-cropped SMART starburst for use as a brand mark / inline icon.
+  Same paths as ic_launcher_foreground.xml but the viewport equals the
+  starburst's source bbox (no safe-zone padding), so the figure fills the
+  drawable. Use this for in-app brand mark, the launcher uses the padded
+  foreground.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="95.17"
+    android:viewportHeight="95.17">
+
+    <group
+        android:translateX="-57.0752"
+        android:translateY="11.1948">
+
+        <path
+            android:fillColor="#722772"
+            android:pathData="M83.91,0 L93.42,0 L104.56,18.47 L116.03,0 L125.28,0 L104.58,33.96 Z" />
+        <path
+            android:fillColor="#E24A31"
+            android:pathData="M60.61,35.72 L65.37,28.16 L87.76,28.16 L76.67,9.49 L81.3,1.87 L101.89,35.72 Z" />
+        <path
+            android:fillColor="#89BF44"
+            android:pathData="M148.72,38.78 L143.97,46.33 L121.57,46.33 L132.66,65.16 L128.03,72.78 L107.44,38.78 Z" />
+        <path
+            android:fillColor="#E77D26"
+            android:pathData="M128,1.73 L132.76,9.55 L121.5,28.16 L144.06,28.16 L148.69,35.72 L107.4,35.72 Z" />
+        <path
+            android:fillColor="#F1B42A"
+            android:pathData="M81.28,72.77 L76.53,64.94 L87.78,46.33 L65.23,46.33 L60.6,38.78 L101.89,38.78 Z" />
+
+    </group>
+</vector>

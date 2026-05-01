@@ -1,0 +1,23 @@
+{
+    "docType":"org.smarthealthit.checkin.1",
+    "version":"1.0",
+    "validityInfo":{
+        "signed":0("2026-04-30T12:00:00Z"),
+        "validFrom":0("2026-04-30T12:00:00Z"),
+        "validUntil":0("2031-01-01T00:00:00Z")
+    },
+    "valueDigests":{
+        "org.smarthealthit.checkin":{
+            0:h'8f7b1f307aacd205224e10ce2b3857fa2dc48186b04655c118d7810e55d0d93c'
+        }
+    },
+    "deviceKeyInfo":{
+        "deviceKey":{
+            1:2,
+            -1:1,
+            -2:h'45dbb49d6d97b385bf5145e2adc14b2ee41650d4c6f750af4ddc713ef63a8670',
+            -3:h'fc147eabbdf9aa196db874ae0de02de4eef235b49b4b42906d0bdfe07416cc3b'
+        }
+    },
+    "digestAlgorithm":"SHA-256"
+}

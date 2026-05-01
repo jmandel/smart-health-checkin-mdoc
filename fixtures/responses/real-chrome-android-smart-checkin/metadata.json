@@ -1,0 +1,34 @@
+{
+  "id": "real-chrome-android-smart-checkin",
+  "kind": "positive-smart-health-checkin-real-platform-response",
+  "source": "/tmp/shc-handler-runs/run-1777649836829",
+  "sourceRequestFixture": "fixtures/dcapi-requests/real-chrome-android-smart-checkin",
+  "capturedAt": "2026-05-01T15:37:16.833791Z",
+  "origin": "http://127.0.0.1:3010",
+  "originSource": "web-origin",
+  "packageName": "com.android.chrome",
+  "protocol": "org-iso-mdoc",
+  "containsPhi": false,
+  "note": "Real Android wallet response debug artifacts using demo wallet data. Includes encrypted wrapper, plaintext DeviceResponse, and an intentionally public test-only RP HPKE private JWK in the paired request fixture.",
+  "hpkeReopen": {
+    "available": true,
+    "privateJwkFixture": "fixtures/dcapi-requests/real-chrome-android-smart-checkin/recipient-private.jwk.json",
+    "openedInspection": "hpke-opened-response-inspection.json"
+  },
+  "sha256": {
+    "wallet-response.digital-credential.json": "6da73127b36d433092f3eab6e911723051992a82c1b466a5f0c5bab7db2eb814",
+    "credential.json": "6da73127b36d433092f3eab6e911723051992a82c1b466a5f0c5bab7db2eb814",
+    "dcapi-response.cbor": "f6e0b2393eae1974ba01e4081476dc19f23c9c6d0d7b031d60780d8a8fe98769",
+    "hpke-enc.bin": "d7d7ab784a918fb1248b3af91d459a5d737ed406b29e4aa4312723a869470b0c",
+    "hpke-ciphertext.bin": "bf069e87f1955fa92323f2c6fe47a88ca22bbc4b7009e7510131a4f1f445db08",
+    "device-response.cbor": "44ca04fde236c92d4e7b70d731f77f9226bb940c0e5b72b29d94e08ef4383ba6",
+    "issuer-signed-item-tag24.cbor": "9eb55a99222ebeab7cfd697273218d1e35041289acfb29926799bb0dc54329d5",
+    "value-digest.bin": "f3eb90fa065b86e0817ae74d7be8cd509ba37948906f412c2ec85b2b0fd39963",
+    "mso.cbor": "49ea909cc4356af89d0a39296fbbd2d069f3d800c64e877bc07c324a3134625b",
+    "issuer-auth.cbor": "76594c90bd75227181f59d7341b829cb4944eb893897ef92e72f87e9f7cea6e7",
+    "device-authentication.cbor": "45f4d778fb5b4203a6e002628e98c54711a50fa8a1abe8a2c52b3fdcbb9c960f",
+    "session-transcript.cbor": "12c79c34c4d755875205e18fc3fb493b0d29aabd82aa282dae2f3a0a1c7583ea",
+    "smart-response.expected.json": "0bb9dc36dea3d063eccb3df2e749197fbfc78983cd1423f594ca59e1df1abfc8",
+    "hpke-opened-response-inspection.json": "7a7fea59b442fcf1314dfdde880d02f1cf5428149fefe6aa6cb05c1b44e7399e"
+  }
+}

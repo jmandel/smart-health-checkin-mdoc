@@ -1,0 +1,1929 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SMART Health Check-in mdoc Byte Explainer</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172033;
+      --muted: #60708a;
+      --line: #d7e1ed;
+      --soft: #f5f8fb;
+      --panel: #ffffff;
+      --blue: #0072bc;
+      --green: #0b7c58;
+      --amber: #9a5b00;
+      --red: #b42318;
+      --code: #0e1628;
+      --code-fg: #e9f0ff;
+      --shadow: 0 10px 24px rgba(23, 32, 51, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 16px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: #eef3f8;
+    }
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--line);
+    }
+    .wrap {
+      max-width: 1220px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 28px;
+      align-items: end;
+    }
+    h1, h2, h3, h4 { line-height: 1.12; margin: 0; }
+    h1 { font-size: clamp(2.1rem, 4vw, 4.2rem); letter-spacing: 0; }
+    h2 { font-size: 1.8rem; margin-bottom: 12px; }
+    h3 { font-size: 1.18rem; margin-bottom: 8px; }
+    h4 { font-size: 1rem; margin-bottom: 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    p { margin: 0 0 12px; }
+    a { color: var(--blue); }
+    .lede {
+      color: var(--muted);
+      font-size: 1.13rem;
+      max-width: 820px;
+      margin-top: 16px;
+    }
+    .badge-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid #b6d8ef;
+      color: #005f9e;
+      background: #eef8ff;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 22px;
+    }
+    .button-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 12px 0;
+    }
+    button {
+      border: 1px solid #006fb7;
+      background: var(--blue);
+      color: #ffffff;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    button.secondary {
+      background: #ffffff;
+      color: var(--blue);
+    }
+    .main-grid {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 22px;
+      align-items: start;
+    }
+    nav {
+      position: sticky;
+      top: 12px;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+    }
+    nav a {
+      display: block;
+      padding: 8px 10px;
+      border-radius: 6px;
+      text-decoration: none;
+      color: var(--ink);
+      font-weight: 650;
+    }
+    nav a:hover { background: var(--soft); }
+    section {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 18px;
+    }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(130px, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .flow-step {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: var(--soft);
+      min-height: 130px;
+    }
+    .flow-step strong { display: block; margin-bottom: 6px; }
+    .flow-step code { font-size: 0.86rem; }
+    .callout {
+      border-left: 4px solid var(--blue);
+      background: #f0f8ff;
+      padding: 14px 16px;
+      border-radius: 6px;
+      margin: 16px 0;
+    }
+    .callout.warn {
+      border-left-color: var(--amber);
+      background: #fff8ea;
+    }
+    .callout.good {
+      border-left-color: var(--green);
+      background: #ecfbf5;
+    }
+    .two {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .three {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .mini {
+      border: 1px solid var(--line);
+      background: var(--soft);
+      border-radius: 8px;
+      padding: 14px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+      font-size: 0.95rem;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px;
+      vertical-align: top;
+      text-align: left;
+    }
+    th {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: 0.78rem;
+    }
+    code, pre, .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+    code {
+      background: #eef2f7;
+      padding: 0.12em 0.3em;
+      border-radius: 4px;
+    }
+    pre {
+      margin: 0;
+      background: var(--code);
+      color: var(--code-fg);
+      padding: 14px;
+      border-radius: 8px;
+      overflow: auto;
+      tab-size: 2;
+      white-space: pre;
+      font-size: 0.85rem;
+    }
+    .wrap-pre {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    .byte-pre {
+      max-height: 520px;
+      border: 1px solid #26324a;
+    }
+    .calc {
+      counter-reset: step;
+      display: grid;
+      gap: 10px;
+    }
+    .calc-row {
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--soft);
+    }
+    .calc-row:before {
+      counter-increment: step;
+      content: counter(step);
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      color: #ffffff;
+      background: var(--blue);
+      font-weight: 800;
+    }
+    .artifact-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      margin: 12px 0;
+      background: #ffffff;
+    }
+    .artifact-card.missing {
+      background: #fafafa;
+      color: var(--muted);
+    }
+    .artifact-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .artifact-title { font-weight: 800; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      background: #eef2f7;
+      color: var(--muted);
+    }
+    .pill.good { background: #ddf8eb; color: var(--green); }
+    .pill.warn { background: #fff0ca; color: var(--amber); }
+    .path {
+      color: var(--muted);
+      font-size: 0.88rem;
+      overflow-wrap: anywhere;
+    }
+    .drill-chain {
+      display: grid;
+      gap: 12px;
+      margin: 16px 0;
+    }
+    .drill-node {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 14px;
+    }
+    .drill-node h4 {
+      color: var(--ink);
+      letter-spacing: 0;
+      text-transform: none;
+      font-size: 1.05rem;
+      margin: 0 0 6px;
+    }
+    .fact-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .fact {
+      border: 1px solid #dce6f0;
+      border-radius: 6px;
+      background: var(--soft);
+      padding: 9px;
+      min-width: 0;
+    }
+    .fact b {
+      display: block;
+      color: var(--muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 3px;
+    }
+    .fact span {
+      display: block;
+      overflow-wrap: anywhere;
+    }
+    .item-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .item-row {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 10px;
+      background: #fbfdff;
+    }
+    .item-row strong { display: block; }
+    .item-row .small { overflow-wrap: anywhere; }
+    .byte-ledger {
+      display: grid;
+      gap: 10px;
+      margin: 16px 0;
+    }
+    .byte-row {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 14px;
+    }
+    .byte-row-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .byte-row-head strong { font-size: 1.02rem; }
+    .check {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 0.76rem;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+    .check.pass { color: var(--green); background: #ddf8eb; }
+    .check.fail { color: var(--red); background: #ffe7e5; }
+    .check.info { color: #005f9e; background: #eef8ff; }
+    .check.skip { color: var(--muted); background: #eef2f7; }
+    .byte-fields {
+      display: grid;
+      grid-template-columns: 160px minmax(0, 1fr);
+      gap: 7px 12px;
+      font-size: 0.9rem;
+    }
+    .byte-fields dt {
+      color: var(--muted);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: 0.72rem;
+    }
+    .byte-fields dd {
+      margin: 0;
+      overflow-wrap: anywhere;
+    }
+    .byte-inspector {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .byte-slice {
+      display: grid;
+      grid-template-columns: 96px minmax(0, 1fr);
+      gap: 10px;
+      border: 1px solid #dce6f0;
+      border-radius: 6px;
+      padding: 10px;
+      background: #fbfdff;
+    }
+    .byte-offset {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      color: var(--muted);
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .byte-hex {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      overflow-wrap: anywhere;
+      word-break: break-all;
+      margin-bottom: 5px;
+    }
+    .byte-ascii {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      color: var(--muted);
+      overflow-wrap: anywhere;
+      margin-bottom: 5px;
+    }
+    .byte-note strong {
+      display: block;
+      margin-bottom: 2px;
+    }
+    .nested-json {
+      display: grid;
+      gap: 10px;
+    }
+    input[type="file"] {
+      width: 100%;
+      padding: 12px;
+      border: 1px dashed #9fb6cc;
+      border-radius: 8px;
+      background: #f8fbff;
+    }
+    details {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0;
+      margin: 10px 0;
+      background: #ffffff;
+    }
+    summary {
+      cursor: pointer;
+      padding: 12px 14px;
+      font-weight: 800;
+    }
+    details > div { padding: 0 14px 14px; }
+    .small { color: var(--muted); font-size: 0.92rem; }
+    .nowrap { white-space: nowrap; }
+    @media (max-width: 980px) {
+      .hero, .main-grid, .two, .three, .flow { grid-template-columns: 1fr; }
+      nav { position: static; }
+      .wrap { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap hero">
+      <div>
+        <h1>SMART Health Check-in over direct mdoc</h1>
+        <p class="lede">
+          A byte-level explainer for the verifier web app, Android Credential Manager,
+          and wallet response path. It tracks where every request and response byte
+          comes from, which values are displayed to the user, what is signed, what is
+          hashed, and what is encrypted.
+        </p>
+        <div class="badge-row">
+          <span class="badge">protocol: org-iso-mdoc</span>
+          <span class="badge">docType: org.smarthealthit.checkin.1</span>
+          <span class="badge">namespace: org.smarthealthit.checkin</span>
+          <span class="badge">element: smart_health_checkin_response</span>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Use With A Real Run</h3>
+        <p class="small">The page auto-loads a bundled successful run. Pull a newer Android handler bundle when you want to compare.</p>
+        <pre>scripts/pull-android-handler-run.sh /tmp/shc-handler-runs latest</pre>
+        <p class="small" style="margin-top:10px">Pick a directory like <code>/tmp/shc-handler-runs/run-1777607005998</code>.</p>
+        <div class="button-row">
+          <button id="loadExample" type="button">Load bundled example</button>
+          <button id="clearRun" class="secondary" type="button">Clear loaded run</button>
+        </div>
+        <input id="runPicker" type="file" webkitdirectory multiple />
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap main-grid">
+    <nav aria-label="Explainer sections">
+      <a href="#mental-model">Mental Model</a>
+      <a href="#role-set">Role Set</a>
+      <a href="#request">Request Bytes</a>
+      <a href="#origin">Origin And Transcript</a>
+      <a href="#response">DeviceResponse Bytes</a>
+      <a href="#hpke">HPKE And Credential Result</a>
+      <a href="#artifact-viewer">Artifact Viewer</a>
+      <a href="#byte-ledger">Byte Ledger</a>
+      <a href="#verification">Verification Checklist</a>
+      <a href="#open-edges">Known Edges</a>
+    </nav>
+
+    <div>
+      <section id="mental-model">
+        <h2>Mental Model</h2>
+        <p>
+          The verifier asks for one mdoc credential. That mdoc credential is not a
+          driver's license. It is our SMART Health Check-in document type. The request
+          asks for one stable mdoc element, and the actual SMART request payload lives
+          in <code>ItemsRequest.requestInfo.smart_health_checkin</code> as a JSON string.
+        </p>
+        <div class="flow">
+          <div class="flow-step">
+            <strong>1. RP page</strong>
+            Builds <code>navigator.credentials.get</code> with an <code>org-iso-mdoc</code>
+            request and an HPKE recipient key.
+          </div>
+          <div class="flow-step">
+            <strong>2. Browser</strong>
+            Shows the trust prompt and tells Android the web origin, such as
+            <code>http://127.0.0.1:3000</code>.
+          </div>
+          <div class="flow-step">
+            <strong>3. Credential Manager</strong>
+            Runs wallet matchers and launches the selected wallet handler activity.
+          </div>
+          <div class="flow-step">
+            <strong>4. Wallet</strong>
+            Decodes the request, shows consent, builds a self-attested mdoc
+            <code>DeviceResponse</code>.
+          </div>
+          <div class="flow-step">
+            <strong>5. RP page</strong>
+            HPKE-opens the response, validates mdoc hashes, and renders SMART artifacts.
+          </div>
+        </div>
+        <div class="callout good">
+          <strong>Current successful signal:</strong> the verifier displays
+          <code>HPKE opened</code>, <code>digest matched</code>, 4 artifacts, and 4 answered
+          items. That means the browser origin, SessionTranscript, HPKE key schedule,
+          and MSO digest all lined up for the current implementation.
+        </div>
+      </section>
+
+      <section id="role-set">
+        <h2>Role Set</h2>
+        <table>
+          <thead><tr><th>Role</th><th>Owns</th><th>What It Sends</th><th>What It Trusts</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Clinic verifier page</td>
+              <td>SMART request JSON, HPKE recipient key pair, nonce</td>
+              <td><code>navigator.credentials.get({ digital: { requests: [...] } })</code></td>
+              <td>The wallet response can be opened with its private key and matches its request transcript.</td>
+            </tr>
+            <tr>
+              <td>Browser</td>
+              <td>Web origin assertion</td>
+              <td>Credential Manager request plus <code>callingAppInfo.origin</code></td>
+              <td>The user approved the browser trust prompt.</td>
+            </tr>
+            <tr>
+              <td>Android Credential Manager</td>
+              <td>Matcher dispatch, picker UI, PendingIntent delivery</td>
+              <td><code>ProviderGetCredentialRequest</code> to the wallet</td>
+              <td>Wallet registration and selected credential entry.</td>
+            </tr>
+            <tr>
+              <td>Wallet matcher</td>
+              <td>Picker entry display</td>
+              <td>One entry for <code>org.smarthealthit.checkin.1</code></td>
+              <td>Only enough request structure to decide whether to offer the entry.</td>
+            </tr>
+            <tr>
+              <td>Wallet handler</td>
+              <td>FHIR data, consent, mdoc response, device key</td>
+              <td><code>DigitalCredential</code> containing a base64url CBOR response</td>
+              <td>Browser origin if the calling browser package/signing cert is trusted.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="request">
+        <h2>Request Bytes</h2>
+        <p>The active verifier request shape is direct Digital Credentials API mdoc:</p>
+        <pre>{
+  "requests": [{
+    "protocol": "org-iso-mdoc",
+    "data": {
+      "deviceRequest": "&lt;base64url CBOR DeviceRequest&gt;",
+      "encryptionInfo": "&lt;base64url CBOR ['dcapi', {...}]&gt;"
+    }
+  }]
+}</pre>
+        <div class="calc">
+          <div class="calc-row">
+            <div>
+              <h3>SMART request JSON</h3>
+              <p>
+                The verifier starts with a plain JSON object:
+                <code>{"version":"1","items":[...]}</code>. Each item is a FHIR
+                profile or an inline/questionnaire URL request. This is user-facing
+                clinical intent, not mdoc selective disclosure metadata.
+              </p>
+            </div>
+          </div>
+          <div class="calc-row">
+            <div>
+              <h3>ItemsRequest</h3>
+              <p>
+                The SMART JSON is stored as a CBOR text string at
+                <code>requestInfo.smart_health_checkin</code>. The requested mdoc
+                element is stable:
+                <code>nameSpaces.org.smarthealthit.checkin.smart_health_checkin_response = false</code>.
+                The <code>false</code> byte is the mdoc <code>intentToRetain</code> flag.
+              </p>
+              <pre>{
+  "docType": "org.smarthealthit.checkin.1",
+  "nameSpaces": {
+    "org.smarthealthit.checkin": {
+      "smart_health_checkin_response": false
+    }
+  },
+  "requestInfo": {
+    "smart_health_checkin": "&lt;SMART request JSON string&gt;"
+  }
+}</pre>
+            </div>
+          </div>
+          <div class="calc-row">
+            <div>
+              <h3>DeviceRequest</h3>
+              <p>
+                The ItemsRequest is CBOR-encoded, wrapped in tag 24, and inserted into
+                <code>DeviceRequest.docRequests[0].itemsRequest</code>.
+              </p>
+              <pre>{
+  "version": "1.0",
+  "docRequests": [
+    { "itemsRequest": Tag(24, bstr .cbor ItemsRequest) }
+  ]
+}</pre>
+            </div>
+          </div>
+          <div class="calc-row">
+            <div>
+              <h3>encryptionInfo</h3>
+              <p>
+                The verifier also sends a CBOR array with a nonce and recipient HPKE
+                public key. The public key is a COSE EC2 P-256 key.
+              </p>
+              <pre>[
+  "dcapi",
+  {
+    "nonce": bstr,
+    "recipientPublicKey": { 1: 2, -1: 1, -2: x, -3: y }
+  }
+]</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="origin">
+        <h2>Origin And SessionTranscript</h2>
+        <p>
+          AndroidX only reveals <code>callingAppInfo.origin</code> after the wallet
+          passes a privileged caller allowlist to <code>getOrigin(...)</code>. In this
+          dev build, the wallet reflects the actual caller app/signature to prove the
+          plumbing. A production build should use a maintained list of trusted browser
+          package names and signing-cert fingerprints.
+        </p>
+        <div class="callout warn">
+          <strong>Important distinction:</strong> the privileged app allowlist is for
+          browsers/apps that are allowed to assert web origins. It is not an allowlist
+          of clinic origins. Once Chrome is trusted, any clinic origin still gets shown
+          to the user and bound into the transcript.
+        </div>
+        <div class="calc">
+          <div class="calc-row">
+            <div>
+              <h3>Origin extraction</h3>
+              <p>
+                The wallet obtains <code>http://127.0.0.1:3000</code> from
+                <code>callingAppInfo.getOrigin(privilegedAllowlistJson)</code>.
+                If this falls back to <code>android-app:com.android.chrome</code>,
+                the transcript will not match the verifier page.
+              </p>
+            </div>
+          </div>
+          <div class="calc-row">
+            <div>
+              <h3>dcapiInfo</h3>
+              <p>Build an intermediate CBOR array from the exact base64url encryptionInfo string and the origin:</p>
+              <pre>dcapiInfo = CBOR([
+  encryptionInfoBase64Url,
+  origin
+])</pre>
+            </div>
+          </div>
+          <div class="calc-row">
+            <div>
+              <h3>Handover hash</h3>
+              <p>Hash that encoded byte string:</p>
+              <pre>handover = [
+  "dcapi",
+  SHA-256(dcapiInfo)
+]</pre>
+            </div>
+          </div>
+          <div class="calc-row">
+            <div>
+              <h3>SessionTranscript</h3>
+              <p>This is the exact CBOR byte string used later in DeviceAuthentication and HPKE:</p>
+              <pre>SessionTranscript = CBOR([
+  null,
+  null,
+  handover
+])</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="response">
+        <h2>DeviceResponse Bytes</h2>
+        <p>
+          The wallet wraps the SMART response JSON in one mdoc issuer-signed item,
+          creates an MSO with a digest of that item, signs the MSO, signs a
+          DeviceAuthentication payload bound to the SessionTranscript, and emits a
+          CBOR <code>DeviceResponse</code>.
+        </p>
+        <div class="calc">
+          <div class="calc-row">
+            <div>
+              <h3>SMART response JSON</h3>
+              <p>
+                The wallet produces <code>{version, artifacts, answers}</code>. The
+                <code>artifacts</code> list holds FHIR resources or other payloads.
+                The <code>answers</code> map links each request item id to artifact ids.
+              </p>
+            </div>
+          </div>
+          <div class="calc-row">
+            <div>
+              <h3>IssuerSignedItem</h3>
+              <p>
+                The SMART response JSON is the <code>elementValue</code> for the one
+                stable element. The item is canonical CBOR, then wrapped as tag 24.
+              </p>
+              <pre>IssuerSignedItem = {
+  "digestID": 0,
+  "random": random16,
+  "elementIdentifier": "smart_health_checkin_response",
+  "elementValue": "&lt;SMART response JSON string&gt;"
+}
+
+issuerSignedItemTag24 = Tag(24, bstr .cbor IssuerSignedItem)</pre>
+            </div>
+          </div>
+          <div class="calc-row">
+            <div>
+              <h3>Value digest</h3>
+              <p>The MSO digest is over the exact tag-24 bytes, not just the inner map:</p>
+              <pre>valueDigest = SHA-256(issuerSignedItemTag24)</pre>
+            </div>
+          </div>
+          <div class="calc-row">
+            <div>
+              <h3>MobileSecurityObject</h3>
+              <p>
+                The MSO records the digest, docType, device public key, digest algorithm,
+                and validity window. It is CBOR-encoded and then used as the payload of
+                an issuer <code>COSE_Sign1</code>.
+              </p>
+            </div>
+          </div>
+          <div class="calc-row">
+            <div>
+              <h3>DeviceAuthentication</h3>
+              <p>The device signature payload binds the response to the verifier's request transcript:</p>
+              <pre>DeviceAuthentication = Tag(24, CBOR([
+  "DeviceAuthentication",
+  SessionTranscript,
+  "org.smarthealthit.checkin.1",
+  Tag(24, bstr .cbor {})
+]))</pre>
+            </div>
+          </div>
+          <div class="calc-row">
+            <div>
+              <h3>DeviceResponse</h3>
+              <pre>DeviceResponse = {
+  "version": "1.0",
+  "documents": [{
+    "docType": "org.smarthealthit.checkin.1",
+    "issuerSigned": {
+      "nameSpaces": {
+        "org.smarthealthit.checkin": [issuerSignedItemTag24]
+      },
+      "issuerAuth": COSE_Sign1(MSO)
+    },
+    "deviceSigned": {
+      "nameSpaces": Tag(24, bstr .cbor {}),
+      "deviceAuth": { "deviceSignature": COSE_Sign1(DeviceAuthentication) }
+    }
+  }],
+  "status": 0
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="hpke">
+        <h2>HPKE And Credential Result</h2>
+        <p>
+          The wallet encrypts the plaintext <code>DeviceResponse</code> to the verifier
+          public key from <code>encryptionInfo.recipientPublicKey</code>.
+        </p>
+        <table>
+          <thead><tr><th>Parameter</th><th>Current implementation</th></tr></thead>
+          <tbody>
+            <tr><td>KEM</td><td><code>DHKEM(P-256, HKDF-SHA256)</code>, suite id <code>0x0010</code></td></tr>
+            <tr><td>KDF</td><td><code>HKDF-SHA256</code>, suite id <code>0x0001</code></td></tr>
+            <tr><td>AEAD</td><td><code>AES-128-GCM</code>, suite id <code>0x0001</code></td></tr>
+            <tr><td>HPKE info</td><td><code>SessionTranscript</code> bytes</td></tr>
+            <tr><td>AES-GCM AAD</td><td>empty byte string in the current implementation</td></tr>
+            <tr><td>Nonce</td><td>HPKE base nonce for sequence number 0</td></tr>
+          </tbody>
+        </table>
+        <p>The encrypted result is wrapped as another small CBOR array:</p>
+        <pre>dcapiResponse = CBOR([
+  "dcapi",
+  {
+    "enc": hpkeEphemeralPublicKeyRawP256,
+    "cipherText": aesGcmCiphertextAndTag
+  }
+])</pre>
+        <p>The wallet returns that through Credential Manager as:</p>
+        <pre>{
+  "protocol": "org-iso-mdoc",
+  "data": {
+    "response": "&lt;base64url dcapiResponse CBOR&gt;"
+  }
+}</pre>
+      </section>
+
+      <section id="artifact-viewer">
+        <h2>Artifact Viewer</h2>
+        <p>
+          Choose a pulled wallet run directory above. The viewer renders the files the
+          wallet writes with <code>HandlerActivity.saveDebugBundle</code> and
+          <code>appendBinaryArtifact</code>. Binary files are shown as complete hex
+          dumps with offsets.
+        </p>
+        <div id="runSummary" class="callout">No run directory selected yet.</div>
+        <div id="byteLedgerOutput"></div>
+        <div id="drillOutput"></div>
+        <div id="artifactOutput"></div>
+      </section>
+
+      <section id="verification">
+        <h2>Verification Checklist</h2>
+        <div class="three">
+          <div class="mini">
+            <h3>Request</h3>
+            <p>Decode <code>device-request.cbor</code>. Confirm docType, namespace,
+              element id, <code>intentToRetain=false</code>, and SMART JSON in
+              <code>requestInfo</code>.</p>
+          </div>
+          <div class="mini">
+            <h3>Transcript</h3>
+            <p>Recompute <code>CBOR([encryptionInfoB64u, origin])</code>,
+              SHA-256 it, then compare <code>session-transcript.cbor</code>.</p>
+          </div>
+          <div class="mini">
+            <h3>Response</h3>
+            <p>Check <code>value-digest.bin == SHA-256(issuer-signed-item-tag24.cbor)</code>
+              and that the MSO contains the same digest id and namespace.</p>
+          </div>
+        </div>
+        <div class="two" style="margin-top:16px">
+          <div class="mini">
+            <h3>Offline tools</h3>
+            <pre>bun run inspect:mdoc /tmp/shc-handler-runs/run-* --out /tmp/out/request
+bun run inspect:response /tmp/shc-handler-runs/run-*/device-response.cbor --out /tmp/out/response</pre>
+          </div>
+          <div class="mini">
+            <h3>Expected RP UI</h3>
+            <p>Success shows <code>HPKE opened</code>, <code>digest matched</code>,
+              <code>4 artifacts</code>, and <code>4 answered items</code>.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="open-edges">
+        <h2>Known Edges</h2>
+        <table>
+          <thead><tr><th>Area</th><th>Current behavior</th><th>Future hardening</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Browser origin trust</td>
+              <td>Dev build reflects the actual caller app/signature into the AndroidX privileged allowlist.</td>
+              <td>Use an up-to-date allowlist of trusted browser package names and official signing cert fingerprints.</td>
+            </tr>
+            <tr>
+              <td>Issuer trust</td>
+              <td>Self-signed issuer cert. Useful for integrity and debugging, not third-party attestation.</td>
+              <td>Add real issuer/IACA/VICAL only if product requirements demand it.</td>
+            </tr>
+            <tr>
+              <td>HPKE binding</td>
+              <td>SessionTranscript is HPKE <code>info</code>; current AES-GCM AAD is empty.</td>
+              <td>Keep tests pinned to this behavior or deliberately migrate both RP and wallet if a target platform requires a different binding.</td>
+            </tr>
+            <tr>
+              <td>Request carrier</td>
+              <td><code>requestInfo.smart_health_checkin</code> is load-bearing.</td>
+              <td>Keep the dynamic element fallback documented but disabled unless a platform hides requestInfo.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+  </main>
+
+  <script src="explainer-example-run.js"></script>
+  <script>
+    const artifactGroups = [
+      {
+        title: "Credential Manager and request input",
+        files: [
+          ["manifest.json", "Run metadata: origin, package, selected entry, sizes, and origin allowlist diagnostics."],
+          ["credential-manager-request.json", "The JSON request delivered to the wallet by Credential Manager."],
+          ["navigator-credentials-get.arg.json", "The verifier-side navigator.credentials.get argument, mirrored for debugging."],
+          ["request.json", "Alias of the outer request JSON used by the inspectors."],
+          ["device-request.b64u", "Base64url string embedded in the request data."],
+          ["device-request.cbor", "Decoded bytes of the mdoc DeviceRequest."],
+          ["encryption-info.b64u", "Base64url string embedded in the request data."],
+          ["encryption-info.cbor", "Decoded bytes of ['dcapi', {nonce, recipientPublicKey}]."],
+          ["session-transcript.cbor", "CBOR [null, null, ['dcapi', SHA-256(CBOR([encryptionInfoB64u, origin]))]]."],
+          ["smart-request.json", "SMART request JSON pulled from ItemsRequest.requestInfo.smart_health_checkin."],
+          ["smart-request.hydrated.json", "SMART request after wallet questionnaire URL hydration."],
+        ],
+      },
+      {
+        title: "Wallet decision and SMART response",
+        files: [
+          ["submit.json", "Wallet UI selection summary at share time."],
+          ["smart-response.json", "The SMART response JSON placed into the mdoc elementValue."],
+          ["smart-response.expected.json", "Copy of the expected SMART response used by inspectors/tests."],
+        ],
+      },
+      {
+        title: "Plaintext mdoc response internals",
+        files: [
+          ["issuer-signed-item-tag24.cbor", "Tag-24 encoded IssuerSignedItem. This is the exact digest input."],
+          ["value-digest.bin", "SHA-256 digest of issuer-signed-item-tag24.cbor."],
+          ["mso.cbor", "MobileSecurityObject payload before tag-24 wrapping for issuerAuth."],
+          ["issuer-auth.cbor", "COSE_Sign1 over Tag(24, MSO)."],
+          ["device-authentication.cbor", "Tag(24, CBOR DeviceAuthentication payload)."],
+          ["device-response.cbor", "Plaintext mdoc DeviceResponse before HPKE sealing."],
+        ],
+      },
+      {
+        title: "Encrypted transport and returned credential",
+        files: [
+          ["hpke-enc.bin", "Raw uncompressed P-256 HPKE ephemeral public key, 65 bytes."],
+          ["hpke-ciphertext.bin", "AES-128-GCM ciphertext plus tag for the DeviceResponse."],
+          ["dcapi-response.cbor", "CBOR ['dcapi', {'enc', 'cipherText'}]."],
+          ["wallet-response.digital-credential.json", "Exact JSON passed to DigitalCredential."],
+          ["credential.json", "Alias of wallet-response.digital-credential.json."],
+        ],
+      },
+    ];
+
+    const textExtensions = new Set([".json", ".b64u", ".hex", ".txt", ".diag"]);
+    const picker = document.getElementById("runPicker");
+    const loadExampleButton = document.getElementById("loadExample");
+    const clearRunButton = document.getElementById("clearRun");
+    const summary = document.getElementById("runSummary");
+    const byteLedgerOutput = document.getElementById("byteLedgerOutput");
+    const drillOutput = document.getElementById("drillOutput");
+    const output = document.getElementById("artifactOutput");
+
+    window.addEventListener("DOMContentLoaded", () => {
+      if (window.EXPLAINER_EXAMPLE_RUN) loadEmbeddedExample();
+    });
+
+    loadExampleButton.addEventListener("click", () => loadEmbeddedExample());
+    clearRunButton.addEventListener("click", () => {
+      picker.value = "";
+      output.innerHTML = "";
+      byteLedgerOutput.innerHTML = "";
+      drillOutput.innerHTML = "";
+      summary.className = "callout";
+      summary.textContent = "No run directory selected yet.";
+    });
+
+    picker.addEventListener("change", async (event) => {
+      const files = Array.from(event.target.files || []);
+      if (!files.length) return;
+      const index = indexFiles(files);
+      await renderRun(index);
+    });
+
+    async function loadEmbeddedExample() {
+      const example = window.EXPLAINER_EXAMPLE_RUN;
+      if (!example?.files?.length) return;
+      const files = example.files.map(file => new EmbeddedFile(file.path, file.encoding, file.content));
+      await renderRun(indexFiles(files), example.label || "Bundled example run");
+    }
+
+    class EmbeddedFile {
+      constructor(path, encoding, content) {
+        this.webkitRelativePath = path;
+        this.name = path.split("/").pop();
+        this.encoding = encoding;
+        this.content = content;
+        this._bytes = null;
+      }
+      get size() { return this.bytes().length; }
+      bytes() {
+        if (this._bytes) return this._bytes;
+        if (this.encoding === "base64") {
+          const binary = atob(this.content);
+          this._bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) this._bytes[i] = binary.charCodeAt(i);
+        } else {
+          this._bytes = new TextEncoder().encode(this.content);
+        }
+        return this._bytes;
+      }
+      async text() {
+        if (this.encoding === "base64") return new TextDecoder().decode(this.bytes());
+        return this.content;
+      }
+      async arrayBuffer() {
+        const bytes = this.bytes();
+        return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+      }
+    }
+
+    function indexFiles(files) {
+      const byName = new Map();
+      const byPath = new Map();
+      for (const file of files) {
+        const path = file.webkitRelativePath || file.name;
+        byPath.set(path, file);
+        const parts = path.split("/");
+        const name = parts[parts.length - 1];
+        if (!byName.has(name) || parts.length <= 2) byName.set(name, file);
+      }
+      return { byName, byPath, files };
+    }
+
+    async function renderRun(index, label = "") {
+      output.innerHTML = "";
+      byteLedgerOutput.innerHTML = "";
+      drillOutput.innerHTML = "";
+      const manifest = await readJson(index.byName.get("manifest.json"));
+      if (manifest) {
+        summary.className = "callout good";
+        summary.innerHTML = `
+          <strong>Loaded ${escapeHtml(label || manifest.runId || "run")}</strong><br>
+          origin: <code>${escapeHtml(manifest.origin || "")}</code><br>
+          originSource: <code>${escapeHtml(manifest.originSource || "")}</code>,
+          protocol: <code>${escapeHtml(manifest.protocol || "")}</code>,
+          sessionTranscript bytes: <code>${escapeHtml(String(manifest.sessionTranscriptByteSize || ""))}</code>
+        `;
+      } else {
+        summary.className = "callout warn";
+        summary.textContent = "Directory loaded, but manifest.json was not found.";
+      }
+
+      await renderByteLedger(index, manifest);
+      await renderDrilldown(index, manifest);
+
+      for (const group of artifactGroups) {
+        const section = document.createElement("section");
+        section.innerHTML = `<h3>${escapeHtml(group.title)}</h3>`;
+        for (const [name, description] of group.files) {
+          section.appendChild(await artifactCard(index, name, description));
+        }
+        output.appendChild(section);
+      }
+    }
+
+    async function renderByteLedger(index, manifest) {
+      const requestArg = await readJson(findBySuffix(index, "analysis/request/navigator-credentials-get.arg.json"))
+        || await readJson(index.byName.get("navigator-credentials-get.arg.json"));
+      const requestInspection = await readJson(findBySuffix(index, "analysis/request/inspection.json"));
+      const responseInspection = await readJson(findBySuffix(index, "analysis/device-response/response-inspection.json"));
+      const dcapiInspection = await readJson(findBySuffix(index, "analysis/dcapi-response/response-inspection.json"));
+      const walletCredential = await readJson(index.byName.get("wallet-response.digital-credential.json"))
+        || await readJson(index.byName.get("credential.json"));
+
+      const request = firstRequest(requestArg);
+      const docRequest = requestInspection?.deviceRequest?.docRequests?.[0];
+      const sessionTranscriptInspection = requestInspection?.sessionTranscript;
+      const responseDocument = responseInspection?.inspection?.documents?.[0];
+      const responseElement = responseDocument?.elements?.[0];
+      const dcapi = dcapiInspection?.inspection;
+
+      const rows = [];
+      await addByteRow(rows, index, {
+        title: "Web API request argument",
+        file: preferredFile(index, "navigator-credentials-get.arg.json", "analysis/request/navigator-credentials-get.arg.json"),
+        source: "Captured at the verifier before navigator.credentials.get resolves.",
+        meaning: "This is the page's original request object. The mdoc and encryption payloads below must be byte-for-byte recoverable from its base64url strings.",
+        check: infoCheck("outer capture"),
+      });
+      await addByteRow(rows, index, {
+        title: "DeviceRequest CBOR",
+        file: preferredFile(index, "device-request.cbor", "analysis/request/device-request.cbor"),
+        source: "base64url decode of data.deviceRequest",
+        meaning: "Outer mdoc DeviceRequest. Contains docRequests[0].itemsRequest as tag-24 embedded CBOR.",
+        check: async (bytes) => checkBase64Equals(request?.data?.deviceRequest, bytes, "matches navigator request data.deviceRequest"),
+        details: await readText(findBySuffix(index, "analysis/request/device-request.diag")),
+      });
+      await addByteRow(rows, index, {
+        title: "Embedded ItemsRequest CBOR",
+        file: preferredFile(index, "items-request.cbor", "analysis/request/items-request.cbor"),
+        source: "docRequests[0].itemsRequest tag-24 byte string",
+        meaning: "The mdoc request body with docType, namespace, requested element, intentToRetain=false, and requestInfo.",
+        check: async (bytes) => checkHexEquals(docRequest?.itemsRequestHex, bytes, "matches tag-24 contents decoded from DeviceRequest"),
+        details: await readText(findBySuffix(index, "analysis/request/items-request.diag")),
+        nestedJson: await readText(findBySuffix(index, "analysis/request/items-request.decoded.json")),
+      });
+      await addByteRow(rows, index, {
+        title: "SMART request JSON",
+        file: preferredFile(index, "smart-request.raw.json", "analysis/request/smart-request.raw.json"),
+        source: "ItemsRequest.requestInfo.smart_health_checkin text string",
+        meaning: "FHIR profiles and inline Questionnaire text used by the wallet UI.",
+        check: async (_bytes, text) => checkTextEquals(docRequest?.smartHealthCheckin?.json, text, "matches requestInfo.smart_health_checkin exactly"),
+        nestedJson: await readText(findBySuffix(index, "analysis/request/smart-request.json")),
+      });
+      await addByteRow(rows, index, {
+        title: "EncryptionInfo CBOR",
+        file: preferredFile(index, "encryption-info.cbor", "analysis/request/encryption-info.cbor"),
+        source: "base64url decode of data.encryptionInfo",
+        meaning: "Holds the verifier nonce and recipient HPKE public key.",
+        check: async (bytes) => checkBase64Equals(request?.data?.encryptionInfo, bytes, "matches navigator request data.encryptionInfo"),
+        details: await readText(findBySuffix(index, "analysis/request/encryption-info.diag")),
+      });
+      await addByteRow(rows, index, {
+        title: "SessionTranscript CBOR",
+        file: preferredFile(index, "session-transcript.cbor", "analysis/request/session-transcript.cbor"),
+        source: "CBOR([null, null, ['dcapi', SHA-256(CBOR([encryptionInfoB64u, origin]))]])",
+        meaning: "Origin-bound transcript used by the wallet and verifier when checking the response.",
+        check: async (bytes) => checkHexEquals(sessionTranscriptInspection?.hex, bytes, "matches inspector recomputation for origin " + (manifest?.origin || "(unknown)")),
+        details: await readText(findBySuffix(index, "analysis/request/session-transcript.diag")),
+      });
+      await addByteRow(rows, index, {
+        title: "SMART response JSON",
+        file: preferredFile(index, "smart-response.raw.json", "analysis/device-response/smart-response.raw.json"),
+        source: "IssuerSignedItem.elementValue text string",
+        meaning: "The wallet's {version, artifacts, answers} payload.",
+        check: async (_bytes, text) => checkTextEquals(responseElement?.smartHealthCheckinResponse?.json, text, "matches IssuerSignedItem.elementValue exactly"),
+        nestedJson: await readText(findBySuffix(index, "analysis/device-response/smart-response.json")),
+      });
+
+      const issuerSignedItemFile = preferredFile(index, "issuer-signed-item-tag24.cbor");
+      const valueDigestFile = preferredFile(index, "value-digest.bin");
+      const valueDigestBytes = await readBytes(valueDigestFile);
+      const valueDigestHex = valueDigestBytes ? hexOf(valueDigestBytes) : "";
+      await addByteRow(rows, index, {
+        title: "IssuerSignedItem tag-24 bytes",
+        file: issuerSignedItemFile,
+        source: "IssuerSigned.nameSpaces.org.smarthealthit.checkin[0]",
+        meaning: "This exact tag-24 CBOR item is the digest input. Changing any response byte changes the MSO digest.",
+        check: async (bytes) => {
+          const digest = await sha256Hex(bytes);
+          if (!digest || !valueDigestHex) return skipCheck("digest input or value-digest.bin missing");
+          return digest.toLowerCase() === valueDigestHex.toLowerCase()
+            ? passCheck("SHA-256(file) equals value-digest.bin")
+            : failCheck("SHA-256(file) does not equal value-digest.bin");
+        },
+        details: responseElement?.issuerSignedItemDiagnostic || "",
+        nestedJson: responseElement?.smartHealthCheckinResponse?.value
+          ? JSON.stringify(responseElement.smartHealthCheckinResponse.value, null, 2)
+          : "",
+      });
+      await addByteRow(rows, index, {
+        title: "Value digest bytes",
+        file: valueDigestFile,
+        source: "MSO.valueDigests.org.smarthealthit.checkin[0]",
+        meaning: "The MSO stores this digest and issuerAuth signs the MSO.",
+        check: async (bytes) => {
+          const actual = hexOf(bytes);
+          const mso = responseElement?.valueDigest?.msoSha256
+            || responseDocument?.issuerAuth?.mso?.valueDigests?.["org.smarthealthit.checkin"]?.["0"]?.hex;
+          if (!actual || !mso) return skipCheck("MSO digest not available in inspection JSON");
+          return actual.toLowerCase() === mso.toLowerCase()
+            ? passCheck("matches MSO valueDigests entry")
+            : failCheck("does not match MSO valueDigests entry");
+        },
+      });
+      await addByteRow(rows, index, {
+        title: "MobileSecurityObject CBOR",
+        file: preferredFile(index, "mso.cbor"),
+        source: "issuerAuth COSE payload, wrapped as Tag(24, MSO bytes)",
+        meaning: "Carries digestAlgorithm, valueDigests, docType, deviceKeyInfo, and validityInfo.",
+        check: infoCheck("parsed by response inspector; browser page does not verify COSE signature yet"),
+        details: responseDocument?.issuerAuth?.msoDiagnostic || "",
+      });
+      await addByteRow(rows, index, {
+        title: "issuerAuth COSE_Sign1",
+        file: preferredFile(index, "issuer-auth.cbor"),
+        source: "Document.issuerSigned.issuerAuth",
+        meaning: "Self-signed issuer COSE_Sign1 over the MSO payload.",
+        check: infoCheck("signature verification is still delegated to verifier/inspector tooling"),
+      });
+      await addByteRow(rows, index, {
+        title: "DeviceAuthentication payload",
+        file: preferredFile(index, "device-authentication.cbor"),
+        source: "DeviceSigned.deviceAuth.deviceSignature payload",
+        meaning: "Binds DeviceAuthentication, the SessionTranscript, docType, and empty device namespaces.",
+        check: infoCheck("signature verification is still delegated to verifier/inspector tooling"),
+      });
+      await addByteRow(rows, index, {
+        title: "Plaintext DeviceResponse CBOR",
+        file: preferredFile(index, "device-response.cbor"),
+        source: "Built by the wallet before HPKE sealing",
+        meaning: "The complete mdoc response that the verifier obtains after HPKE open.",
+        check: infoCheck("HPKE-open success is recorded by the verifier UI/run artifacts"),
+      });
+      await addByteRow(rows, index, {
+        title: "HPKE encapsulated key",
+        file: preferredFile(index, "hpke-enc.bin"),
+        source: "dcapi response field enc",
+        meaning: "Ephemeral public key used by the verifier to derive the HPKE shared secret.",
+        check: async (bytes) => checkHexEquals(dcapi?.enc?.hex, bytes, "matches dcapi-response.cbor enc field"),
+      });
+      await addByteRow(rows, index, {
+        title: "HPKE ciphertext",
+        file: preferredFile(index, "hpke-ciphertext.bin"),
+        source: "dcapi response field cipherText",
+        meaning: "Encrypted DeviceResponse bytes plus authentication tag.",
+        check: async (bytes) => checkHexEquals(dcapi?.cipherText?.hex, bytes, "matches dcapi-response.cbor cipherText field"),
+      });
+      await addByteRow(rows, index, {
+        title: "dcapi response CBOR",
+        file: preferredFile(index, "dcapi-response.cbor"),
+        source: "CBOR ['dcapi', {'enc', 'cipherText'}]",
+        meaning: "The binary response envelope returned inside the DigitalCredential JSON.",
+        check: async (bytes) => checkBase64Equals(walletCredential?.data?.response || walletCredential?.data, bytes, "matches wallet-response.digital-credential.json data.response"),
+        details: dcapi?.dcapiResponseDiagnostic || "",
+      });
+      await addByteRow(rows, index, {
+        title: "DigitalCredential JSON",
+        file: preferredFile(index, "wallet-response.digital-credential.json"),
+        source: "PendingIntentHandler.setGetCredentialResponse result",
+        meaning: "The exact JSON handed back to Android Credential Manager.",
+        check: infoCheck("final app-visible credential response"),
+      });
+
+      const section = document.createElement("div");
+      section.id = "byte-ledger";
+      section.innerHTML = `
+        <h3>Run Byte Ledger</h3>
+        <p class="small">
+          This is the evidence table for the selected run. Each row points at one
+          loaded file, computes its byte length and SHA-256 in the browser when
+          available, and ties it back to the container field or decoded structure
+          that produced it.
+        </p>
+        <div class="callout warn">
+          The page currently recomputes carrier equality and SHA-256 digest checks.
+          Full COSE signature verification and HPKE opening still live in the verifier
+          app / inspector tooling, because this standalone HTML does not include a
+          COSE or HPKE implementation yet.
+        </div>
+      `;
+      const ledger = document.createElement("div");
+      ledger.className = "byte-ledger";
+      for (const row of rows) ledger.appendChild(renderByteRow(row));
+      section.appendChild(ledger);
+      byteLedgerOutput.appendChild(section);
+    }
+
+    async function addByteRow(rows, index, spec) {
+      const file = spec.file;
+      const bytes = await readBytes(file);
+      const text = file ? await readText(file) : "";
+      const path = file ? (file.webkitRelativePath || file.name) : "";
+      const check = bytes && typeof spec.check === "function"
+        ? await spec.check(bytes, text)
+        : typeof spec.check === "object"
+          ? spec.check
+          : skipCheck("file missing");
+      const readable = spec.readable !== undefined ? spec.readable : spec.details || "";
+      const nestedJson = spec.nestedJson !== undefined
+        ? spec.nestedJson
+        : isJsonFile(path) ? prettyJson(text) : "";
+      rows.push({
+        title: spec.title,
+        path,
+        size: bytes ? bytes.length : 0,
+        sha256: bytes ? await sha256Hex(bytes) : "",
+        source: spec.source,
+        meaning: spec.meaning,
+        check,
+        bytes,
+        annotations: bytes ? byteAnnotationsFor(spec.title, bytes) : [],
+        readable,
+        nestedJson,
+      });
+    }
+
+    function renderByteRow(row) {
+      const node = document.createElement("div");
+      node.className = "byte-row";
+      const check = row.check || skipCheck("not checked");
+      const byteHtml = row.bytes
+        ? `<details open><summary>Annotated bytes</summary><div>${renderAnnotatedBytes(row.bytes, row.annotations)}</div></details>`
+        : "";
+      const readableHtml = row.readable
+        ? `<details><summary>Readable decode</summary><div><pre class="wrap-pre">${escapeHtml(row.readable.trim())}</pre></div></details>`
+        : "";
+      const nestedHtml = row.nestedJson
+        ? `<details><summary>Contained JSON</summary><div class="nested-json"><pre class="wrap-pre">${escapeHtml(row.nestedJson.trim())}</pre></div></details>`
+        : "";
+      node.innerHTML = `
+        <div class="byte-row-head">
+          <strong>${escapeHtml(row.title)}</strong>
+          <span class="check ${escapeHtml(check.kind)}">${escapeHtml(check.label)}</span>
+        </div>
+        <dl class="byte-fields">
+          <dt>File</dt><dd>${row.path ? escapeHtml(row.path) : "<span class=\"small\">missing</span>"}</dd>
+          <dt>Bytes</dt><dd>${row.size ? row.size.toLocaleString() : ""}</dd>
+          <dt>SHA-256</dt><dd class="mono">${escapeHtml(row.sha256 || "")}</dd>
+          <dt>Comes From</dt><dd>${escapeHtml(row.source || "")}</dd>
+          <dt>Means</dt><dd>${escapeHtml(row.meaning || "")}</dd>
+          <dt>Check</dt><dd>${escapeHtml(check.text || "")}</dd>
+        </dl>
+        ${byteHtml}
+        ${readableHtml}
+        ${nestedHtml}
+      `;
+      return node;
+    }
+
+    function renderAnnotatedBytes(bytes, annotations) {
+      const rows = annotations.length ? annotations : fallbackAnnotations(bytes);
+      return `<div class="byte-inspector">${rows.map(note => {
+        const start = Math.max(0, note.start);
+        const end = Math.min(bytes.length, note.end);
+        const slice = bytes.slice(start, end);
+        const shown = slice.length > 96 ? slice.slice(0, 96) : slice;
+        const truncated = slice.length > shown.length;
+        return `
+          <div class="byte-slice">
+            <div class="byte-offset">0x${start.toString(16).padStart(4, "0")}..0x${end.toString(16).padStart(4, "0")}</div>
+            <div>
+              <div class="byte-hex">${escapeHtml(hexSpaced(shown))}${truncated ? " ..." : ""}</div>
+              <div class="byte-ascii">${escapeHtml(asciiPreview(shown))}${truncated ? " ..." : ""}</div>
+              <div class="byte-note"><strong>${escapeHtml(note.label)}</strong>${escapeHtml(note.note || "")}</div>
+            </div>
+          </div>
+        `;
+      }).join("")}</div>`;
+    }
+
+    function byteAnnotationsFor(title, bytes) {
+      const notes = [];
+      const add = (start, len, label, note = "") => {
+        if (start === -1 || start === undefined || start === null || len <= 0) return;
+        notes.push({ start, end: Math.min(bytes.length, start + len), label, note });
+      };
+      const text = (value, label, note = "") => {
+        const start = findTextOffset(bytes, value);
+        add(start, new TextEncoder().encode(value).length, label, note);
+      };
+
+      if (title === "DeviceRequest CBOR") {
+        add(0, Math.min(10, bytes.length), "CBOR map header", "Top-level DeviceRequest map begins here.");
+        text("version", "map key: version");
+        text("1.0", "DeviceRequest version");
+        text("docRequests", "map key: docRequests", "Array of requested documents.");
+        text("itemsRequest", "map key: itemsRequest", "The value is tag 24 containing embedded CBOR bytes.");
+      } else if (title === "Embedded ItemsRequest CBOR") {
+        add(0, Math.min(10, bytes.length), "CBOR map header", "Decoded from DeviceRequest.docRequests[0].itemsRequest.");
+        text("docType", "map key: docType");
+        text("org.smarthealthit.checkin.1", "doctype", "The wallet matcher and handler use this document type.");
+        text("nameSpaces", "map key: nameSpaces");
+        text("org.smarthealthit.checkin", "namespace");
+        text("smart_health_checkin_response", "requested element", "Its CBOR boolean value is false, the intentToRetain flag.");
+        text("requestInfo", "map key: requestInfo");
+        text("smart_health_checkin", "requestInfo key");
+        text("{\"version\"", "embedded SMART JSON begins", "The following tstr is parsed as the SMART request.");
+      } else if (title === "SMART request JSON") {
+        add(0, Math.min(bytes.length, 96), "JSON document start", "This whole file is the exact requestInfo text string.");
+        text("\"items\"", "items array");
+        text("\"questionnaire\"", "inline Questionnaire", "Nested FHIR Questionnaire JSON is inside this request.");
+      } else if (title === "EncryptionInfo CBOR") {
+        add(0, Math.min(10, bytes.length), "CBOR envelope", "Verifier encryption metadata begins here.");
+        text("dcapi", "encryptionInfo label");
+        text("nonce", "nonce key");
+        text("recipientPublicKey", "recipient public key", "COSE_Key for the verifier HPKE recipient key.");
+      } else if (title === "SessionTranscript CBOR") {
+        add(0, 1, "array(3)", "SessionTranscript has DeviceEngagementBytes, EReaderKeyBytes, and handover.");
+        add(1, 1, "null", "DeviceEngagementBytes is null for this browser-mediated flow.");
+        add(2, 1, "null", "EReaderKeyBytes is null for this browser-mediated flow.");
+        text("dcapi", "handover label");
+        const marker = findTextOffset(bytes, "dcapi");
+        if (marker !== -1) {
+          const digestStart = marker + 5;
+          add(digestStart, bytes.length - digestStart, "handover hash", "SHA-256(CBOR([encryptionInfoBase64url, origin])).");
+        }
+      } else if (title === "SMART response JSON") {
+        add(0, Math.min(bytes.length, 96), "JSON document start", "This whole file is the exact IssuerSignedItem.elementValue string.");
+        text("\"artifacts\"", "artifacts array", "Flat list of FHIR resources or other payloads.");
+        text("\"answers\"", "answers map", "Maps request item ids to artifact ids.");
+        text("\"QuestionnaireResponse\"", "QuestionnaireResponse artifact");
+      } else if (title === "IssuerSignedItem tag-24 bytes") {
+        add(0, Math.min(10, bytes.length), "tag-24 wrapper", "The MSO digest is over these exact bytes.");
+        text("digestID", "digest id key");
+        text("random", "random salt key");
+        text("elementIdentifier", "element identifier key");
+        text("smart_health_checkin_response", "element identifier value");
+        text("elementValue", "element value key");
+        text("{\"version\"", "SMART response JSON begins");
+      } else if (title === "Value digest bytes") {
+        add(0, bytes.length, "SHA-256 digest", "Should be exactly 32 bytes and match MSO.valueDigests.");
+      } else if (title === "HPKE encapsulated key") {
+        add(0, 1, "uncompressed P-256 marker", "0x04 means x and y coordinates follow.");
+        add(1, 32, "ephemeral public key x");
+        add(33, 32, "ephemeral public key y");
+      } else if (title === "HPKE ciphertext") {
+        add(0, Math.min(64, bytes.length), "ciphertext start", "Encrypted DeviceResponse bytes.");
+        if (bytes.length > 16) add(bytes.length - 16, 16, "AES-GCM tag", "Authentication tag at the end of the ciphertext.");
+      } else if (title === "dcapi response CBOR") {
+        add(0, Math.min(10, bytes.length), "CBOR envelope", "Returned response envelope.");
+        text("dcapi", "response label");
+        text("enc", "enc key", "Contains the HPKE encapsulated key.");
+        text("cipherText", "cipherText key", "Contains encrypted DeviceResponse bytes plus tag.");
+      } else if (title === "DigitalCredential JSON") {
+        add(0, Math.min(bytes.length, 96), "JSON response start");
+        text("org-iso-mdoc", "protocol");
+        text("\"response\"", "response field", "Base64url of dcapi-response.cbor.");
+      } else {
+        add(0, Math.min(bytes.length, 128), "file start");
+        if (bytes.length > 256) add(bytes.length - 64, 64, "file end");
+      }
+      return notes.sort((a, b) => a.start - b.start || a.end - b.end);
+    }
+
+    function fallbackAnnotations(bytes) {
+      const notes = [{ start: 0, end: Math.min(bytes.length, 128), label: "file start", note: "" }];
+      if (bytes.length > 256) notes.push({ start: bytes.length - 64, end: bytes.length, label: "file end", note: "" });
+      return notes;
+    }
+
+    function findTextOffset(bytes, text) {
+      const needle = new TextEncoder().encode(text);
+      outer: for (let i = 0; i <= bytes.length - needle.length; i++) {
+        for (let j = 0; j < needle.length; j++) {
+          if (bytes[i + j] !== needle[j]) continue outer;
+        }
+        return i;
+      }
+      return -1;
+    }
+
+    function hexSpaced(bytes) {
+      return Array.from(bytes, b => b.toString(16).padStart(2, "0")).join(" ");
+    }
+
+    function asciiPreview(bytes) {
+      return Array.from(bytes, b => b >= 0x20 && b <= 0x7e ? String.fromCharCode(b) : ".").join("");
+    }
+
+    function preferredFile(index, name, suffix = "") {
+      if (suffix) return findBySuffix(index, suffix) || index.byName.get(name);
+      return index.byName.get(name);
+    }
+
+    function isJsonFile(path) {
+      return typeof path === "string" && path.endsWith(".json");
+    }
+
+    async function readBytes(file) {
+      if (!file) return null;
+      return new Uint8Array(await file.arrayBuffer());
+    }
+
+    async function sha256Hex(bytes) {
+      if (!bytes || !globalThis.crypto?.subtle) return "";
+      const digest = await crypto.subtle.digest("SHA-256", bytes);
+      return hexOf(new Uint8Array(digest));
+    }
+
+    function hexOf(bytes) {
+      if (!bytes) return "";
+      return Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    function normalizeHex(value) {
+      return typeof value === "string" ? value.replace(/\s+/g, "").toLowerCase() : "";
+    }
+
+    function checkBase64Equals(expected, bytes, message) {
+      if (!expected || !bytes) return skipCheck("base64url source unavailable");
+      const actual = base64Url(bytes);
+      return actual === expected
+        ? passCheck(message)
+        : failCheck("base64url mismatch");
+    }
+
+    function checkHexEquals(expectedHex, bytes, message) {
+      if (!expectedHex || !bytes) return skipCheck("hex source unavailable");
+      const actual = hexOf(bytes);
+      return actual === normalizeHex(expectedHex)
+        ? passCheck(message)
+        : failCheck("hex mismatch");
+    }
+
+    function checkTextEquals(expected, actual, message) {
+      if (!expected || !actual) return skipCheck("text source unavailable");
+      return expected === actual.trimEnd()
+        ? passCheck(message)
+        : failCheck("text mismatch");
+    }
+
+    function passCheck(text) { return { kind: "pass", label: "checked", text }; }
+    function failCheck(text) { return { kind: "fail", label: "mismatch", text }; }
+    function infoCheck(text) { return { kind: "info", label: "info", text }; }
+    function skipCheck(text) { return { kind: "skip", label: "not checked", text }; }
+
+    async function renderDrilldown(index, manifest) {
+      const requestInspection = await readJson(findBySuffix(index, "analysis/request/inspection.json"));
+      const requestArg = await readJson(findBySuffix(index, "analysis/request/navigator-credentials-get.arg.json"))
+        || await readJson(index.byName.get("navigator-credentials-get.arg.json"));
+      const itemsRequest = await readJson(findBySuffix(index, "analysis/request/items-request.decoded.json"));
+      const smartRequest = await readJson(findBySuffix(index, "analysis/request/smart-request.json"))
+        || await readJson(index.byName.get("smart-request.json"));
+      const responseInspection = await readJson(findBySuffix(index, "analysis/device-response/response-inspection.json"));
+      const smartResponse = await readJson(findBySuffix(index, "analysis/device-response/smart-response.json"))
+        || await readJson(index.byName.get("smart-response.json"));
+      const sessionDiag = await readText(findBySuffix(index, "analysis/request/session-transcript.diag"));
+      const deviceRequestDiag = await readText(findBySuffix(index, "analysis/request/device-request.diag"));
+      const encryptionInfoDiag = await readText(findBySuffix(index, "analysis/request/encryption-info.diag"));
+      const itemsRequestDiag = await readText(findBySuffix(index, "analysis/request/items-request.diag"));
+      const requestedElement = await readText(findBySuffix(index, "analysis/request/requested-element.txt"));
+
+      const request = firstRequest(requestArg);
+      const docRequest = requestInspection?.deviceRequest?.docRequests?.[0];
+      const encryption = requestInspection?.encryptionInfo;
+      const deviceResponse = responseInspection?.inspection;
+      const document = deviceResponse?.documents?.[0];
+      const element = document?.elements?.[0];
+      const issuerAuth = document?.issuerAuth;
+      const dcapiInspection = await readJson(findBySuffix(index, "analysis/dcapi-response/response-inspection.json"));
+      const dcapi = dcapiInspection?.inspection;
+
+      const section = document.createElement("section");
+      section.innerHTML = `
+        <h3>Contained Structure Drilldown</h3>
+        <p class="small">
+          This panel follows embedded content in order: outer Web API request,
+          base64url CBOR fields, mdoc DeviceRequest, tag-24 ItemsRequest,
+          requestInfo JSON, SessionTranscript, plaintext DeviceResponse, and the
+          encrypted dcapi wrapper.
+        </p>
+      `;
+      const chain = document.createElement("div");
+      chain.className = "drill-chain";
+
+      chain.appendChild(drillNode({
+        title: "1. navigator.credentials.get request",
+        text: "This is what the RP page gave the browser. The two load-bearing strings are base64url CBOR values.",
+        facts: [
+          ["protocol", request?.protocol],
+          ["data.deviceRequest chars", request?.data?.deviceRequest?.length],
+          ["data.encryptionInfo chars", request?.data?.encryptionInfo?.length],
+        ],
+        preTitle: "Outer request JSON",
+        pre: requestArg ? JSON.stringify(compactNavigatorRequest(requestArg), null, 2) : "",
+      }));
+
+      chain.appendChild(drillNode({
+        title: "2. DeviceRequest CBOR",
+        text: "Base64url-decoding data.deviceRequest yields the mdoc DeviceRequest. Its docRequests[0].itemsRequest value is tag 24, so it contains another complete CBOR item as bytes.",
+        facts: [
+          ["device-request.cbor bytes", fileSize(index, "device-request.cbor")],
+          ["docRequests", requestInspection?.deviceRequest?.docRequests?.length],
+          ["diagnostic source", deviceRequestDiag ? "analysis/request/device-request.diag" : undefined],
+        ],
+        preTitle: "CBOR diagnostic",
+        pre: deviceRequestDiag,
+      }));
+
+      chain.appendChild(drillNode({
+        title: "3. ItemsRequest inside tag 24",
+        text: "Decoding the tag-24 bstr gives the ItemsRequest. This is where mdoc concepts show up: docType, namespace, element id, and intentToRetain.",
+        facts: [
+          ["docType", itemsRequest?.docType || docRequest?.docType],
+          ["namespace", "org.smarthealthit.checkin"],
+          ["element", requestedElement?.trim() || "smart_health_checkin_response intentToRetain=false"],
+          ["requestInfo key", itemsRequest?.requestInfo ? Object.keys(itemsRequest.requestInfo).join(", ") : undefined],
+        ],
+        preTitle: "ItemsRequest JSON",
+        pre: itemsRequest ? JSON.stringify(itemsRequest, null, 2) : itemsRequestDiag,
+      }));
+
+      chain.appendChild(drillNode({
+        title: "4. SMART request JSON in requestInfo",
+        text: "The wallet parses requestInfo.smart_health_checkin as JSON. These items drive the consent UI and data selection.",
+        facts: [
+          ["version", smartRequest?.version],
+          ["item count", smartRequest?.items?.length],
+          ["questionnaire items", countQuestionnaires(smartRequest)],
+        ],
+        body: renderSmartItems(smartRequest),
+        preTitle: "SMART request JSON",
+        pre: smartRequest ? JSON.stringify(smartRequest, null, 2) : "",
+      }));
+
+      chain.appendChild(drillNode({
+        title: "5. EncryptionInfo and origin-bound SessionTranscript",
+        text: "Base64url-decoding data.encryptionInfo yields nonce and recipient public key. The wallet combines the original encryptionInfo base64url string with the browser origin to compute the SessionTranscript.",
+        facts: [
+          ["origin", manifest?.origin],
+          ["origin source", manifest?.originSource],
+          ["nonce", bytesLabel(encryption?.encryptionInfo?.[1]?.nonce)],
+          ["session-transcript.cbor bytes", fileSize(index, "session-transcript.cbor")],
+        ],
+        preTitle: "EncryptionInfo diagnostic and SessionTranscript",
+        pre: [encryptionInfoDiag, sessionDiag].filter(Boolean).join("\n\n"),
+      }));
+
+      chain.appendChild(drillNode({
+        title: "6. SMART response inside IssuerSignedItem",
+        text: "The wallet builds the SMART response JSON, then inserts it as elementValue in one IssuerSignedItem for smart_health_checkin_response.",
+        facts: [
+          ["artifact count", smartResponse?.artifacts?.length],
+          ["answered item count", smartResponse?.answers ? Object.keys(smartResponse.answers).length : undefined],
+          ["elementIdentifier", element?.elementIdentifier],
+          ["digestID", element?.digestID],
+        ],
+        body: renderSmartResponseSummary(smartResponse),
+      }));
+
+      chain.appendChild(drillNode({
+        title: "7. Digest and MSO",
+        text: "The MSO digest is SHA-256 over issuer-signed-item-tag24.cbor. The verifier recomputes this and compares it to issuerAuth.mso.valueDigests.",
+        facts: [
+          ["digest algorithm", issuerAuth?.digestAlgorithm || issuerAuth?.mso?.digestAlgorithm],
+          ["value-digest.bin", await readText(index.byName.get("value-digest.bin.b64u"))],
+          ["MSO digest", issuerAuth?.mso?.valueDigests?.["org.smarthealthit.checkin"]?.["0"]?.hex],
+          ["valid until", issuerAuth?.mso?.validityInfo?.validUntil?.value],
+        ],
+        preTitle: "MSO summary",
+        pre: issuerAuth?.mso ? JSON.stringify(issuerAuth.mso, null, 2) : "",
+      }));
+
+      chain.appendChild(drillNode({
+        title: "8. DeviceAuthentication signature payload",
+        text: "The deviceSignature payload contains DeviceAuthentication, the exact SessionTranscript bytes, docType, and empty device namespaces. This is what fails if origin or transcript bytes differ.",
+        facts: [
+          ["device-authentication.cbor bytes", fileSize(index, "device-authentication.cbor")],
+          ["docType", document?.docType],
+          ["device namespaces", "Tag(24, CBOR {})"],
+        ],
+        preTitle: "DeviceAuthentication artifact",
+        pre: "See device-authentication.cbor and device-authentication.cbor.hex in the artifact list below.",
+      }));
+
+      chain.appendChild(drillNode({
+        title: "9. HPKE dcapi response wrapper",
+        text: "The plaintext DeviceResponse is HPKE-sealed. The returned credential contains base64url CBOR ['dcapi', {enc, cipherText}].",
+        facts: [
+          ["device-response.cbor bytes", fileSize(index, "device-response.cbor")],
+          ["hpke enc bytes", fileSize(index, "hpke-enc.bin")],
+          ["ciphertext bytes", fileSize(index, "hpke-ciphertext.bin")],
+          ["credential protocol", (await readJson(index.byName.get("credential.json")))?.protocol],
+        ],
+        preTitle: "dcapi response diagnostic",
+        pre: dcapi?.dcapiResponseDiagnostic || "",
+      }));
+
+      section.appendChild(chain);
+      drillOutput.appendChild(section);
+    }
+
+    function drillNode({ title, text, facts = [], body = "", preTitle = "", pre = "" }) {
+      const node = document.createElement("div");
+      node.className = "drill-node";
+      const factHtml = facts
+        .filter(([, value]) => value !== undefined && value !== null && value !== "")
+        .map(([key, value]) => `<div class="fact"><b>${escapeHtml(key)}</b><span>${escapeHtml(String(value).trim())}</span></div>`)
+        .join("");
+      const preHtml = pre
+        ? `<details><summary>${escapeHtml(preTitle || "Details")}</summary><div><pre>${escapeHtml(pre.trim())}</pre></div></details>`
+        : "";
+      node.innerHTML = `
+        <h4>${escapeHtml(title)}</h4>
+        <p>${escapeHtml(text)}</p>
+        ${factHtml ? `<div class="fact-grid">${factHtml}</div>` : ""}
+        ${body || ""}
+        ${preHtml}
+      `;
+      return node;
+    }
+
+    function firstRequest(arg) {
+      if (!arg || typeof arg !== "object") return undefined;
+      const requests = Array.isArray(arg.requests) ? arg.requests : arg.digital?.requests;
+      return Array.isArray(requests) ? requests[0] : undefined;
+    }
+
+    function compactNavigatorRequest(arg) {
+      const request = firstRequest(arg);
+      if (!request) return arg;
+      return {
+        requests: [{
+          protocol: request.protocol,
+          data: {
+            deviceRequest: abbreviate(request.data?.deviceRequest),
+            encryptionInfo: abbreviate(request.data?.encryptionInfo),
+          },
+        }],
+      };
+    }
+
+    function abbreviate(value) {
+      if (typeof value !== "string") return value;
+      if (value.length <= 120) return value;
+      return `${value.slice(0, 72)}...${value.slice(-28)} (${value.length} chars)`;
+    }
+
+    function countQuestionnaires(smartRequest) {
+      const items = smartRequest?.items;
+      if (!Array.isArray(items)) return undefined;
+      return items.filter(item => item?.questionnaire || item?.questionnaireUrl).length;
+    }
+
+    function renderSmartItems(smartRequest) {
+      const items = smartRequest?.items;
+      if (!Array.isArray(items)) return "";
+      return `<div class="item-list">${items.map(item => {
+        const kind = item.profile ? "FHIR profile" : item.questionnaire ? "Inline Questionnaire" : item.questionnaireUrl ? "Questionnaire URL" : "Unknown";
+        const target = item.profile || item.questionnaire?.title || item.questionnaireUrl || "";
+        return `
+          <div class="item-row">
+            <strong>${escapeHtml(item.id || "(no id)")} <span class="pill">${escapeHtml(kind)}</span></strong>
+            <div class="small">${escapeHtml(item.description || "")}</div>
+            <div class="small mono">${escapeHtml(target)}</div>
+          </div>
+        `;
+      }).join("")}</div>`;
+    }
+
+    function renderSmartResponseSummary(smartResponse) {
+      if (!smartResponse) return "";
+      const artifacts = Array.isArray(smartResponse.artifacts) ? smartResponse.artifacts : [];
+      const answers = smartResponse.answers && typeof smartResponse.answers === "object" ? smartResponse.answers : {};
+      return `
+        <div class="item-list">
+          ${Object.entries(answers).map(([id, refs]) => `
+            <div class="item-row">
+              <strong>answer ${escapeHtml(id)}</strong>
+              <div class="small mono">${escapeHtml(Array.isArray(refs) ? refs.join(", ") : String(refs))}</div>
+            </div>
+          `).join("")}
+          ${artifacts.map(artifact => `
+            <div class="item-row">
+              <strong>${escapeHtml(artifact.id || "(artifact)")} <span class="pill">${escapeHtml(artifact.type || "")}</span></strong>
+              <div class="small">${escapeHtml(artifact.data?.resourceType ? `FHIR ${artifact.data.resourceType}` : typeof artifact.data)}</div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function bytesLabel(value) {
+      if (!value || typeof value !== "object") return undefined;
+      if (value.hex) return value.hex;
+      if (value.$bytes) return value.$bytes;
+      return undefined;
+    }
+
+    function fileSize(index, name) {
+      const file = index.byName.get(name);
+      return file ? `${file.size} bytes` : undefined;
+    }
+
+    function findBySuffix(index, suffix) {
+      for (const [path, file] of index.byPath.entries()) {
+        if (path.endsWith(suffix)) return file;
+      }
+      return undefined;
+    }
+
+    async function artifactCard(index, name, description) {
+      const file = index.byName.get(name);
+      const card = document.createElement("div");
+      card.className = "artifact-card" + (file ? "" : " missing");
+      if (!file) {
+        card.innerHTML = `
+          <div class="artifact-head">
+            <span class="artifact-title">${escapeHtml(name)}</span>
+            <span class="pill warn">missing</span>
+          </div>
+          <p>${escapeHtml(description)}</p>
+        `;
+        return card;
+      }
+
+      const path = file.webkitRelativePath || file.name;
+      const ext = extensionOf(name);
+      const size = file.size;
+      const head = `
+        <div class="artifact-head">
+          <span class="artifact-title">${escapeHtml(name)}</span>
+          <span class="pill good">${size.toLocaleString()} bytes</span>
+        </div>
+        <p>${escapeHtml(description)}</p>
+        <p class="path">${escapeHtml(path)}</p>
+      `;
+
+      if (textExtensions.has(ext)) {
+        const text = await file.text();
+        const rendered = ext === ".json" ? prettyJson(text) : text.trimEnd();
+        card.innerHTML = head + `<details><summary>Text content</summary><div><pre>${escapeHtml(rendered)}</pre></div></details>`;
+        return card;
+      }
+
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const b64u = base64Url(bytes);
+      const dump = hexDump(bytes);
+      card.innerHTML = head + `
+        <details open>
+          <summary>Complete hex dump</summary>
+          <div><pre class="byte-pre">${escapeHtml(dump)}</pre></div>
+        </details>
+        <details>
+          <summary>Base64url</summary>
+          <div><pre>${escapeHtml(wrap(b64u, 96))}</pre></div>
+        </details>
+      `;
+      return card;
+    }
+
+    async function readJson(file) {
+      if (!file) return null;
+      try {
+        return JSON.parse(await file.text());
+      } catch {
+        return null;
+      }
+    }
+
+    async function readText(file) {
+      if (!file) return "";
+      try {
+        return await file.text();
+      } catch {
+        return "";
+      }
+    }
+
+    function prettyJson(text) {
+      try {
+        return JSON.stringify(JSON.parse(text), null, 2);
+      } catch {
+        return text;
+      }
+    }
+
+    function extensionOf(name) {
+      const i = name.lastIndexOf(".");
+      return i === -1 ? "" : name.slice(i);
+    }
+
+    function hexDump(bytes) {
+      const lines = [];
+      for (let offset = 0; offset < bytes.length; offset += 16) {
+        const chunk = bytes.slice(offset, offset + 16);
+        const hex = Array.from(chunk, b => b.toString(16).padStart(2, "0"));
+        const left = hex.slice(0, 8).join(" ");
+        const right = hex.slice(8).join(" ");
+        const ascii = Array.from(chunk, b => b >= 0x20 && b <= 0x7e ? String.fromCharCode(b) : ".");
+        lines.push(
+          offset.toString(16).padStart(8, "0") +
+          "  " +
+          left.padEnd(23, " ") +
+          "  " +
+          right.padEnd(23, " ") +
+          "  |" +
+          ascii.join("").padEnd(16, " ") +
+          "|"
+        );
+      }
+      return lines.join("\n");
+    }
+
+    function base64Url(bytes) {
+      let binary = "";
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode(...bytes.slice(i, i + chunk));
+      }
+      return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+    }
+
+    function wrap(text, width) {
+      const lines = [];
+      for (let i = 0; i < text.length; i += width) lines.push(text.slice(i, i + width));
+      return lines.join("\n");
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+  </script>
+</body>
+</html>
