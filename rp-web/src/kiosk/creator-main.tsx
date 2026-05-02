@@ -145,29 +145,34 @@ function CreatorApp() {
                     <span>This kiosk receives only your SMART Health Check-in response.</span>
                   </div>
                 </div>
-                <details>
-                  <summary>Technical details</summary>
-                  <div className="kiosk-details">
-                    <Field
-                      label="Request purpose"
-                      value={session.verified.payload.smartRequest.purpose ?? session.verified.payload.smartRequest.id}
-                    />
-                    <Field label="SMART request id" value={session.verified.payload.smartRequest.id} />
-                    <Field label="Expires" value={new Date(session.verified.payload.expiresAt).toLocaleString()} />
-                    <Field label="Pointer" value={session.verified.payload.requestId} />
-                    <Field label="Request write" value="Instant accepted (queued for delivery)" />
-                  </div>
-                  <textarea className="json kiosk-url" readOnly value={session.submitUrl} />
-                  <pre>{JSON.stringify({
-                    requestRow: session.requestRow,
-                    signedRequestPayload: session.verified.payload,
-                    demoOnlyDesktopPrivateJwk: session.desktopPrivateJwk,
-                  }, null, 2)}</pre>
-                </details>
               </div>
             </div>
           ) : null}
         </section>
+
+        {session ? (
+          <div className="kiosk-details kiosk-details--standalone">
+            <details>
+              <summary>Technical details</summary>
+              <div className="kiosk-details">
+                <Field
+                  label="Request purpose"
+                  value={session.verified.payload.smartRequest.purpose ?? session.verified.payload.smartRequest.id}
+                />
+                <Field label="SMART request id" value={session.verified.payload.smartRequest.id} />
+                <Field label="Expires" value={new Date(session.verified.payload.expiresAt).toLocaleString()} />
+                <Field label="Pointer" value={session.verified.payload.requestId} />
+                <Field label="Request write" value="Instant accepted (queued for delivery)" />
+              </div>
+              <textarea className="json kiosk-url" readOnly value={session.submitUrl} />
+              <pre>{JSON.stringify({
+                requestRow: session.requestRow,
+                signedRequestPayload: session.verified.payload,
+                demoOnlyDesktopPrivateJwk: session.desktopPrivateJwk,
+              }, null, 2)}</pre>
+            </details>
+          </div>
+        ) : null}
 
         <section className="portal-card">
           <div className="section-heading">
