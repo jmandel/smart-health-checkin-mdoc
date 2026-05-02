@@ -151,7 +151,7 @@ function CreatorApp() {
                     <Field label="Request" value={session.verified.payload.smartRequest.title} />
                     <Field label="Expires" value={new Date(session.verified.payload.expiresAt).toLocaleString()} />
                     <Field label="Pointer" value={session.verified.payload.requestId} />
-                    <Field label="Request write" value="Instant confirmed synced before QR display" />
+                    <Field label="Request write" value="Instant accepted (queued for delivery)" />
                   </div>
                   <textarea className="json kiosk-url" readOnly value={session.submitUrl} />
                   <pre>{JSON.stringify({
