@@ -71,7 +71,7 @@ Main exports:
 | `SmartArtifact` | One returned artifact, such as FHIR JSON or SMART Health Card. |
 | `validateSmartCheckinRequest(value)` | Runtime shape validation for untrusted request JSON. |
 | `validateSmartCheckinResponse(value)` | Runtime shape validation for untrusted response JSON. |
-| `validateResponseAgainstRequest(request, response)` | Cross-checks response IDs/status/artifact references against the original request. |
+| `validateResponseAgainstRequest(request, response)` | Cross-checks `requestId`, `artifacts[].fulfills` reachability, `mediaType ∈ item.accept[]`, `fhirVersion ∈ request.fhirVersions[]`, and per-item status coverage. |
 
 Example request:
 

@@ -133,6 +133,15 @@ describe("fallback dynamic SMART Check-in element", () => {
 
   test("validates SMART Health Card response artifacts", async () => {
     const shc = await Bun.file("../fixtures/sample-shc/samples/spec-example-00/credential.json").json();
+    const shcRequest: SmartCheckinRequest = {
+      ...PATIENT_REQUEST,
+      items: [
+        {
+          ...PATIENT_REQUEST.items[0]!,
+          accept: ["application/smart-health-card", "application/fhir+json"],
+        },
+      ],
+    };
     const response = {
       type: "smart-health-checkin-response",
       version: "1",
@@ -149,13 +158,16 @@ describe("fallback dynamic SMART Check-in element", () => {
     };
 
     expect(validateSmartCheckinResponse(response).ok).toBe(true);
-    expect(validateResponseAgainstRequest(PATIENT_REQUEST, response).ok).toBe(true);
+    expect(validateResponseAgainstRequest(shcRequest, response).ok).toBe(true);
     expect(
       validateSmartCheckinResponse({
         ...response,
         artifacts: [{ ...response.artifacts[0], fhirVersion: "4.0.1" }],
       }).ok,
     ).toBe(false);
+    // PATIENT_REQUEST only accepts application/fhir+json, so an SHC artifact
+    // for the same item must be rejected by the cross-check.
+    expect(validateResponseAgainstRequest(PATIENT_REQUEST, response).ok).toBe(false);
   });
 
   test("validates response references against request items", () => {
@@ -188,6 +200,105 @@ describe("fallback dynamic SMART Check-in element", () => {
         requestStatus: [],
       }).ok,
     ).toBe(false);
+  });
+
+  test("rejects artifacts whose mediaType is not in the fulfilled item's accept[]", () => {
+    const response = {
+      type: "smart-health-checkin-response",
+      version: "1",
+      requestId: "test-patient-request",
+      artifacts: [
+        {
+          id: "a1",
+          mediaType: "application/smart-health-card",
+          fulfills: ["patient"],
+          value: { verifiableCredential: ["eyJ.fake.jws"] },
+        },
+      ],
+      requestStatus: [{ item: "patient", status: "fulfilled" }],
+    };
+    const result = validateResponseAgainstRequest(PATIENT_REQUEST, response);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain("not accepted by item patient");
+    }
+  });
+
+  test("rejects multi-fulfill artifacts where any fulfilled item rejects the mediaType", () => {
+    const request: SmartCheckinRequest = {
+      ...PATIENT_REQUEST,
+      items: [
+        PATIENT_REQUEST.items[0]!,
+        {
+          id: "intake",
+          title: "Intake forms",
+          content: { kind: "questionnaire", questionnaire: "https://example.org/Q/intake" },
+          accept: ["application/fhir+json"],
+        },
+      ],
+    };
+    const response = {
+      type: "smart-health-checkin-response",
+      version: "1",
+      requestId: "test-patient-request",
+      artifacts: [
+        {
+          id: "a1",
+          mediaType: "application/smart-health-card",
+          fulfills: ["patient", "intake"],
+          value: { verifiableCredential: ["eyJ.fake.jws"] },
+        },
+      ],
+      requestStatus: [
+        { item: "patient", status: "fulfilled" },
+        { item: "intake", status: "fulfilled" },
+      ],
+    };
+    expect(validateResponseAgainstRequest(request, response).ok).toBe(false);
+  });
+
+  test("rejects artifacts whose fhirVersion is not in request.fhirVersions[]", () => {
+    const response = {
+      type: "smart-health-checkin-response",
+      version: "1",
+      requestId: "test-patient-request",
+      artifacts: [
+        {
+          id: "a1",
+          mediaType: "application/fhir+json",
+          fhirVersion: "5.0.0",
+          fulfills: ["patient"],
+          value: { resourceType: "Patient" },
+        },
+      ],
+      requestStatus: [{ item: "patient", status: "fulfilled" }],
+    };
+    const result = validateResponseAgainstRequest(PATIENT_REQUEST, response);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain("not in request.fhirVersions");
+    }
+  });
+
+  test("does not constrain artifact fhirVersion when request.fhirVersions is absent", () => {
+    const { fhirVersions: _omit, ...rest } = PATIENT_REQUEST;
+    const request = rest as SmartCheckinRequest;
+    const response = {
+      type: "smart-health-checkin-response",
+      version: "1",
+      requestId: "test-patient-request",
+      artifacts: [
+        {
+          id: "a1",
+          mediaType: "application/fhir+json",
+          fhirVersion: "5.0.0",
+          fulfills: ["patient"],
+          value: { resourceType: "Patient" },
+        },
+      ],
+      requestStatus: [{ item: "patient", status: "fulfilled" }],
+    };
+    expect(validateResponseAgainstRequest(request, response).ok).toBe(true);
   });
 
   test("constants match the active direct mdoc mapping", () => {

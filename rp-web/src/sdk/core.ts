@@ -266,12 +266,29 @@ export function validateResponseAgainstRequest(
     return { ok: false, error: `requestId must match request id ${req.id}` };
   }
 
-  const itemIds = new Set(req.items.map((item) => item.id));
+  const itemsById = new Map(req.items.map((item) => [item.id, item]));
+  const allowedFhirVersions = req.fhirVersions;
   for (let i = 0; i < resp.artifacts.length; i++) {
     const artifact = resp.artifacts[i]!;
     for (const itemId of artifact.fulfills) {
-      if (!itemIds.has(itemId)) {
+      const item = itemsById.get(itemId);
+      if (!item) {
         return { ok: false, error: `artifacts[${i}].fulfills references unknown item ${itemId}` };
+      }
+      if (!item.accept.includes(artifact.mediaType)) {
+        return {
+          ok: false,
+          error: `artifacts[${i}].mediaType "${artifact.mediaType}" is not accepted by item ${itemId} (accept: ${JSON.stringify(item.accept)})`,
+        };
+      }
+    }
+    if (allowedFhirVersions !== undefined && allowedFhirVersions.length > 0) {
+      const declared = (artifact as { fhirVersion?: unknown }).fhirVersion;
+      if (typeof declared === "string" && !allowedFhirVersions.includes(declared)) {
+        return {
+          ok: false,
+          error: `artifacts[${i}].fhirVersion "${declared}" is not in request.fhirVersions ${JSON.stringify(allowedFhirVersions)}`,
+        };
       }
     }
   }
@@ -279,11 +296,11 @@ export function validateResponseAgainstRequest(
   const statusItems = new Set(resp.requestStatus.map((status) => status.item));
   for (let i = 0; i < resp.requestStatus.length; i++) {
     const itemId = resp.requestStatus[i]!.item;
-    if (!itemIds.has(itemId)) {
+    if (!itemsById.has(itemId)) {
       return { ok: false, error: `requestStatus[${i}].item references unknown item ${itemId}` };
     }
   }
-  for (const itemId of itemIds) {
+  for (const itemId of itemsById.keys()) {
     if (!statusItems.has(itemId)) {
       return { ok: false, error: `requestStatus missing item ${itemId}` };
     }
