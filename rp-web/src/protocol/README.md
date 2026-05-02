@@ -1,6 +1,12 @@
 # protocol/
 
-Temporary TypeScript protocol surface for the active SMART Check-in mapping.
+Low-level TypeScript protocol surface for the active SMART Check-in mapping.
+
+App-level integrations should prefer `../sdk/`:
+
+- `sdk/core.ts` for transport-neutral SMART request/response types and validation.
+- `sdk/dcapi-verifier.ts` for browser W3C Digital Credentials API verifier flow.
+- `sdk/kiosk-session.ts` for QR/session descriptors and return-channel adapters.
 
 Stable exports:
 
@@ -28,9 +34,9 @@ Stable exports:
 - `inspectEncryptionInfoBytes(...)`
 - `cborDecode(...)`, `cborDiagnostic(...)`, `cborToJsonValue(...)`
 - `publicJwkToCoseKey(jwk)`
-- `validateSmartCheckinRequest(v)`
-- `validateResponseAgainstRequest(request, response)`
-- `SmartCheckinRequest`, `SmartCheckinResponse` types
+- `validateSmartCheckinRequest(v)` (re-exported from `sdk/core.ts`)
+- `validateResponseAgainstRequest(request, response)` (re-exported from `sdk/core.ts`)
+- `SmartCheckinRequest`, `SmartCheckinResponse` types (re-exported from `sdk/core.ts`)
 
 The active request shape is direct `org-iso-mdoc`:
 
@@ -46,7 +52,7 @@ The active request shape is direct `org-iso-mdoc`:
 
 The checked-in implementation carries SMART request JSON in
 `ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]`, using the
-payload shape in `../../SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md`. The requested
+payload shape in `../../../docs/SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md`. The requested
 mdoc element remains the stable `smart_health_checkin_response`.
 
 The `shc1j`/`shc1d` dynamic element encoding remains a fallback strategy if a

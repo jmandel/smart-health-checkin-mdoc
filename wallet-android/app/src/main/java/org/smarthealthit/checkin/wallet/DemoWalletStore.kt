@@ -5,18 +5,6 @@ import java.io.InputStream
 import java.nio.charset.StandardCharsets
 import org.json.JSONObject
 
-internal interface SmartHealthWalletStore {
-    fun resolveArtifact(item: RequestItem, questionnaireAnswers: Map<String, Any>): SmartHealthWalletArtifact
-
-    fun prefillQuestionnaireAnswers(items: List<RequestItem>): Map<String, Any>
-}
-
-internal data class SmartHealthWalletArtifact(
-    val mediaType: String = "application/fhir+json",
-    val fhirVersion: String = "4.0.1",
-    val value: JSONObject,
-)
-
 internal data class QuestionnaireAnswerKey(
     val questionnaireUrl: String,
     val questionnaireVersion: String,

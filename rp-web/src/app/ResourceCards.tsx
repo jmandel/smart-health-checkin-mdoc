@@ -177,7 +177,9 @@ export function ResourceCard({
           <Field label="Network" value={network?.name || network?.value} />
           <Field label="Card Issued" value={cardIssueDate} />
           <Field label="SBC" value={sbcReference} />
-          {obj.status && <Field label="Status" value={obj.status as string} />}
+          {typeof obj.status === "string" && obj.status && (
+            <Field label="Status" value={obj.status} />
+          )}
           <CardImages images={images} />
         </div>
       </div>
@@ -286,8 +288,12 @@ export function ResourceCard({
     <div className="resource-card">
       <div className="resource-type">{resourceType || credentialId}</div>
       <div className="resource-fields">
-        {resourceType && obj.id && <Field label="ID" value={obj.id as string} />}
-        {obj.status && <Field label="Status" value={obj.status as string} />}
+        {resourceType && typeof obj.id === "string" && obj.id && (
+          <Field label="ID" value={obj.id} />
+        )}
+        {typeof obj.status === "string" && obj.status && (
+          <Field label="Status" value={obj.status} />
+        )}
         <GenericFields obj={obj} skip={["resourceType", "id", "status", "meta"]} />
       </div>
     </div>

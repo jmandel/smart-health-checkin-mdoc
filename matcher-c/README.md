@@ -16,7 +16,7 @@ April 2026). It carries the canonical `credman` / `credman_v2`–`v6` import
 ABI declarations.
 
 The build invocation mirrors the upstream pattern (also documented in
-`research/03-matcher-wasm-abi.md`): wasi-sdk's clang, `--target=wasm32-wasi`
+`../docs/research/03-matcher-wasm-abi.md`): wasi-sdk's clang, `--target=wasm32-wasi`
 for the libc headers, `-nostdlib` to avoid pulling wasi crt + libc, and
 `--allow-undefined` so the host imports resolve at instantiation time.
 

@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SMART Health Check-in Model Explainer</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #5f6f86;
+      --rule: #d9e2ec;
+      --soft: #f7fafc;
+      --blue: #006fb7;
+      --green: #08795b;
+      --amber: #925a00;
+      --code: #111827;
+      --code-fg: #f4f8ff;
+      --measure: 920px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #fff;
+      font: 17px/1.62 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .page {
+      max-width: var(--measure);
+      margin: 0 auto;
+      padding: 42px 24px 72px;
+    }
+
+    header {
+      padding-bottom: 30px;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      color: #365b82;
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      line-height: 1.13;
+      letter-spacing: -0.025em;
+    }
+
+    h1 {
+      max-width: 800px;
+      font-size: clamp(2.4rem, 5vw, 4.7rem);
+      letter-spacing: -0.055em;
+    }
+
+    h2 {
+      margin-bottom: 14px;
+      font-size: clamp(1.65rem, 3vw, 2.2rem);
+    }
+
+    h3 {
+      margin: 28px 0 8px;
+      font-size: 1.18rem;
+    }
+
+    p {
+      max-width: 74ch;
+      margin: 0 0 14px;
+    }
+
+    .lede {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 1.16rem;
+    }
+
+    a {
+      color: var(--blue);
+      font-weight: 750;
+      text-underline-offset: 0.16em;
+    }
+
+    .actions,
+    .toc {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+    }
+
+    .actions {
+      margin-top: 24px;
+    }
+
+    .toc {
+      padding: 16px 0;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .toc a {
+      color: #36506e;
+      font-size: 0.95rem;
+      text-decoration: none;
+    }
+
+    section {
+      padding: 36px 0;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    section:last-child {
+      border-bottom: 0;
+    }
+
+    .role-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      margin-top: 22px;
+    }
+
+    .role {
+      padding-left: 16px;
+      border-left: 4px solid var(--blue);
+    }
+
+    .role.responder {
+      border-left-color: var(--green);
+    }
+
+    .role h3 {
+      margin-top: 0;
+    }
+
+    ul {
+      margin: 8px 0 0;
+      padding-left: 22px;
+    }
+
+    li {
+      margin: 4px 0;
+    }
+
+    .steps {
+      margin: 24px 0 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: step;
+    }
+
+    .steps li {
+      counter-increment: step;
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr);
+      gap: 14px;
+      padding: 16px 0;
+      border-top: 1px solid var(--rule);
+    }
+
+    .steps li:first-child {
+      border-top: 0;
+    }
+
+    .steps li::before {
+      content: counter(step);
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--rule);
+      border-radius: 50%;
+      color: var(--blue);
+      font-weight: 900;
+    }
+
+    .steps strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    code,
+    pre,
+    dt {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    }
+
+    code {
+      padding: 0.08em 0.24em;
+      background: #edf3f8;
+      color: #21334d;
+      overflow-wrap: anywhere;
+    }
+
+    pre {
+      margin: 16px 0 22px;
+      padding: 18px 20px;
+      overflow-x: auto;
+      background: var(--code);
+      color: var(--code-fg);
+      font-size: 0.92rem;
+      line-height: 1.55;
+      white-space: pre;
+    }
+
+    dl {
+      display: grid;
+      grid-template-columns: 180px minmax(0, 1fr);
+      gap: 10px 20px;
+      margin: 18px 0 0;
+    }
+
+    dt {
+      color: #0d4f82;
+      font-weight: 850;
+    }
+
+    dd {
+      margin: 0;
+      color: #33445c;
+    }
+
+    .example {
+      padding-top: 20px;
+      margin-top: 22px;
+      border-top: 1px solid var(--rule);
+    }
+
+    .example:first-of-type {
+      padding-top: 0;
+      border-top: 0;
+    }
+
+    .label {
+      display: inline-block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .note {
+      margin: 20px 0 0;
+      padding: 16px 0 16px 18px;
+      border-left: 4px solid var(--green);
+      background: linear-gradient(90deg, rgba(8, 121, 91, 0.08), transparent 75%);
+    }
+
+    .note.warning {
+      border-left-color: var(--amber);
+      background: linear-gradient(90deg, rgba(146, 90, 0, 0.08), transparent 75%);
+    }
+
+    table {
+      width: 100%;
+      margin: 18px 0 0;
+      border-collapse: collapse;
+      font-size: 0.96rem;
+    }
+
+    th,
+    td {
+      padding: 11px 10px;
+      border-bottom: 1px solid var(--rule);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: #425873;
+      font-size: 0.8rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    @media (max-width: 760px) {
+      body {
+        font-size: 16px;
+      }
+
+      .page {
+        padding: 28px 18px 56px;
+      }
+
+      .role-pair,
+      dl {
+        grid-template-columns: 1fr;
+      }
+
+      pre {
+        font-size: 0.84rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <p class="eyebrow">SMART Health Check-in over W3C Digital Credentials API</p>
+      <h1>A request asks for check-in work. A response returns what the patient shared.</h1>
+      <p class="lede">
+        This page explains the application-level model: requester, responder,
+        request items, profile-family selectors, response artifacts, and
+        per-item status.
+      </p>
+      <div class="actions">
+        <a href="./index.html">Overview</a>
+        <a href="./verifier/">Open verifier demo</a>
+        <a href="./wire-protocol-explainer.html">Wire protocol explainer</a>
+        <a href="./SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md">Draft payload spec</a>
+      </div>
+    </header>
+
+    <nav class="toc" aria-label="Explainer sections">
+      <a href="#roles">Roles</a>
+      <a href="#conversation">Conversation</a>
+      <a href="#request">Request</a>
+      <a href="#items">Items</a>
+      <a href="#profile-families">Profile families</a>
+      <a href="#response">Response</a>
+      <a href="#artifacts">Artifacts</a>
+      <a href="#statuses">Statuses</a>
+      <a href="#complete-example">Complete example</a>
+    </nav>
+
+    <section id="roles">
+      <h2>Requester and responder roles</h2>
+      <p>
+        The requester says what it wants for a check-in workflow. The responder
+        decides what it can provide, asks the user, and returns the approved
+        content.
+      </p>
+
+      <div class="role-pair">
+        <div class="role">
+          <h3>Requester</h3>
+          <p>
+            A clinic, registration kiosk, patient portal, or relying-party web
+            app. It owns the reason for the exchange, the requested item list,
+            and the formats it can accept.
+          </p>
+          <ul>
+            <li>Creates a SMART Health Check-in request.</li>
+            <li>Invokes <code>navigator.credentials.get()</code>.</li>
+            <li>Validates the response against the original request.</li>
+          </ul>
+        </div>
+
+        <div class="role responder">
+          <h3>Responder</h3>
+          <p>
+            A patient wallet or health app. It owns available data, renders
+            consent, and creates a SMART Health Check-in response.
+          </p>
+          <ul>
+            <li>Matches request items it understands.</li>
+            <li>Shows the user what will be shared.</li>
+            <li>Returns artifacts plus a status for every item.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="conversation">
+      <h2>The conversation is a checklist</h2>
+      <p>
+        This is not "give me one credential." It is "here is a checklist of
+        consentable check-in tasks; tell me what the patient shared for each."
+      </p>
+
+      <ol class="steps">
+        <li>
+          <span>
+            <strong>Requester chooses a purpose.</strong>
+            Example: clinic check-in, billing, visit intake, or prior authorization.
+          </span>
+        </li>
+        <li>
+          <span>
+            <strong>Requester lists named items.</strong>
+            Examples: patient demographics, insurance card, health summary, intake form.
+          </span>
+        </li>
+        <li>
+          <span>
+            <strong>Responder matches the list.</strong>
+            The wallet decides what it can offer and how each item should be shown.
+          </span>
+        </li>
+        <li>
+          <span>
+            <strong>User accepts, edits, or declines.</strong>
+            The user may share all, some, or none of the requested items.
+          </span>
+        </li>
+        <li>
+          <span>
+            <strong>Responder maps everything back.</strong>
+            Artifacts cite item ids in <code>fulfills[]</code>. Status rows cite item ids in <code>requestStatus[]</code>.
+          </span>
+        </li>
+      </ol>
+
+      <p class="note">
+        <strong>Core invariant:</strong> each <code>request.items[].id</code>
+        must appear exactly once in <code>response.requestStatus[]</code>.
+        Artifacts point back to one or more item ids using <code>fulfills[]</code>.
+      </p>
+    </section>
+
+    <section id="request">
+      <h2>What makes a SMART request?</h2>
+      <p>
+        A request is a typed envelope plus an ordered list of items. The
+        envelope identifies the conversation. The items are the work the user
+        sees in the wallet.
+      </p>
+
+<pre>{
+  "type": "smart-health-checkin-request",
+  "version": "1",
+  "id": "demo-all-of-the-above",
+  "purpose": "Clinic check-in",
+  "fhirVersions": ["4.0.1"],
+  "items": [
+    { "...": "request item" }
+  ]
+}</pre>
+
+      <dl>
+        <dt>type</dt>
+        <dd>Fixed discriminator: <code>smart-health-checkin-request</code>.</dd>
+        <dt>version</dt>
+        <dd>Payload schema version. Current value is <code>"1"</code>.</dd>
+        <dt>id</dt>
+        <dd>Requester-chosen id echoed by <code>response.requestId</code>.</dd>
+        <dt>purpose</dt>
+        <dd>Human-readable reason to show in consent UI.</dd>
+        <dt>fhirVersions</dt>
+        <dd>FHIR versions the requester can consume.</dd>
+        <dt>items</dt>
+        <dd>The named checklist of clinical requests.</dd>
+      </dl>
+    </section>
+
+    <section id="items">
+      <h2>What makes a request item?</h2>
+      <p>
+        A request item is one consentable task. It has a stable id, display
+        text, a content selector, and a list of accepted response formats.
+      </p>
+
+<pre>{
+  "id": "insurance",
+  "title": "Insurance card",
+  "summary": "Insurance card for billing",
+  "required": true,
+  "content": { "...": "what is being requested" },
+  "accept": ["application/fhir+json"]
+}</pre>
+
+      <dl>
+        <dt>id</dt>
+        <dd>Short stable name. Responses refer to this id.</dd>
+        <dt>title / summary</dt>
+        <dd>User-facing display text for the wallet consent screen.</dd>
+        <dt>required</dt>
+        <dd>Requester preference. The user still controls sharing.</dd>
+        <dt>content</dt>
+        <dd>The clinical thing requested.</dd>
+        <dt>accept</dt>
+        <dd>Media types the requester accepts for the returned artifact.</dd>
+      </dl>
+
+      <div class="example">
+        <h3>Exact FHIR profile</h3>
+        <p>
+          Use <code>profiles</code> to ask for resources conforming to exact
+          StructureDefinition canonicals, such as US Core Patient.
+        </p>
+<pre>{
+  "id": "patient",
+  "title": "Patient demographics",
+  "content": {
+    "kind": "fhir.resources",
+    "profiles": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
+    ]
+  },
+  "accept": ["application/fhir+json"]
+}</pre>
+      </div>
+
+      <div class="example">
+        <h3>Questionnaire</h3>
+        <p>
+          Use <code>kind: "questionnaire"</code> when the wallet should render a
+          FHIR Questionnaire, accept user input, and return a
+          QuestionnaireResponse.
+        </p>
+<pre>{
+  "id": "intake",
+  "title": "Migraine intake",
+  "content": {
+    "kind": "questionnaire",
+    "questionnaire": {
+      "resourceType": "Questionnaire",
+      "title": "Migraine Check-in",
+      "item": [
+        {
+          "linkId": "severity",
+          "text": "Pain severity (0-10)",
+          "type": "integer"
+        }
+      ]
+    }
+  },
+  "accept": ["application/fhir+json"]
+}</pre>
+      </div>
+    </section>
+
+    <section id="profile-families">
+      <h2>Profile families: asking for "any US Core profiles"</h2>
+      <p>
+        Exact profile requests use <code>profiles</code>. Broad implementation
+        guide or profile-family requests use <code>profilesFrom</code>. The
+        canonical URL is the semantic identity; package and version are optional
+        resolver hints.
+      </p>
+
+      <span class="label">Any US Core resource the wallet can share</span>
+<pre>{
+  "id": "us-core-records",
+  "title": "US Core records",
+  "summary": "Patient records your app can share that conform to US Core profiles.",
+  "content": {
+    "kind": "fhir.resources",
+    "profilesFrom": "http://hl7.org/fhir/us/core"
+  },
+  "accept": ["application/fhir+json"]
+}</pre>
+
+      <span class="label">US Core family, narrowed by resource type</span>
+<pre>{
+  "id": "us-core-problems-meds-labs",
+  "title": "Problems, medications, and labs",
+  "content": {
+    "kind": "fhir.resources",
+    "profilesFrom": {
+      "canonical": "http://hl7.org/fhir/us/core",
+      "package": "hl7.fhir.us.core"
+    },
+    "resourceTypes": ["Condition", "MedicationRequest", "Observation"]
+  },
+  "accept": ["application/fhir+json", "application/smart-health-card"]
+}</pre>
+
+      <dl>
+        <dt>profiles</dt>
+        <dd>Exact StructureDefinition canonicals, such as US Core Patient.</dd>
+        <dt>profilesFrom</dt>
+        <dd>A publication, implementation guide, or profile collection, such as US Core as a family.</dd>
+        <dt>resourceTypes</dt>
+        <dd>Optional official FHIR resourceType narrowing within the profile family.</dd>
+        <dt>no selectors</dt>
+        <dd>Ask for any patient-specific FHIR resources the wallet can offer and the user chooses to share.</dd>
+      </dl>
+
+      <p class="note warning">
+        <strong>Version rule:</strong> strip <code>|version</code> when checking
+        profile-family membership or fetching canonical content; preserve it in
+        returned records, fixtures, logs, and exact profile checks.
+      </p>
+    </section>
+
+    <section id="response">
+      <h2>What makes a SMART response?</h2>
+      <p>
+        A response is a typed envelope that links shared artifacts back to the
+        original request and says what happened for every requested item.
+      </p>
+
+<pre>{
+  "type": "smart-health-checkin-response",
+  "version": "1",
+  "requestId": "demo-all-of-the-above",
+  "artifacts": [
+    { "...": "shared clinical content" }
+  ],
+  "requestStatus": [
+    { "...": "one outcome per item" }
+  ]
+}</pre>
+
+      <dl>
+        <dt>requestId</dt>
+        <dd>Must equal the original request <code>id</code>.</dd>
+        <dt>artifacts</dt>
+        <dd>Clinical payloads the user chose to share.</dd>
+        <dt>requestStatus</dt>
+        <dd>One outcome for every requested item.</dd>
+      </dl>
+    </section>
+
+    <section id="artifacts">
+      <h2>Artifacts are the shared clinical content</h2>
+      <p>
+        An artifact has its own id, a media type, and a <code>fulfills[]</code>
+        array that maps it back to one or more request items.
+      </p>
+
+      <div class="example">
+        <h3>FHIR JSON resource or bundle</h3>
+<pre>{
+  "id": "artifact-us-core",
+  "mediaType": "application/fhir+json",
+  "fhirVersion": "4.0.1",
+  "fulfills": ["us-core-records"],
+  "value": {
+    "resourceType": "Bundle",
+    "entry": [ ... ]
+  }
+}</pre>
+      </div>
+
+      <div class="example">
+        <h3>SMART Health Card</h3>
+<pre>{
+  "id": "artifact-ips-shc",
+  "mediaType": "application/smart-health-card",
+  "fulfills": ["ips"],
+  "data": "shc:/567629..."
+}</pre>
+        <p>
+          SMART Health Cards do not use outer <code>fhirVersion</code>; the
+          verifier inspects the signed JWS payload.
+        </p>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Artifact field</th>
+            <th>Meaning</th>
+            <th>Important rule</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>id</code></td>
+            <td>Responder-chosen artifact identifier.</td>
+            <td>Unique inside the response.</td>
+          </tr>
+          <tr>
+            <td><code>mediaType</code></td>
+            <td>How the verifier should parse the artifact.</td>
+            <td>Must be accepted by every item in <code>fulfills[]</code>.</td>
+          </tr>
+          <tr>
+            <td><code>fulfills</code></td>
+            <td>Request item ids this artifact satisfies.</td>
+            <td>Must be non-empty and reference real request item ids.</td>
+          </tr>
+          <tr>
+            <td><code>value</code></td>
+            <td>Inline JSON content, such as FHIR JSON.</td>
+            <td>Use for clear JSON artifacts.</td>
+          </tr>
+          <tr>
+            <td><code>data</code></td>
+            <td>Compact encoded artifact, such as an SHC string.</td>
+            <td>Use for signed or binary-friendly payloads.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="statuses">
+      <h2>Status says what happened for each item</h2>
+      <p>
+        A verifier should not infer success from artifacts alone. It should
+        check the status list for every requested item.
+      </p>
+
+<pre>{
+  "item": "insurance",
+  "status": "fulfilled",
+  "message": "Shared digital insurance card"
+}</pre>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Meaning</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>fulfilled</code></td><td>The item was satisfied.</td></tr>
+          <tr><td><code>partial</code></td><td>Some, but not all, useful content was shared.</td></tr>
+          <tr><td><code>unavailable</code></td><td>The wallet has no matching data.</td></tr>
+          <tr><td><code>declined</code></td><td>The user chose not to share it.</td></tr>
+          <tr><td><code>unsupported</code></td><td>The wallet cannot handle that item shape.</td></tr>
+          <tr><td><code>error</code></td><td>The wallet tried but failed.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="complete-example">
+      <h2>A complete example</h2>
+      <p>
+        This simplified example asks for any US Core records and an intake form,
+        then returns a FHIR Bundle and QuestionnaireResponse.
+      </p>
+
+<pre>{
+  "type": "smart-health-checkin-request",
+  "version": "1",
+  "id": "demo-us-core-and-intake",
+  "purpose": "Clinic check-in",
+  "fhirVersions": ["4.0.1"],
+  "items": [
+    {
+      "id": "us-core-records",
+      "title": "US Core records",
+      "content": {
+        "kind": "fhir.resources",
+        "profilesFrom": "http://hl7.org/fhir/us/core"
+      },
+      "accept": ["application/fhir+json"]
+    },
+    {
+      "id": "intake",
+      "title": "Migraine intake",
+      "content": {
+        "kind": "questionnaire",
+        "questionnaire": { "resourceType": "Questionnaire", "title": "Migraine Check-in" }
+      },
+      "accept": ["application/fhir+json"]
+    }
+  ]
+}</pre>
+
+<pre>{
+  "type": "smart-health-checkin-response",
+  "version": "1",
+  "requestId": "demo-us-core-and-intake",
+  "artifacts": [
+    {
+      "id": "artifact-us-core",
+      "mediaType": "application/fhir+json",
+      "fhirVersion": "4.0.1",
+      "fulfills": ["us-core-records"],
+      "value": { "resourceType": "Bundle", "entry": [ ... ] }
+    },
+    {
+      "id": "artifact-intake",
+      "mediaType": "application/fhir+json",
+      "fhirVersion": "4.0.1",
+      "fulfills": ["intake"],
+      "value": { "resourceType": "QuestionnaireResponse" }
+    }
+  ],
+  "requestStatus": [
+    { "item": "us-core-records", "status": "fulfilled" },
+    { "item": "intake", "status": "fulfilled" }
+  ]
+}</pre>
+    </section>
+
+    <section>
+      <h2>Where the wire details live</h2>
+      <p>
+        This page is the product and payload model. CBOR, direct mdoc
+        namespaces, HPKE encryption, SessionTranscript binding, MSO digests,
+        COSE signatures, and checked-in fixture annotations live in
+        <a href="./wire-protocol-explainer.html">the wire protocol explainer</a>.
+      </p>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,45 @@
+plugins {
+    id "com.android.library"
+    id "org.jetbrains.kotlin.android"
+}
+
+def registrationMode = (project.findProperty("registration-mode") ?: "both").toString()
+def validRegistrationModes = ["both", "legacy-only", "modern-only"]
+if (!validRegistrationModes.contains(registrationMode)) {
+    throw new GradleException("registration-mode must be one of ${validRegistrationModes}; got '${registrationMode}'")
+}
+
+android {
+    namespace "org.smarthealthit.checkin.wallet.credentialmanager"
+    compileSdk 35
+
+    defaultConfig {
+        minSdk 26
+        buildConfigField "String", "REGISTRATION_MODE", "\"${registrationMode}\""
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+}
+
+dependencies {
+    implementation "androidx.credentials:credentials:1.6.0-SNAPSHOT"
+    implementation "androidx.credentials.registry:registry-provider:1.0.0-SNAPSHOT"
+    implementation "androidx.credentials.registry:registry-digitalcredentials-mdoc:1.0.0-SNAPSHOT"
+}
+
+configurations.all {
+    resolutionStrategy {
+        force "androidx.credentials:credentials:1.6.0-SNAPSHOT"
+    }
+}

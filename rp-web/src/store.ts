@@ -2,7 +2,11 @@ import { create } from "zustand";
 import {
   validateSmartCheckinRequest,
   type SmartCheckinRequest,
-} from "./protocol/index.ts";
+} from "./sdk/core.ts";
+import {
+  detectDcApiSupport,
+  type DcApiSupport,
+} from "./sdk/dcapi-verifier.ts";
 import { emit, getRunId, newRunId } from "./debug/events.ts";
 
 export type Preset = {
@@ -201,11 +205,6 @@ export const PRESETS: ReadonlyArray<Preset> = [
   },
 ];
 
-export type DcApiSupport =
-  | { state: "checking" }
-  | { state: "supported" }
-  | { state: "unsupported"; reason: string };
-
 type State = {
   presetId: string;
   requestText: string;
@@ -218,36 +217,6 @@ type State = {
   resetRunId: () => void;
 };
 
-function detectDcApi(): DcApiSupport {
-  if (typeof navigator === "undefined") {
-    return { state: "unsupported", reason: "no navigator (SSR?)" };
-  }
-  // Chrome 141+ exposes navigator.credentials.get with a `digital` option.
-  // We can't feature-detect the option key without calling it, but we can at
-  // least require navigator.credentials to exist and be a CredentialsContainer.
-  const cc = (navigator as Navigator & { credentials?: unknown }).credentials;
-  if (!cc || typeof (cc as { get?: unknown }).get !== "function") {
-    return {
-      state: "unsupported",
-      reason: "navigator.credentials.get is not available",
-    };
-  }
-  // Heuristic: Chrome 141+ ships a global `IdentityCredential` and/or
-  // `DigitalCredential`. Treat presence of either as a positive signal,
-  // absence as not-yet-supported.
-  const w = window as unknown as {
-    DigitalCredential?: unknown;
-    IdentityCredential?: unknown;
-  };
-  if (!w.DigitalCredential && !w.IdentityCredential) {
-    return {
-      state: "unsupported",
-      reason: "no DigitalCredential / IdentityCredential global (need Chrome 141+ or Safari 26+)",
-    };
-  }
-  return { state: "supported" };
-}
-
 const firstPreset = PRESETS[0]!;
 const initialText = JSON.stringify(firstPreset.request, null, 2);
 
@@ -255,7 +224,7 @@ export const useStore = create<State>((set) => ({
   presetId: firstPreset.id,
   requestText: initialText,
   validation: { ok: true },
-  dcApi: detectDcApi(),
+  dcApi: detectDcApiSupport(),
   runId: getRunId(),
 
   selectPreset: (id) => {

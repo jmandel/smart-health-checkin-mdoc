@@ -1,6 +1,6 @@
 //! SMART Health Check-in matcher.
 //!
-//! Eligibility rule (see `profiles/org-iso-mdoc.md` §"Wallet matcher contract"):
+//! Eligibility rule (see `docs/profiles/org-iso-mdoc.md` §"Wallet matcher contract"):
 //!
 //! 1. The Credential Manager request bytes contain `org-iso-mdoc`. **Required
 //!    self-filter** — the AndroidX `registry-provider` path passes an empty

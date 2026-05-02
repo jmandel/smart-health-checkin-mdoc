@@ -1,3 +1,5 @@
 _site/
 rp-web/dist/
-
+.env
+.env.*
+.agents/

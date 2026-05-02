@@ -1,22 +1,28 @@
 import { useEffect, useMemo, useState } from "react";
 import { PRESETS, useStore } from "./store.ts";
 import { emit, getRing, subscribe, type DebugEvent } from "./debug/events.ts";
-import { ResourceCard } from "./app/ResourceCards.tsx";
 import {
-  base64UrlEncodeBytes,
-  buildDcapiSessionTranscript,
-  buildOrgIsoMdocRequest,
-  hex,
+  SmartResponseReview,
+  asRecord,
+  readPath,
+  responseFulfillmentsFromSmartValue,
+  smartValueFromOpenedResponse,
+} from "./app/SmartResponseReview.tsx";
+import {
   MDOC_DOC_TYPE,
   MDOC_NAMESPACE,
-  openWalletResponse,
   PROTOCOL_ID,
   SMART_RESPONSE_ELEMENT_ID,
   SMART_REQUEST_INFO_KEY,
-  validateSmartCheckinRequest,
-  type DcapiMdocResponse,
-  type SmartCheckinRequest,
 } from "./protocol/index.ts";
+import {
+  validateSmartCheckinRequest,
+  type SmartCheckinRequest,
+} from "./sdk/core.ts";
+import {
+  createDcapiVerifier,
+  credentialToDebugJson,
+} from "./sdk/dcapi-verifier.ts";
 
 type TaskView = {
   id: string;
@@ -56,81 +62,29 @@ export function App() {
         emit("ERROR", { where: "validate", error: validated.error });
         return;
       }
-      const bundle = await buildOrgIsoMdocRequest(validated.value, {
-        origin: location.origin,
-      });
-      const arg = bundle.navigatorArgument;
-      const recipientPrivateJwk = await crypto.subtle.exportKey(
-        "jwk",
-        bundle.verifierKeyPair.privateKey,
-      );
-      const sessionTranscript = await buildDcapiSessionTranscript({
-        origin: location.origin,
-        encryptionInfo: bundle.encryptionInfoBytes,
-      });
+      const verifier = createDcapiVerifier({ origin: location.origin });
+      const context = await verifier.prepareCredentialRequest(validated.value);
+      const arg = context.navigatorArgument;
       emit("SMART_REQUEST_INFO", {
         key: SMART_REQUEST_INFO_KEY,
-        json: bundle.smartRequestJson,
+        json: context.bundle.smartRequestJson,
         decoded: validated.value,
       });
       emit("DEVICE_REQUEST", {
         deviceRequest: arg.digital.requests[0].data.deviceRequest,
-        requestedElementIdentifier: bundle.requestedElementIdentifier,
+        requestedElementIdentifier: context.bundle.requestedElementIdentifier,
         requestInfoKey: SMART_REQUEST_INFO_KEY,
       });
       emit("ENCRYPTION_INFO", {
         encryptionInfo: arg.digital.requests[0].data.encryptionInfo,
       });
-      emit("REQUEST_ARTIFACTS", {
-        origin: location.origin,
-        protocol: PROTOCOL_ID,
-        docType: MDOC_DOC_TYPE,
-        namespace: MDOC_NAMESPACE,
-        responseElement: SMART_RESPONSE_ELEMENT_ID,
-        navigatorArgument: arg,
-        recipientPublicJwk: bundle.verifierPublicJwk,
-        recipientPrivateJwk,
-        deviceRequest: {
-          base64url: base64UrlEncodeBytes(bundle.deviceRequestBytes),
-          hex: hex(bundle.deviceRequestBytes),
-        },
-        encryptionInfo: {
-          base64url: base64UrlEncodeBytes(bundle.encryptionInfoBytes),
-          hex: hex(bundle.encryptionInfoBytes),
-        },
-        sessionTranscript: {
-          base64url: base64UrlEncodeBytes(sessionTranscript),
-          hex: hex(sessionTranscript),
-        },
-        readerAuth: bundle.readerAuthBytes
-          ? {
-              hex: hex(bundle.readerAuthBytes),
-              readerPublicJwk: bundle.readerPublicJwk,
-              readerCertificateDer: bundle.readerCertificateDer
-                ? {
-                    base64url: base64UrlEncodeBytes(bundle.readerCertificateDer),
-                    hex: hex(bundle.readerCertificateDer),
-                  }
-                : undefined,
-              note: "Per-request demo readerAuth. The key is ephemeral until stable reader identity is implemented.",
-            }
-          : undefined,
-        note: "Local debug artifact. The private JWK is intentionally logged for offline HPKE debugging.",
-      });
+      emit("REQUEST_ARTIFACTS", context.artifacts);
       emit("DCAPI_ARGUMENT", arg);
-      const credential = await navigator.credentials.get(
-        arg as unknown as CredentialRequestOptions,
-      );
+      const credential = await context.getCredential();
       const credentialDebugJson = credentialToDebugJson(credential);
       emit("DCAPI_RESULT", credentialDebugJson);
       try {
-        const openedResponse = await openWalletResponse({
-          response: credential as unknown as DcapiMdocResponse,
-          recipientPrivateKey: bundle.verifierKeyPair.privateKey,
-          recipientPublicJwk: bundle.verifierPublicJwk,
-          sessionTranscript,
-          smartRequest: validated.value,
-        });
+        const openedResponse = await context.openCredential(credential);
         emit("DCAPI_RESPONSE_OPENED", {
           dcapiResponse: openedResponse.dcapiResponse,
           deviceResponse: openedResponse.deviceResponse,
@@ -140,12 +94,9 @@ export function App() {
           error: e instanceof Error ? e.message : String(e),
           credential: credentialDebugJson,
           origin: location.origin,
-          recipientPublicJwk: bundle.verifierPublicJwk,
-          recipientPrivateJwk,
-          sessionTranscript: {
-            base64url: base64UrlEncodeBytes(sessionTranscript),
-            hex: hex(sessionTranscript),
-          },
+          recipientPublicJwk: context.bundle.verifierPublicJwk,
+          recipientPrivateJwk: context.recipientPrivateJwk,
+          sessionTranscript: context.artifacts.sessionTranscript,
         });
       }
     } catch (e) {
@@ -261,22 +212,6 @@ export function App() {
       </main>
     </>
   );
-}
-
-function credentialToDebugJson(credential: unknown): unknown {
-  if (!credential || typeof credential !== "object") return credential;
-  const c = credential as {
-    id?: unknown;
-    type?: unknown;
-    protocol?: unknown;
-    data?: unknown;
-  };
-  return {
-    id: c.id,
-    type: c.type,
-    protocol: c.protocol,
-    data: c.data,
-  };
 }
 
 function TaskList({ tasks }: { tasks: TaskView[] }) {
@@ -470,127 +405,7 @@ function ResponsePanel({ events }: { events: DebugEvent[] }) {
     return <div className="empty-state">Credential returned; opening response.</div>;
   }
 
-  const payload = asRecord(last.payload);
-  const deviceResponse = asRecord(payload?.deviceResponse);
-  const doc = asRecord(readPath(deviceResponse, ["documents", 0]));
-  const elements = readPath<unknown[]>(doc, ["elements"]) ?? [];
-  const element =
-    elements.map(asRecord).find((e) => e?.elementIdentifier === SMART_RESPONSE_ELEMENT_ID) ??
-    asRecord(elements[0]);
-  const smart = asRecord(element?.smartHealthCheckinResponse);
-  const smartValue = smart?.valid === true ? asRecord(smart.value) : undefined;
-  const artifacts = Array.isArray(smartValue?.artifacts) ? smartValue.artifacts : [];
-  const requestStatus = Array.isArray(smartValue?.requestStatus) ? smartValue.requestStatus : [];
-  const fulfilledItems = responseFulfillmentsFromSmartValue(smartValue);
-  const digestMatches = readPath<boolean>(element, ["valueDigest", "matches"]);
-  const docType = readPath<string>(doc, ["docType"]);
-  const status = readPath<number>(deviceResponse, ["status"]);
-  const cipherText = readPath<string>(payload, ["dcapiResponse", "cipherText", "base64url"]);
-
-  return (
-    <div className="result">
-      <div className="summary">
-        <span className="status-pill status-pill--done">HPKE opened</span>
-        <span className={digestMatches ? "status-pill status-pill--done" : "status-pill"}>
-          digest {digestMatches ? "matched" : "unchecked"}
-        </span>
-        {docType ? <code>{docType}</code> : null}
-        {typeof status === "number" ? <span className="muted">status {status}</span> : null}
-      </div>
-
-      {smartValue ? (
-        <>
-          <div className="metric-row">
-            <div>
-              <span className="metric">{artifacts.length}</span>
-              <span className="muted"> artifacts</span>
-            </div>
-            <div>
-              <span className="metric">{requestStatus.length}</span>
-              <span className="muted"> item statuses</span>
-            </div>
-            {cipherText ? (
-              <div className="truncate">
-                <span className="muted">cipherText </span>
-                <code>{cipherText}</code>
-              </div>
-            ) : null}
-          </div>
-
-          {artifacts.length > 0 ? (
-            <div className="received-credentials">
-              <div className="tool-subheading">Received credentials</div>
-              <div className="credentials-grid">
-                {artifacts.map((artifact, i) => {
-                  const a = asRecord(artifact);
-                  const id = String(a?.id ?? `artifact-${i + 1}`);
-                  return (
-                    <ResourceCard
-                      key={`${id}-${i}`}
-                      credentialId={id}
-                      resource={a?.value ?? a?.data ?? artifact}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          ) : null}
-
-          <div className="response-columns">
-            <div>
-              <div className="tool-subheading">Item status</div>
-              {requestStatus.length > 0 ? (
-                <div className="answers">
-                  {requestStatus.map((entry, i) => {
-                    const status = asRecord(entry);
-                    const itemId = String(status?.item ?? `item-${i + 1}`);
-                    const artifactIds = fulfilledItems[itemId] ?? [];
-                    return (
-                    <div className="answer-row" key={itemId}>
-                      <code>{itemId}</code>
-                      <span>
-                        {String(status?.status ?? "unknown")}
-                        {artifactIds.length > 0 ? ` (${artifactIds.join(", ")})` : ""}
-                      </span>
-                    </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="muted">No item status returned.</div>
-              )}
-            </div>
-
-            <div>
-              <div className="tool-subheading">Artifacts</div>
-              {artifacts.length > 0 ? (
-                <div className="artifacts">
-                  {artifacts.map((artifact, i) => {
-                    const a = asRecord(artifact);
-                    return (
-                      <details key={`${String(a?.id ?? i)}-${i}`}>
-                        <summary>
-                          <code>{String(a?.id ?? `artifact-${i + 1}`)}</code>
-                          <span>{String(a?.mediaType ?? "unknown")}</span>
-                        </summary>
-                        <pre className="json result__pre">
-                          {JSON.stringify(a?.value ?? a?.data ?? artifact, null, 2)}
-                        </pre>
-                      </details>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="muted">No artifacts shared.</div>
-              )}
-            </div>
-          </div>
-        </>
-      ) : (
-        <pre className="json result__pre">{JSON.stringify(deviceResponse, null, 2)}</pre>
-      )}
-    </div>
-  );
+  return <SmartResponseReview openedResponse={last.payload} technicalDetails={{ eventKind: last.kind }} />;
 }
 
 function useDebugEvents(): DebugEvent[] {
@@ -618,28 +433,9 @@ function parseRequest(text: string): SmartCheckinRequest | undefined {
 }
 
 function responseAnswers(event: DebugEvent | undefined): Record<string, string[]> | undefined {
-  const elements = readPath<unknown[]>(event?.payload, ["deviceResponse", "documents", 0, "elements"]) ?? [];
-  const element =
-    elements.map(asRecord).find((e) => e?.elementIdentifier === SMART_RESPONSE_ELEMENT_ID) ??
-    asRecord(elements[0]);
-  const smartValue = asRecord(readPath(element, ["smartHealthCheckinResponse", "value"]));
+  const smartValue = smartValueFromOpenedResponse(event?.payload);
   const out = responseFulfillmentsFromSmartValue(smartValue);
   return Object.keys(out).length > 0 ? out : undefined;
-}
-
-function responseFulfillmentsFromSmartValue(smartValue: Record<string, unknown> | undefined): Record<string, string[]> {
-  const out: Record<string, string[]> = {};
-  const artifacts = Array.isArray(smartValue?.artifacts) ? smartValue.artifacts : [];
-  for (let i = 0; i < artifacts.length; i++) {
-    const artifact = asRecord(artifacts[i]);
-    const artifactId = String(artifact?.id ?? `artifact-${i + 1}`);
-    const fulfills = Array.isArray(artifact?.fulfills) ? artifact.fulfills : [];
-    for (const itemId of fulfills) {
-      if (typeof itemId !== "string" || itemId.length === 0) continue;
-      (out[itemId] ??= []).push(artifactId);
-    }
-  }
-  return out;
 }
 
 function taskFromItem(item: SmartCheckinRequest["items"][number], answers: Record<string, string[]> | undefined): TaskView {
@@ -698,25 +494,4 @@ function profileTitle(profiles: string[], id: string): string {
   if (joined.includes("Bundle-uv-ips")) return "Clinical history";
   if (id === "ips") return "Clinical history";
   return id.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-function asRecord(v: unknown): Record<string, unknown> | undefined {
-  return typeof v === "object" && v !== null && !Array.isArray(v)
-    ? (v as Record<string, unknown>)
-    : undefined;
-}
-
-function readPath<T = unknown>(root: unknown, path: ReadonlyArray<string | number>): T | undefined {
-  let cur = root;
-  for (const part of path) {
-    if (typeof part === "number") {
-      if (!Array.isArray(cur)) return undefined;
-      cur = cur[part];
-    } else {
-      const obj = asRecord(cur);
-      if (!obj || !(part in obj)) return undefined;
-      cur = obj[part];
-    }
-  }
-  return cur as T | undefined;
 }

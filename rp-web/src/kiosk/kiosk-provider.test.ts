@@ -1,0 +1,197 @@
+import { expect, test } from "bun:test";
+import type { SmartCheckinRequest } from "../sdk/core.ts";
+import { DEMO_KIOSK_CRYPTO_CONFIG } from "./demo-keys.ts";
+import {
+  completeKioskRequest,
+  initiateKioskRequest,
+  openKioskSubmission,
+  resolveKioskRequest,
+  type KioskRequestRow,
+  type KioskSubmissionRow,
+  type KioskTransportProvider,
+} from "./kiosk-provider.ts";
+import {
+  KIOSK_BLOB_CONTENT_TYPE,
+  KIOSK_FORM_ID,
+  type EncryptedPayload,
+  type SubmissionPlaintext,
+  type VerifiedKioskRequest,
+} from "./protocol.ts";
+
+const SMART_REQUEST: SmartCheckinRequest = {
+  type: "smart-health-checkin-request",
+  version: "1",
+  id: "test-kiosk-request",
+  purpose: "Clinic check-in",
+  fhirVersions: ["4.0.1"],
+  items: [
+    {
+      id: "patient",
+      title: "Patient demographics",
+      summary: "Demographics for check-in",
+      required: true,
+      content: {
+        kind: "fhir.resources",
+        profiles: ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"],
+      },
+      accept: ["application/fhir+json"],
+    },
+    {
+      id: "intake",
+      title: "Intake form",
+      summary: "Migraine Check-in",
+      content: {
+        kind: "questionnaire",
+        questionnaire: {
+          resourceType: "Questionnaire",
+          status: "active",
+          title: "Migraine Check-in",
+        },
+      },
+      accept: ["application/fhir+json"],
+    },
+  ],
+};
+
+test("kiosk provider workflow stores opaque requests and opens encrypted submissions", async () => {
+  const provider = createMemoryProvider();
+  const initiated = await initiateKioskRequest({
+    provider,
+    cryptoConfig: DEMO_KIOSK_CRYPTO_CONFIG,
+    submitBaseUrl: "https://clinic.example/verifier/submit.html",
+    smartRequest: {
+      presetId: "test",
+      title: "Test check-in",
+      request: SMART_REQUEST,
+    },
+  });
+
+  expect(initiated.submitUrl).toStartWith("https://clinic.example/verifier/submit.html#r=");
+  expect(initiated.submitUrl).not.toContain("Migraine");
+
+  const stored = await provider.readRequest(initiated.verified.payload.requestId);
+  const storedRequestTransport = JSON.stringify(stored.encryptedRequest);
+  expect(storedRequestTransport).not.toContain("Migraine");
+  expect(storedRequestTransport).not.toContain("us-core-patient");
+
+  const resolved = await resolveKioskRequest({
+    provider,
+    cryptoConfig: DEMO_KIOSK_CRYPTO_CONFIG,
+    requestId: initiated.verified.payload.requestId,
+  });
+  expect(resolved.verified.requestHash).toBe(initiated.verified.requestHash);
+  expect(resolved.verified.payload.smartRequest.request.items[1]?.summary).toBe("Migraine Check-in");
+
+  const completed = await completeKioskRequest({
+    provider,
+    request: resolved.verified,
+    payload: {
+      kind: "dcapi-smart-checkin",
+      openedResponse: {
+        smartResponseValidation: {
+          ok: true,
+          value: {
+            type: "smart-health-checkin-response",
+            version: "1",
+            requestId: SMART_REQUEST.id,
+            artifacts: [],
+            requestStatus: [
+              { item: "patient", status: "unavailable" },
+              { item: "intake", status: "fulfilled" },
+            ],
+          },
+        },
+      },
+    },
+  });
+
+  const opened = await openKioskSubmission({
+    provider,
+    request: initiated.verified,
+    desktopPrivateKey: initiated.desktopPrivateKey,
+    row: completed.row,
+  });
+  expect(opened.plaintext.requestHash).toBe(initiated.verified.requestHash);
+  expect(opened.plaintext.payload.kind).toBe("dcapi-smart-checkin");
+});
+
+function createMemoryProvider(): KioskTransportProvider {
+  const requests = new Map<string, KioskRequestRow>();
+  const submissions: KioskSubmissionRow[] = [];
+  const blobs = new Map<string, Uint8Array<ArrayBuffer>>();
+  return {
+    name: "memory",
+    appId: "memory-app",
+    configured: true,
+    async writeRequest(input) {
+      const row: KioskRequestRow = {
+        id: crypto.randomUUID(),
+        requestId: input.payload.requestId,
+        routeId: input.payload.routeId,
+        sessionId: input.payload.sessionId,
+        requestHash: input.requestHash,
+        createdAt: input.payload.createdAt,
+        expiresAt: input.payload.expiresAt,
+        creatorKeyId: input.payload.minter.keyId,
+        serviceKeyId: input.payload.encryptRequestTo.keyId,
+        encryptedRequest: input.encryptedRequest,
+      };
+      requests.set(row.requestId, row);
+      return row;
+    },
+    async readRequest(requestId) {
+      const row = requests.get(requestId);
+      if (!row) throw new Error("missing request");
+      return row;
+    },
+    async writeSubmission(input) {
+      const row = memorySubmissionRow(input);
+      const ciphertext = new Uint8Array(input.encrypted.ciphertext.byteLength);
+      ciphertext.set(input.encrypted.ciphertext);
+      blobs.set(row.storagePath, ciphertext);
+      submissions.push(row);
+      return row;
+    },
+    async downloadSubmissionBlob(row) {
+      const blob = blobs.get(row.storagePath);
+      if (!blob) throw new Error("missing blob");
+      return blob;
+    },
+    useSubmissionRows(routeId) {
+      return {
+        rows: routeId ? submissions.filter((row) => row.routeId === routeId) : [],
+        isLoading: false,
+      };
+    },
+  };
+}
+
+function memorySubmissionRow(input: {
+  request: VerifiedKioskRequest;
+  plaintext: SubmissionPlaintext;
+  encrypted: EncryptedPayload;
+  totalPlaintextBytes: number;
+}): KioskSubmissionRow {
+  const storagePath = `submissions/${input.request.payload.routeId}/${input.plaintext.nonce}.bin`;
+  return {
+    id: crypto.randomUUID(),
+    routeId: input.request.payload.routeId,
+    sessionId: input.request.payload.sessionId,
+    submissionId: crypto.randomUUID(),
+    requestId: input.request.payload.requestId,
+    requestHash: input.request.requestHash,
+    certHash: input.request.requestHash,
+    nonce: input.plaintext.nonce,
+    createdAt: Date.now(),
+    expiresAt: input.request.payload.expiresAt,
+    formId: KIOSK_FORM_ID,
+    totalPlaintextBytes: input.totalPlaintextBytes,
+    totalCiphertextBytes: input.encrypted.ciphertext.byteLength,
+    payloadSha256: input.encrypted.payloadSha256,
+    iv: input.encrypted.iv,
+    storagePath,
+    storageFileId: crypto.randomUUID(),
+    contentType: KIOSK_BLOB_CONTENT_TYPE,
+    phoneEphemeralPublicKeyJwk: input.encrypted.phoneEphemeralPublicKeyJwk,
+  };
+}

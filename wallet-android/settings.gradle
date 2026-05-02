@@ -20,3 +20,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "SmartHealthCheckinWallet"
 include ":app"
+include ":smart-checkin-core"
+include ":smart-checkin-mdoc"
+include ":smart-checkin-credential-manager"
+include ":smart-checkin-ui-compose"

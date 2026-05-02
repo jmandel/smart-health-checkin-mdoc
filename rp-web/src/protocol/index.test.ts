@@ -429,7 +429,7 @@ describe("org-iso-mdoc response wrapper", () => {
     expect(doc.docType).toBe(MDOC_DOC_TYPE);
     expect(element.namespace).toBe(MDOC_NAMESPACE);
     expect(element.elementIdentifier).toBe(SMART_RESPONSE_ELEMENT_ID);
-    expect(element.valueDigest.matches).toBe(true);
+    expect(element.valueDigest?.matches).toBe(true);
     if (!element.smartHealthCheckinResponse.present || !element.smartHealthCheckinResponse.valid) {
       throw new Error(
         `SMART response did not decode: ${JSON.stringify(element.smartHealthCheckinResponse)}`,

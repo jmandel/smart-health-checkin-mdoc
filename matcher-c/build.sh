@@ -4,7 +4,7 @@
 #
 # Mirrors the clang invocation pattern from the upstream
 # digitalcredentialsdev/CMWallet matcher (also documented in
-# research/03-matcher-wasm-abi.md):
+# docs/research/03-matcher-wasm-abi.md):
 #
 #   clang \
 #     --target=wasm32 -nostdlib \

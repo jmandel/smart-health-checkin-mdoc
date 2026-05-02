@@ -1,0 +1,74 @@
+import type { InstantRules } from "@instantdb/react";
+
+const maxPayloadBytes = 25 * 1024 * 1024;
+const maxBlobBytes = maxPayloadBytes + 1024;
+const blobContentType = "application/octet-stream";
+
+const rules = {
+  "$default": {
+    allow: {
+      "$default": "false",
+    },
+  },
+  attrs: {
+    allow: {
+      "$default": "false",
+    },
+  },
+  "$files": {
+    bind: {
+      kioskBlobPath: "data.path.startsWith('submissions/')",
+    },
+    allow: {
+      view: "kioskBlobPath",
+      create: "kioskBlobPath",
+      update: "false",
+      delete: "false",
+    },
+  },
+  requests: {
+    bind: {
+      knowsRequest: "data.requestId == ruleParams.requestId",
+      allowedFields:
+        "request.modifiedFields.all(field, field in [" +
+        "'requestId', 'routeId', 'sessionId', 'requestHash', 'createdAt', 'expiresAt', " +
+        "'creatorKeyId', 'serviceKeyId', 'encryptedRequest'" +
+        "])",
+      timeShapeOk: "data.expiresAt > data.createdAt",
+    },
+    allow: {
+      view: "knowsRequest",
+      create: "knowsRequest && allowedFields && timeShapeOk",
+      update: "false",
+      delete: "false",
+    },
+  },
+  submissions: {
+    bind: {
+      knowsRoute: "data.routeId == ruleParams.routeId",
+      allowedFields:
+        "request.modifiedFields.all(field, field in [" +
+        "'routeId', 'sessionId', 'submissionId', 'requestId', 'requestHash', 'certHash', 'nonce', 'createdAt', " +
+        "'expiresAt', 'formId', 'totalPlaintextBytes', 'totalCiphertextBytes', " +
+        "'payloadSha256', 'iv', 'storagePath', 'storageFileId', 'contentType', " +
+        "'phoneEphemeralPublicKeyJwk'" +
+        "])",
+      sizeOk:
+        `data.totalPlaintextBytes <= ${maxPayloadBytes} && ` +
+        `data.totalCiphertextBytes <= ${maxBlobBytes}`,
+      contentOk: `data.contentType == '${blobContentType}'`,
+      pathOk:
+        "data.storagePath == 'submissions/' + data.routeId + '/' + data.nonce + '.bin' && " +
+        "data.storagePath.startsWith('submissions/' + ruleParams.routeId + '/')",
+      timeShapeOk: "data.expiresAt > data.createdAt",
+    },
+    allow: {
+      view: "knowsRoute",
+      create: "knowsRoute && allowedFields && sizeOk && contentOk && pathOk && timeShapeOk",
+      update: "false",
+      delete: "false",
+    },
+  },
+} satisfies InstantRules;
+
+export default rules;
