@@ -87,46 +87,67 @@ in the DeviceResponse, also encoded as a CBOR text string:
 
 ```json
 {
+  "type": "smart-health-checkin-response",
   "version": "1",
+  "requestId": "demo-request",
   "artifacts": [
-    { "id": "a1", "type": "fhir_resource",
-      "data": { "resourceType": "Coverage", "id": "...", "subscriberId": "..." } },
+    {
+      "id": "a1",
+      "mediaType": "application/fhir+json",
+      "fhirVersion": "4.0.1",
+      "fulfills": ["insurance"],
+      "value": { "resourceType": "Coverage", "id": "...", "subscriberId": "..." }
+    },
 
-    { "id": "a2", "type": "fhir_resource",
-      "data": { "resourceType": "Patient", "id": "...", "name": [...] } },
+    {
+      "id": "a2",
+      "mediaType": "application/fhir+json",
+      "fhirVersion": "4.0.1",
+      "fulfills": ["patient"],
+      "value": { "resourceType": "Patient", "id": "...", "name": [...] }
+    },
 
-    { "id": "a3", "type": "shc",
-      "data": "eyJhbGciOiJFUzI1NiIsImtpZCI6...."  /* SMART Health Card JWS */ },
+    {
+      "id": "a3",
+      "mediaType": "application/smart-health-card",
+      "fulfills": ["vaccinations"],
+      "value": { "verifiableCredential": ["eyJhbGciOiJFUzI1NiIsImtpZCI6...."] }
+    },
 
-    { "id": "a4", "type": "fhir_resource",
-      "data": { "resourceType": "QuestionnaireResponse",
-                "questionnaire": "<url-or-id>",
-                "item": [ /* user's answers */ ] } }
+    {
+      "id": "a4",
+      "mediaType": "application/fhir+json",
+      "fhirVersion": "4.0.1",
+      "fulfills": ["intake"],
+      "value": {
+        "resourceType": "QuestionnaireResponse",
+        "questionnaire": "<url-or-id>",
+        "item": [ /* user's answers */ ]
+      }
+    }
   ],
-  "answers": {
-    "insurance":    ["a1"],
-    "patient":      ["a2"],
-    "vaccinations": ["a3"],
-    "intake":       ["a4"]
-  }
+  "requestStatus": [
+    { "item": "insurance", "status": "fulfilled" },
+    { "item": "patient", "status": "fulfilled" },
+    { "item": "vaccinations", "status": "fulfilled" },
+    { "item": "intake", "status": "fulfilled" }
+  ]
 }
 ```
 
 Two-part structure exactly as you described:
 
-- **`artifacts`** — flat de-duplicated list. `id` is wallet-generated, scoped to
-  this response. `type` is one of `"fhir_resource"`, `"shc"` (compact JWS),
-  `"shl"` (smart-health-link string), or `"opaque"` (catch-all).
-- **`answers`** — map from each request `item.id` to an array of artifact ids
-  satisfying it. One artifact can answer multiple items (e.g., a Patient
-  resource referenced by two requested profiles).
+- **`artifacts`** — flat de-duplicated list. `id` is wallet-generated and scoped
+  to this response. Artifacts are typed by `mediaType`; raw FHIR JSON uses
+  `mediaType: "application/fhir+json"` plus `fhirVersion`, and the FHIR payload
+  itself declares `value.resourceType`.
+- **`requestStatus`** — one status per requested item, including declined,
+  unavailable, unsupported, or error outcomes. `artifact.fulfills` links shared
+  artifacts back to the request item ids they satisfy.
 
-If the user declined an item, omit its key from `answers`. If a Questionnaire
-was fully filled, return one artifact and put its id in `answers`. If partially
-filled, return the partial QuestionnaireResponse and let the verifier decide.
-
-A request item with no answer simply has no key in `answers` — there's no
-explicit "declined" marker. Verifiers infer "user did not share" from absence.
+If a Questionnaire was filled, return its `QuestionnaireResponse` as a normal
+FHIR JSON artifact. The artifact does not need a special questionnaire-response
+type; `value.resourceType` already says `"QuestionnaireResponse"`.
 
 ## Why this is enough
 

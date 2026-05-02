@@ -46,6 +46,9 @@ class DemoWalletStoreTest {
         val byId = (0 until artifacts.length())
             .associate { index ->
                 val artifact = artifacts.getJSONObject(index)
+                assertFalse("Artifacts should use mediaType/value, not a legacy type discriminator.", artifact.has("type"))
+                assertEquals("application/fhir+json", artifact.getString("mediaType"))
+                assertEquals("4.0.1", artifact.getString("fhirVersion"))
                 artifact.getString("id") to artifact.getJSONObject("value")
             }
 

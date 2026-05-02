@@ -96,13 +96,21 @@ containing the SMART response JSON:
 
 ```json
 {
+  "type": "smart-health-checkin-response",
   "version": "1",
+  "requestId": "demo-request",
   "artifacts": [
-    { "id": "a1", "type": "fhir_resource", "data": { "resourceType": "Patient" } }
+    {
+      "id": "artifact-patient",
+      "mediaType": "application/fhir+json",
+      "fhirVersion": "4.0.1",
+      "fulfills": ["patient"],
+      "value": { "resourceType": "Patient" }
+    }
   ],
-  "answers": {
-    "coverage": ["a1"]
-  }
+  "requestStatus": [
+    { "item": "patient", "status": "fulfilled" }
+  ]
 }
 ```
 
