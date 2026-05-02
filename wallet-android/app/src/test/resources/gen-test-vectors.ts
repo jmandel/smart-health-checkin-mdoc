@@ -150,12 +150,12 @@ const SMART_REQUESTS: Array<{
     },
   },
   {
-    name: "all-of-the-above",
-    description: "Patient + Coverage + IPS + inline Questionnaire",
+    name: "us-core-checkin",
+    description: "Patient + Coverage + US Core clinical history + inline Questionnaire",
     request: {
       type: "smart-health-checkin-request",
       version: "1",
-      id: "test-all-of-the-above-request",
+      id: "test-us-core-checkin-request",
       purpose: "Clinic check-in",
       fhirVersions: ["4.0.1"],
       items: [
@@ -181,13 +181,22 @@ const SMART_REQUESTS: Array<{
           accept: ["application/fhir+json"],
         },
         {
-          id: "ips",
-          title: "International Patient Summary",
+          id: "clinical-history",
+          title: "US Core clinical history",
           content: {
             kind: "fhir.resources",
-            profiles: ["http://hl7.org/fhir/uv/ips/StructureDefinition/Bundle-uv-ips"],
+            profilesFrom: {
+              canonical: "http://hl7.org/fhir/us/core",
+              package: "hl7.fhir.us.core",
+            },
+            profiles: [
+              "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
+              "http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns",
+              "http://hl7.org/fhir/us/core/StructureDefinition/us-core-allergyintolerance",
+              "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest",
+            ],
           },
-          accept: ["application/smart-health-card", "application/fhir+json"],
+          accept: ["application/fhir+json"],
         },
         {
           id: "intake",

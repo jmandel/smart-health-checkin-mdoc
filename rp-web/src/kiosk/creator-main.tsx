@@ -15,7 +15,7 @@ import {
 import { instantKioskProvider } from "./instant-mailbox.ts";
 import "../app/styles.css";
 
-const KIOSK_REQUEST_PRESET = PRESETS.find((preset) => preset.id === "all-of-the-above") ?? PRESETS[0]!;
+const KIOSK_SMART_REQUEST = (PRESETS.find((preset) => preset.id === "us-core-checkin") ?? PRESETS[0]!).request;
 
 type KioskSession = InitiatedKioskRequest & { qrDataUrl: string };
 
@@ -148,7 +148,11 @@ function CreatorApp() {
                 <details>
                   <summary>Technical details</summary>
                   <div className="kiosk-details">
-                    <Field label="Request" value={session.verified.payload.smartRequest.title} />
+                    <Field
+                      label="Request purpose"
+                      value={session.verified.payload.smartRequest.purpose ?? session.verified.payload.smartRequest.id}
+                    />
+                    <Field label="SMART request id" value={session.verified.payload.smartRequest.id} />
                     <Field label="Expires" value={new Date(session.verified.payload.expiresAt).toLocaleString()} />
                     <Field label="Pointer" value={session.verified.payload.requestId} />
                     <Field label="Request write" value="Instant accepted (queued for delivery)" />
@@ -237,11 +241,7 @@ async function createKioskSession(): Promise<KioskSession> {
     provider: instantKioskProvider,
     cryptoConfig: DEMO_KIOSK_CRYPTO_CONFIG,
     submitBaseUrl: new URL("./submit.html", location.href),
-    smartRequest: {
-      presetId: KIOSK_REQUEST_PRESET.id,
-      title: KIOSK_REQUEST_PRESET.label,
-      request: KIOSK_REQUEST_PRESET.request,
-    },
+    smartRequest: KIOSK_SMART_REQUEST,
   });
   const qrDataUrl = await QRCode.toDataURL(initiated.submitUrl, {
     margin: 1,

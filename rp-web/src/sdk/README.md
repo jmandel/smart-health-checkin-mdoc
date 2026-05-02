@@ -137,7 +137,7 @@ Use `profiles` when the requester needs specific StructureDefinitions:
 ```
 
 Use `profilesFrom` when the requester means a profile family or package, such
-as "any US Core profile" or "anything from IPS":
+as "any US Core profile":
 
 ```json
 {

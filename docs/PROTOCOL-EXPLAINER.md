@@ -133,7 +133,7 @@ string:
 {
   "type": "smart-health-checkin-request",
   "version": "1",
-  "id": "demo-all-of-the-above",
+  "id": "demo-us-core-checkin",
   "purpose": "Clinic check-in",
   "fhirVersions": ["4.0.1"],
   "items": [
@@ -144,6 +144,24 @@ string:
       "content": {
         "kind": "fhir.resources",
         "profiles": ["http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage"]
+      },
+      "accept": ["application/fhir+json"]
+    },
+    {
+      "id": "clinical-history",
+      "title": "US Core clinical history",
+      "content": {
+        "kind": "fhir.resources",
+        "profilesFrom": {
+          "canonical": "http://hl7.org/fhir/us/core",
+          "package": "hl7.fhir.us.core"
+        },
+        "profiles": [
+          "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
+          "http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns",
+          "http://hl7.org/fhir/us/core/StructureDefinition/us-core-allergyintolerance",
+          "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+        ]
       },
       "accept": ["application/fhir+json"]
     },
@@ -240,7 +258,7 @@ SMART response JSON:
 {
   "type": "smart-health-checkin-response",
   "version": "1",
-  "requestId": "demo-all-of-the-above",
+  "requestId": "demo-us-core-checkin",
   "artifacts": [
     {
       "id": "a1",

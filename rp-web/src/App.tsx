@@ -257,7 +257,7 @@ function RequestInspector(props: {
     <div className="tool-section">
       <div className="tool-heading">Request</div>
       <label className="field-row">
-        <span>Preset</span>
+        <span>Example request</span>
         <select value={props.presetId} onChange={(e) => props.selectPreset(e.target.value)}>
           {PRESETS.map((p) => (
             <option key={p.id} value={p.id}>
@@ -490,8 +490,8 @@ function questionnaireCanonical(value: unknown): string | undefined {
 function profileTitle(profiles: string[], id: string): string {
   const joined = profiles.join(" ");
   if (joined.includes("C4DIC-Coverage")) return "Insurance information";
+  if (id === "clinical-history") return "Clinical history";
   if (joined.includes("us-core-patient")) return "Patient demographics";
-  if (joined.includes("Bundle-uv-ips")) return "Clinical history";
-  if (id === "ips") return "Clinical history";
+  if (profiles.some((profile) => profile.includes("/StructureDefinition/us-core-"))) return "Clinical history";
   return id.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }

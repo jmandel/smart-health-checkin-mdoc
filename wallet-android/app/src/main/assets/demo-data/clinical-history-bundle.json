@@ -206,6 +206,40 @@
         "onsetDateTime": "2020-02-10",
         "recordedDate": "2025-01-22"
       }
+    },
+    {
+      "fullUrl": "urn:uuid:medicationrequest-sumatriptan",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "medicationrequest-sumatriptan",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+          ]
+        },
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "313161",
+              "display": "Sumatriptan 50 MG Oral Tablet"
+            }
+          ],
+          "text": "Sumatriptan 50 mg tablet"
+        },
+        "subject": {
+          "reference": "Patient/patient-1",
+          "display": "Jane Doe"
+        },
+        "authoredOn": "2025-02-02",
+        "dosageInstruction": [
+          {
+            "text": "Take one tablet at migraine onset; may repeat once after 2 hours if needed."
+          }
+        ]
+      }
     }
   ]
 }

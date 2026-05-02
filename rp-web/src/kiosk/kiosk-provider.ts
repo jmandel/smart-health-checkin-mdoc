@@ -118,11 +118,7 @@ export async function initiateKioskRequest(input: {
     "creatorKeyId" | "creatorPrivateJwk" | "submissionServiceKeyId" | "submissionServicePublicJwk"
   >;
   submitBaseUrl: string | URL;
-  smartRequest: {
-    presetId: string;
-    title: string;
-    request: SmartCheckinRequest;
-  };
+  smartRequest: SmartCheckinRequest;
 }): Promise<InitiatedKioskRequest> {
   ensureProviderConfigured(input.provider);
   const creatorPrivateKey = await importCreatorPrivateKey(input.cryptoConfig.creatorPrivateJwk);

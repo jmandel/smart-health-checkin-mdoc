@@ -55,12 +55,21 @@ const INTAKE_QUESTIONNAIRE = {
 };
 
 const ACCEPT_FHIR = ["application/fhir+json"];
-const ACCEPT_SHC_OR_FHIR = ["application/smart-health-card", "application/fhir+json"];
+const US_CORE_PROFILES_FROM = {
+  canonical: "http://hl7.org/fhir/us/core",
+  package: "hl7.fhir.us.core",
+};
+const US_CORE_CLINICAL_PROFILES = [
+  "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
+  "http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns",
+  "http://hl7.org/fhir/us/core/StructureDefinition/us-core-allergyintolerance",
+  "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest",
+];
 
-const ALL_OF_THE_ABOVE: SmartCheckinRequest = {
+const US_CORE_CHECKIN: SmartCheckinRequest = {
   type: "smart-health-checkin-request",
   version: "1",
-  id: "demo-all-of-the-above",
+  id: "demo-us-core-checkin",
   purpose: "Clinic check-in",
   fhirVersions: ["4.0.1"],
   items: [
@@ -89,14 +98,15 @@ const ALL_OF_THE_ABOVE: SmartCheckinRequest = {
       accept: ACCEPT_FHIR,
     },
     {
-      id: "ips",
-      title: "Health summary",
-      summary: "Problems, medications, allergies, and immunizations",
+      id: "clinical-history",
+      title: "US Core clinical history",
+      summary: "Patient, problems, medications, and allergies from US Core.",
       content: {
         kind: "fhir.resources",
-        profiles: ["http://hl7.org/fhir/uv/ips/StructureDefinition/Bundle-uv-ips"],
+        profilesFrom: US_CORE_PROFILES_FROM,
+        profiles: US_CORE_CLINICAL_PROFILES,
       },
-      accept: ACCEPT_SHC_OR_FHIR,
+      accept: ACCEPT_FHIR,
     },
     {
       id: "intake",
@@ -112,11 +122,11 @@ const ALL_OF_THE_ABOVE: SmartCheckinRequest = {
 
 export const PRESETS: ReadonlyArray<Preset> = [
   {
-    id: "all-of-the-above",
-    label: "All of the above",
+    id: "us-core-checkin",
+    label: "US Core check-in",
     description:
-      "Patient + Coverage + IPS (SHC-signed) + an inline intake Questionnaire.",
-    request: ALL_OF_THE_ABOVE,
+      "Patient demographics, insurance, US Core clinical history, and an inline intake Questionnaire.",
+    request: US_CORE_CHECKIN,
   },
   {
     id: "patient-only",

@@ -124,12 +124,15 @@ object SmartRequestAdapter {
             )
             profiles.any {
                 it.endsWith("/structuredefinition/us-core-patient") ||
+                    it.endsWith("/structuredefinition/us-core-condition-problems-health-concerns") ||
+                    it.endsWith("/structuredefinition/us-core-allergyintolerance") ||
+                    it.endsWith("/structuredefinition/us-core-medicationrequest") ||
                     it.endsWith("/structuredefinition/bundle-uv-ips")
             } || profileCollections.any {
                 it == "http://hl7.org/fhir/us/core" ||
                     it == "http://hl7.org/fhir/uv/ips"
             } || resourceTypes.any {
-                it in setOf("patient", "bundle", "immunization", "condition", "allergyintolerance", "diagnosticreport", "observation")
+                it in setOf("patient", "bundle", "immunization", "condition", "allergyintolerance", "medicationrequest", "diagnosticreport", "observation")
             } -> RequestItem(
                 id = id,
                 title = item.optString("title").ifBlank { "Clinical History" },

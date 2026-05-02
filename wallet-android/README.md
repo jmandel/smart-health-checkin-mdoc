@@ -200,7 +200,7 @@ for offline inspection.
 Bundled under `app/src/main/assets/demo-data/`:
 
 - `carin-coverage.json`: CARIN-IG Coverage resource.
-- `clinical-history-bundle.json`: IPS-style FHIR bundle.
+- `clinical-history-bundle.json`: US Core clinical history bundle.
 - `migraine-questionnaire.json`: Chronic Migraine follow-up Questionnaire.
 - `migraine-autofill-values.json`: prefill values keyed by Questionnaire linkId.
 - `sbc-insurance-plan.json`: Summary of Benefits and Coverage resource.

@@ -433,7 +433,7 @@
 <pre>{
   "type": "smart-health-checkin-request",
   "version": "1",
-  "id": "demo-all-of-the-above",
+  "id": "demo-us-core-checkin",
   "purpose": "Clinic check-in",
   "fhirVersions": ["4.0.1"],
   "items": [
@@ -598,7 +598,7 @@
 <pre>{
   "type": "smart-health-checkin-response",
   "version": "1",
-  "requestId": "demo-all-of-the-above",
+  "requestId": "demo-us-core-checkin",
   "artifacts": [
     { "...": "shared clinical content" }
   ],
@@ -630,7 +630,7 @@
   "id": "artifact-us-core",
   "mediaType": "application/fhir+json",
   "fhirVersion": "4.0.1",
-  "fulfills": ["us-core-records"],
+  "fulfills": ["clinical-history"],
   "value": {
     "resourceType": "Bundle",
     "entry": [ ... ]
@@ -641,10 +641,12 @@
       <div class="example">
         <h3>SMART Health Card</h3>
 <pre>{
-  "id": "artifact-ips-shc",
+  "id": "artifact-clinical-shc",
   "mediaType": "application/smart-health-card",
-  "fulfills": ["ips"],
-  "data": "shc:/567629..."
+  "fulfills": ["clinical-history"],
+  "value": {
+    "verifiableCredential": ["shc:/567629..."]
+  }
 }</pre>
         <p>
           SMART Health Cards do not use outer <code>fhirVersion</code>; the

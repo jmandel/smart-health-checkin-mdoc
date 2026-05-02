@@ -69,7 +69,7 @@ The adapter maps requested FHIR resources to coarse UI/store categories:
 | --- | --- |
 | CARIN Coverage profile or `Coverage` resource type | `Coverage` |
 | C4DIC/SBC InsurancePlan profile or `InsurancePlan` resource type | `Plan` |
-| US Core, IPS, patient/clinical resource types, or matching `profilesFrom` family | `Clinical` |
+| US Core, patient/clinical resource types, or matching `profilesFrom` family | `Clinical` |
 | `content.kind == "questionnaire"` | `Questionnaire` |
 | Anything else valid but not recognized | `Unknown` |
 
@@ -87,9 +87,9 @@ for "anything from US Core" instead of naming every StructureDefinition:
 }
 ```
 
-The current adapter recognizes canonical families such as US Core and IPS for
-UI classification. Production holder matching can be more precise and should
-live behind `SmartHealthWalletStore`.
+The current adapter recognizes canonical families such as US Core for UI
+classification. Production holder matching can be more precise and should live
+behind `SmartHealthWalletStore`.
 
 ## Wallet-store boundary
 

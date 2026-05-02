@@ -560,7 +560,7 @@ private fun HomeScreen(
                 Spacer(Modifier.height(8.dp))
                 listOf(
                     "carin-coverage.json — CARIN-IG Coverage",
-                    "clinical-history-bundle.json — IPS-style FHIR bundle",
+                    "clinical-history-bundle.json — US Core clinical history bundle",
                     "migraine-questionnaire.json — Chronic Migraine 3-month follow-up",
                     "migraine-autofill-values.json — prefill answers",
                     "sbc-insurance-plan.json — Summary of Benefits and Coverage",

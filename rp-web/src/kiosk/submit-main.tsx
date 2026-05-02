@@ -42,7 +42,7 @@ function SubmitApp() {
   }, []);
 
   const resolved = requestStatus.state === "ready" ? requestStatus.resolved : undefined;
-  const request = resolved?.verified.payload.smartRequest.request;
+  const request = resolved?.verified.payload.smartRequest;
   const requestValidation = useMemo(
     () => request ? validateSmartCheckinRequest(request) : undefined,
     [request],
@@ -226,7 +226,11 @@ function SubmitApp() {
               {resolved ? (
                 <>
                   <Field label="Request pointer" value={resolved.verified.payload.requestId} />
-                  <Field label="Request" value={resolved.verified.payload.smartRequest.title} />
+                  <Field
+                    label="Request purpose"
+                    value={resolved.verified.payload.smartRequest.purpose ?? resolved.verified.payload.smartRequest.id}
+                  />
+                  <Field label="SMART request id" value={resolved.verified.payload.smartRequest.id} />
                   <Field label="Expires" value={new Date(resolved.verified.payload.expiresAt).toLocaleString()} />
                   <Field label="Response limit" value={formatBytes(resolved.verified.payload.constraints.maxPlaintextBytes)} />
                   <p className="muted">

@@ -58,11 +58,7 @@ test("kiosk provider workflow stores opaque requests and opens encrypted submiss
     provider,
     cryptoConfig: DEMO_KIOSK_CRYPTO_CONFIG,
     submitBaseUrl: "https://clinic.example/verifier/submit.html",
-    smartRequest: {
-      presetId: "test",
-      title: "Test check-in",
-      request: SMART_REQUEST,
-    },
+    smartRequest: SMART_REQUEST,
   });
 
   expect(initiated.submitUrl).toStartWith("https://clinic.example/verifier/submit.html#r=");
@@ -78,7 +74,9 @@ test("kiosk provider workflow stores opaque requests and opens encrypted submiss
     cryptoConfig: DEMO_KIOSK_CRYPTO_CONFIG,
     requestId: initiated.verified.payload.requestId,
   });
-  expect(resolved.verified.payload.smartRequest.request.items[1]?.summary).toBe("Migraine Check-in");
+  expect(Object.prototype.hasOwnProperty.call(resolved.verified.payload.smartRequest, "request")).toBe(false);
+  expect(Object.prototype.hasOwnProperty.call(resolved.verified.payload.smartRequest, "presetId")).toBe(false);
+  expect(resolved.verified.payload.smartRequest.items[1]?.summary).toBe("Migraine Check-in");
 
   const completed = await completeKioskRequest({
     provider,

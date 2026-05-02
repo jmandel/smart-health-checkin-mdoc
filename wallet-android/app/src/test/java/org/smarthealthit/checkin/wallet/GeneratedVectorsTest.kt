@@ -181,7 +181,7 @@ class GeneratedVectorsTest {
             "patient-only",
             "patient-and-coverage",
             "questionnaire-inline",
-            "all-of-the-above",
+            "us-core-checkin",
         )
 
         fun String.hexToBytes(): ByteArray {

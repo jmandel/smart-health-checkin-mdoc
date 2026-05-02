@@ -28,12 +28,7 @@ export type KioskRequestPayload = {
     backend: "instantdb";
     appId: string;
   };
-  smartRequest: {
-    presetId: string;
-    requestId: string;
-    title: string;
-    request: SmartCheckinRequest;
-  };
+  smartRequest: SmartCheckinRequest;
   encryptRequestTo: {
     alg: "ECDH-P256+HKDF-SHA256+AES-GCM";
     keyId: string;
@@ -147,11 +142,7 @@ export async function createKioskRequestJws(input: {
   creatorKeyId: string;
   submissionServiceKeyId: string;
   desktopPublicKeyJwk: JsonWebKey;
-  smartRequest: {
-    presetId: string;
-    title: string;
-    request: SmartCheckinRequest;
-  };
+  smartRequest: SmartCheckinRequest;
   now?: number;
 }): Promise<VerifiedKioskRequest> {
   const now = input.now ?? Date.now();
@@ -167,12 +158,7 @@ export async function createKioskRequestJws(input: {
       backend: "instantdb",
       appId: input.transportAppId,
     },
-    smartRequest: {
-      presetId: input.smartRequest.presetId,
-      requestId: input.smartRequest.request.id,
-      title: input.smartRequest.title,
-      request: input.smartRequest.request,
-    },
+    smartRequest: input.smartRequest,
     encryptRequestTo: {
       alg: "ECDH-P256+HKDF-SHA256+AES-GCM",
       keyId: input.submissionServiceKeyId,
@@ -438,10 +424,7 @@ async function validateKioskRequestPayload(
     return "Unsupported response encryption algorithm.";
   }
   if (payload.minter.keyId.length === 0) return "Kiosk request is missing its minter key id.";
-  if (payload.smartRequest.requestId !== payload.smartRequest.request.id) {
-    return "SMART request binding does not match the embedded request.";
-  }
-  const requestValidation = validateSmartCheckinRequest(payload.smartRequest.request);
+  const requestValidation = validateSmartCheckinRequest(payload.smartRequest);
   if (!requestValidation.ok) return `Embedded SMART request is invalid: ${requestValidation.error}`;
   return undefined;
 }
