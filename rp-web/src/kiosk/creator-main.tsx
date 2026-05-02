@@ -6,9 +6,7 @@ import { PRESETS } from "../store.ts";
 import { DEMO_KIOSK_CRYPTO_CONFIG } from "./demo-keys.ts";
 import {
   filterRowsForRequest,
-  formatBytes,
   initiateKioskRequest,
-  KIOSK_MAX_PAYLOAD_BYTES,
   openKioskSubmission,
   type InitiatedKioskRequest,
   type KioskSubmissionRow,
@@ -27,14 +25,36 @@ type ReceivedSubmission = {
   error?: string;
 };
 
+let initialSessionPromise: Promise<KioskSession> | undefined;
+
 function CreatorApp() {
   const [session, setSession] = useState<KioskSession>();
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string>();
   const [received, setReceived] = useState<ReceivedSubmission[]>([]);
   const requestId = session?.verified.payload.requestId;
 
   const inbox = instantKioskProvider.useSubmissionRows(requestId);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function start() {
+      setBusy(true);
+      setError(undefined);
+      try {
+        const next = await initialKioskSession();
+        if (!cancelled) setSession(next);
+      } catch (e) {
+        if (!cancelled) setError(e instanceof Error ? e.message : String(e));
+      } finally {
+        if (!cancelled) setBusy(false);
+      }
+    }
+    void start();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!session) {
@@ -54,77 +74,39 @@ function CreatorApp() {
     };
   }, [session, inbox.rows]);
 
-  async function mintSession() {
-    setBusy(true);
-    setError(undefined);
-    try {
-      if (!instantKioskProvider.configured) {
-        throw new Error("InstantDB app id is not configured. Set BUN_PUBLIC_INSTANT_APP_ID or update src/instant/public-config.ts.");
-      }
-      const initiated = await initiateKioskRequest({
-        provider: instantKioskProvider,
-        cryptoConfig: DEMO_KIOSK_CRYPTO_CONFIG,
-        submitBaseUrl: new URL("./submit.html", location.href),
-        smartRequest: {
-          presetId: KIOSK_REQUEST_PRESET.id,
-          title: KIOSK_REQUEST_PRESET.label,
-          request: KIOSK_REQUEST_PRESET.request,
-        },
-      });
-      const qrDataUrl = await QRCode.toDataURL(initiated.submitUrl, {
-        margin: 1,
-        width: 340,
-        errorCorrectionLevel: "M",
-      });
-      setSession({
-        ...initiated,
-        qrDataUrl,
-      });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
     <>
       <header className="clinic-header">
         <div className="clinic-header__inner">
-          <div className="clinic-logo">QR</div>
+          <div className="clinic-logo">SH</div>
           <div>
-            <div className="clinic-kicker">Front desk</div>
+            <div className="clinic-kicker">Self-service kiosk</div>
             <h1>SMART Health Check-in</h1>
           </div>
         </div>
       </header>
 
       <main className="portal kiosk-page">
-        <section className="portal-card checkin-hero">
+        <section className="portal-card checkin-hero checkin-hero--patient">
           <div className="hero-copy">
-            <div className="eyebrow">Clinical check-in</div>
-            <h2>Start a patient check-in</h2>
+            <div className="eyebrow">Welcome</div>
+            <h2>Check in with your phone</h2>
             <p>
-              Display a QR code for the patient, then receive only the extracted
-              SMART Health Check-in response when they finish sharing from their phone.
+              Scan the code below, review the request in your health app, and send
+              your check-in information back to this kiosk.
             </p>
-          </div>
-          <div className="appointment-box">
-            <div className="appointment-box__label">Response limit</div>
-            <div className="appointment-box__title">{formatBytes(KIOSK_MAX_PAYLOAD_BYTES)}</div>
-            <div className="appointment-box__meta">encrypted response for this request</div>
           </div>
         </section>
 
-        <section className="portal-card">
+        <section className="portal-card kiosk-scan-card">
           <div className="section-heading">
             <div>
-              <div className="eyebrow">Session</div>
-              <h2>QR handoff</h2>
+              <div className="eyebrow">Step 1</div>
+              <h2>Scan this QR code</h2>
             </div>
-            <button className="checkin-button kiosk-button-inline" type="button" onClick={mintSession} disabled={busy}>
-              {busy ? "Minting..." : "Mint QR"}
-            </button>
+            <span className={session ? "status-pill status-pill--done" : "status-pill"}>
+              {session ? "Ready" : busy ? "Preparing" : "Unavailable"}
+            </span>
           </div>
 
           {!instantKioskProvider.configured ? (
@@ -134,22 +116,39 @@ function CreatorApp() {
           ) : null}
           {error ? <div className="notice notice--error">{error}</div> : null}
 
+          {busy && !session ? (
+            <div className="kiosk-loading">Preparing your secure check-in QR code...</div>
+          ) : null}
+
           {session ? (
-            <div className="kiosk-grid">
-              <div>
-                <img className="kiosk-qr" src={session.qrDataUrl} alt="Kiosk submit QR code" />
-                <p className="muted">Scan with a phone to open the submit page. The QR contains only the request pointer.</p>
+            <div className="kiosk-grid kiosk-grid--patient">
+              <div className="kiosk-qr-panel">
+                <img className="kiosk-qr kiosk-qr--large" src={session.qrDataUrl} alt="SMART Health Check-in QR code" />
+                <p className="kiosk-qr-caption">Open your phone camera and point it at this code.</p>
               </div>
-              <div className="kiosk-details">
-                <Field label="Request pointer" value={session.verified.payload.requestId} />
-                <Field label="Request" value={session.verified.payload.smartRequest.title} />
-                <Field label="Expires" value={new Date(session.verified.payload.expiresAt).toLocaleString()} />
+              <div className="kiosk-patient-summary">
+                <div className="patient-steps">
+                  <div className="patient-step">
+                    <strong>Scan</strong>
+                    <span>Use your own phone so your wallet stays with you.</span>
+                  </div>
+                  <div className="patient-step">
+                    <strong>Review</strong>
+                    <span>Your health app will show what this check-in is asking for.</span>
+                  </div>
+                  <div className="patient-step">
+                    <strong>Send</strong>
+                    <span>This kiosk receives only your SMART Health Check-in response.</span>
+                  </div>
+                </div>
                 <details>
-                  <summary>Submit URL</summary>
+                  <summary>Technical details</summary>
+                  <div className="kiosk-details">
+                    <Field label="Request" value={session.verified.payload.smartRequest.title} />
+                    <Field label="Expires" value={new Date(session.verified.payload.expiresAt).toLocaleString()} />
+                    <Field label="Pointer" value={session.verified.payload.requestId} />
+                  </div>
                   <textarea className="json kiosk-url" readOnly value={session.submitUrl} />
-                </details>
-                <details>
-                  <summary>Technical setup</summary>
                   <pre>{JSON.stringify({
                     requestRow: session.requestRow,
                     signedRequestPayload: session.verified.payload,
@@ -158,22 +157,22 @@ function CreatorApp() {
                 </details>
               </div>
             </div>
-          ) : (
-            <p className="muted">No active QR yet.</p>
-          )}
+          ) : null}
         </section>
 
         <section className="portal-card">
           <div className="section-heading">
             <div>
-              <div className="eyebrow">Patient response</div>
-              <h2>Check-in status</h2>
+              <div className="eyebrow">Step 2</div>
+              <h2>{received.length > 0 ? "Check-in received" : "Waiting for your phone"}</h2>
             </div>
-            <span className="status-pill">{inbox.isLoading ? "Listening..." : `${received.length} rows`}</span>
+            <span className={received.length > 0 ? "status-pill status-pill--done" : "status-pill"}>
+              {received.length > 0 ? "Complete" : inbox.isLoading ? "Waiting" : "Ready"}
+            </span>
           </div>
           {inbox.error ? <div className="notice notice--error">{inbox.error.message}</div> : null}
           {received.length === 0 ? (
-            <p className="muted">The patient response for this request will appear here after the phone share completes.</p>
+            <p className="muted">After you approve sharing on your phone, this screen will update automatically.</p>
           ) : (
             <div className="task-list">
               {received.map((item) => (
@@ -184,7 +183,7 @@ function CreatorApp() {
                     <div className="task-description">{item.error ?? submissionDescription(item)}</div>
                     {!item.error ? <SubmissionDetails item={item} /> : null}
                   </div>
-                  <div className="task-kind">{formatBytes(item.row.totalCiphertextBytes)}</div>
+                  <div className="task-kind">{item.error ? "Review" : "Done"}</div>
                 </article>
               ))}
             </div>
@@ -193,6 +192,41 @@ function CreatorApp() {
       </main>
     </>
   );
+}
+
+function initialKioskSession(): Promise<KioskSession> {
+  if (!initialSessionPromise) {
+    initialSessionPromise = createKioskSession().catch((e) => {
+      initialSessionPromise = undefined;
+      throw e;
+    });
+  }
+  return initialSessionPromise;
+}
+
+async function createKioskSession(): Promise<KioskSession> {
+  if (!instantKioskProvider.configured) {
+    throw new Error("InstantDB app id is not configured. Set BUN_PUBLIC_INSTANT_APP_ID or update src/instant/public-config.ts.");
+  }
+  const initiated = await initiateKioskRequest({
+    provider: instantKioskProvider,
+    cryptoConfig: DEMO_KIOSK_CRYPTO_CONFIG,
+    submitBaseUrl: new URL("./submit.html", location.href),
+    smartRequest: {
+      presetId: KIOSK_REQUEST_PRESET.id,
+      title: KIOSK_REQUEST_PRESET.label,
+      request: KIOSK_REQUEST_PRESET.request,
+    },
+  });
+  const qrDataUrl = await QRCode.toDataURL(initiated.submitUrl, {
+    margin: 1,
+    width: 380,
+    errorCorrectionLevel: "M",
+  });
+  return {
+    ...initiated,
+    qrDataUrl,
+  };
 }
 
 async function openRow(session: KioskSession, row: KioskSubmissionRow): Promise<ReceivedSubmission> {

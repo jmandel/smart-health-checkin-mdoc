@@ -109,7 +109,7 @@ export async function downloadEncryptedSubmissionBlob(row: KioskSubmissionRow): 
         where: { path: row.storagePath },
       },
     },
-  });
+  }, { ruleParams: { requestId: row.requestId, storagePath: row.storagePath } });
   const file = result.data.$files.find((item) => item.path === row.storagePath);
   if (!file?.url || typeof file.url !== "string") throw new Error("Encrypted blob is not available in Instant Storage.");
 

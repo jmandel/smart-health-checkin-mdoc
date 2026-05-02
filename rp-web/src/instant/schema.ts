@@ -17,7 +17,7 @@ const schema = i.schema({
     }),
     submissions: i.entity({
       submissionId: i.string().unique().indexed(),
-      requestId: i.string().indexed(),
+      requestId: i.string().indexed().optional(),
       createdAt: i.number().indexed(),
       expiresAt: i.number().indexed(),
       totalPlaintextBytes: i.number(),

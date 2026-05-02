@@ -18,9 +18,12 @@ const rules = {
   "$files": {
     bind: {
       kioskBlobPath: "data.path.startsWith('submissions/')",
+      knownStoragePath:
+        "data.path == ruleParams.storagePath && " +
+        "data.path.startsWith('submissions/' + ruleParams.requestId + '/')",
     },
     allow: {
-      view: "kioskBlobPath",
+      view: "knownStoragePath",
       create: "kioskBlobPath",
       update: "false",
       delete: "false",
