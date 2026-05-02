@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   SMART starburst, cropped to 5 colored wedges (no wordmark, no detached blue
-  bottom triangle). Source: matcher/assets/starburst.svg, which is in turn
+  bottom triangle). Source: wallet-android/app/matcher/assets/starburst.svg, which is in turn
   derived from https://smarthealthit.org/wp-content/themes/SMART/images/logo.svg
 
   Adaptive icon viewport is 108x108. The starburst is scaled into the inner

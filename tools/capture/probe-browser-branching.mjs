@@ -6,10 +6,10 @@
 // real WebKit. Use manual-safari-hook.js for an actual Safari capture.
 //
 // Usage:
-//   node capture/probe-browser-branching.mjs --profile chrome
-//   node capture/probe-browser-branching.mjs --profile safari-macos --mode stub
-//   node capture/probe-browser-branching.mjs --profile safari-ios --mode stub
-//   node capture/probe-browser-branching.mjs --url https://... --click-selector 'button'
+//   node tools/capture/probe-browser-branching.mjs --profile chrome
+//   node tools/capture/probe-browser-branching.mjs --profile safari-macos --mode stub
+//   node tools/capture/probe-browser-branching.mjs --profile safari-ios --mode stub
+//   node tools/capture/probe-browser-branching.mjs --url https://... --click-selector 'button'
 
 import { spawn } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";

@@ -27,7 +27,7 @@ bun scripts/validate-android-mdoc-response.ts "$GENERATED_DIR" "$REQUEST_FIXTURE
 
 if command -v uv >/dev/null 2>&1; then
   echo "==> Validate Android response issuer-signed bytes with pyMDOC tooling"
-  cd "$PROJECT_DIR/fixtures-tool"
+  cd "$PROJECT_DIR/tools/fixtures-tool"
   uv run python bin/check-android-response.py "$GENERATED_DIR" \
     --out "$OUT_DIR/pymdoc-byte-check.json"
 else

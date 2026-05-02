@@ -37,9 +37,9 @@ Last fetched: April 2026.
 - google/mdoc-credential (archived Oct 2024 — still useful for HPKE/handover code) — https://github.com/google/mdoc-credential
 - digitalcredentialsdev/CMWallet (the C matcher POC the article describes; this is the working copy at `../../`) — https://github.com/digitalcredentialsdev/CMWallet
 - jmandel/shl-wallet (Josh's separate Rust-matcher SHL wallet — the actual project he wrote about on LinkedIn) — https://github.com/jmandel/shl-wallet
-- Local CMWallet matcher header (de-facto ABI reference) — `../../matcher/credentialmanager.h`
-- Local CMWallet matcher example — `../../matcher/hardcoded_matcher.c`, `../../matcher/dcql.c`
-- Local CMWallet sample DCQL request (legacy shape) — `../../matcher/request.json`
+- Local CMWallet matcher header (de-facto ABI reference) — `../../tools/matcher-c/credentialmanager.h`
+- Local CMWallet matcher example — upstream CMWallet `matcher/hardcoded_matcher.c`, `matcher/dcql.c`
+- Local CMWallet sample DCQL request (legacy shape) — upstream CMWallet `matcher/request.json`
 - Local mirror of shl-wallet Rust matcher — `shl-wallet-matcher_rs/matcher_rs_src_main.rs` (Cargo.toml + main.rs + README)
 - Archived OID4VP/DCQL notes — `archive/legacy-oid4vp/` (historical context only)
 

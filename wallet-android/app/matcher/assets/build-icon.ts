@@ -5,12 +5,12 @@
 // to PNG at one or more sizes via rsvg-convert.
 //
 // Outputs:
-//   matcher/assets/starburst.svg          # the cropped-and-squared SVG
-//   matcher/assets/icon.png               # default size
-//   matcher/assets/icon-<size>.png        # one per --sizes entry
+//   wallet-android/app/matcher/assets/starburst.svg          # the cropped-and-squared SVG
+//   wallet-android/app/matcher/assets/icon.png               # default size
+//   wallet-android/app/matcher/assets/icon-<size>.png        # one per --sizes entry
 //
 // Usage:
-//   bun run matcher/assets/build-icon.ts [--sizes 96,144,192,256] [--default 192]
+//   bun run wallet-android/app/matcher/assets/build-icon.ts [--sizes 96,144,192,256] [--default 192]
 //
 // Re-run after the upstream logo changes, or when we want a new size.
 

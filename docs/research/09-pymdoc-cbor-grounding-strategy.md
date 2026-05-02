@@ -82,7 +82,7 @@ Set up a tiny Python sidecar tool that drives pyMDOC-CBOR with deterministic
 inputs:
 
 ```text
-fixtures-tool/
+tools/fixtures-tool/
   pyproject.toml
   bin/
     issue-checkin.py        # builds an mdoc Document for our doctype
@@ -125,7 +125,7 @@ When a byte mismatch shows up, we need to see *exactly* where the encoders
 diverge. A small script:
 
 ```text
-fixtures-tool/bin/diff-encoders.sh <input.json>
+tools/fixtures-tool/bin/diff-encoders.sh <input.json>
   → runs both:
        python issue-checkin.py < input.json > py.cbor
        bun  ts-encode.ts        < input.json > ts.cbor
@@ -203,7 +203,7 @@ transcript-byte-layout golden files, canonical-encoding comparisons.
 
 ## Tooling commitment
 
-We add one Python project (`fixtures-tool/`) to the repo, with `uv` /
+We add one Python project (`tools/fixtures-tool/`) to the repo, with `uv` /
 `pyproject.toml`, locked dependencies, and clean CLI scripts. It's not
 shipped to users — only used in dev for fixtures and diffs. Total surface
 should stay under ~300 LOC.

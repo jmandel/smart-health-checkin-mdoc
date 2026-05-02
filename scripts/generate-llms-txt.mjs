@@ -27,6 +27,8 @@ const MARKDOWN_ORDER = [
   "rp-web/src/sdk/react.README.md",
   "rp-web/src/protocol/README.md",
   "wallet-android/README.md",
+  "wallet-android/app/matcher/README.md",
+  "tools/README.md",
 ];
 
 const SKIPPED_DIRECTORIES = new Set([
@@ -35,6 +37,9 @@ const SKIPPED_DIRECTORIES = new Set([
   ".idea",
   ".agents",
   ".pytest_cache",
+  ".venv",
+  "target",
+  "__pycache__",
   "node_modules",
   "dist",
   "build",
@@ -80,10 +85,10 @@ function isMarkdownDoc(relPath) {
   }
   if (
     relPath.startsWith("fixtures/") ||
-    relPath.startsWith("fixtures-tool/") ||
-    relPath.startsWith("capture/") ||
-    relPath.startsWith("matcher/") ||
-    relPath.startsWith("matcher-c/")
+    relPath === "tools/README.md" ||
+    relPath.startsWith("tools/fixtures-tool/") ||
+    relPath.startsWith("tools/capture/") ||
+    relPath.startsWith("tools/matcher-c/")
   ) {
     return relPath.endsWith("README.md");
   }

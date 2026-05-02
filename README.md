@@ -32,9 +32,9 @@ Not part of the CMWallet POC — only the matcher technique is reused.
 | [rp-web/src/sdk/README.md](rp-web/src/sdk/README.md) | TypeScript SDK documentation for the transport-neutral SMART model, browser DC API verifier, verifier authority seam, and kiosk session descriptors. |
 | [rp-web/src/sdk/react.README.md](rp-web/src/sdk/react.README.md) | Optional React bindings documentation for hooks/components over the non-React verifier SDK. |
 | [wallet-android/README.md](wallet-android/README.md) | Android wallet library/module guide, including links to each Gradle module README. |
+| [wallet-android/app/matcher/README.md](wallet-android/app/matcher/README.md) | Rust WASM matcher built by the Android app and registered with Credential Manager. |
 | [fixtures/](fixtures/) | Checked-in byte fixtures and normalized captures used by tests and inspectors. |
-| [fixtures-tool/](fixtures-tool/) | Developer-only Python sidecar for pyMDOC-CBOR grounding fixtures. |
-| [capture/](capture/) | Capture scripts for real browser/RP flows, including the Android Chrome → Credential Manager → wallet automation that saves the RP HPKE key for offline validation. |
+| [tools/](tools/) | Developer-only capture scripts, fixture-generation tooling, and diagnostic matcher utilities. |
 | [docs/research/](docs/research/) | Reference material for DC API, matcher ABI, mdoc response, encryption, and verifier architecture. |
 | [docs/archive/](docs/archive/) | Historical plans, old profile docs, OpenID4VP notes, and alternate explainer drafts. |
 
@@ -60,8 +60,7 @@ explainer at `/kiosk-flow-explainer.html`, the byte-level wire-protocol
 explainer at `/wire-protocol-explainer.html`, an LLM-friendly generated docs
 bundle at `/llms.txt`, and the checked-in test fixtures at `/fixtures/` so the
 wire page can fetch the same captures used by the test suites. The old
-`/explainer.html`, `/kiosk.html`, and `/wire-protocol.html` paths remain as
-redirects.
+generic explainer URLs are not kept; use the specific explainer URLs above.
 
 The kiosk pages are static apps over a provider abstraction. The creator calls a
 wrapper to sign/encrypt a full SMART request, store it through the configured

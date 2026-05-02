@@ -21,13 +21,12 @@ deployment, Android Gradle wiring, fixture paths, or existing tests.
 | `site/` | Static GitHub Pages source HTML. | Yes |
 | `scripts/` | Repo-level automation such as Pages build and Android handler pull. | Yes |
 | `rp-web/` | Bun/React relying-party verifier, SDK, kiosk pages, TS tests/tools. | Yes |
-| `wallet-android/` | Android Gradle app and library modules. | Yes |
+| `wallet-android/` | Android Gradle app/library modules and app-owned Rust matcher at `wallet-android/app/matcher/`. | Yes |
 | `fixtures/` | Shared checked-in fixtures used by TS, Android, Python, and Pages. | Yes |
-| `matcher/` | Rust WASM matcher built by Android Gradle from sibling `../matcher`. | Yes for now |
 | `vendor/` | Pinned upstream reference metadata and scripts; `_src` is ignored. | Yes for now |
-| `capture/` | Developer-only browser/Android capture scripts and ignored outputs. | Move later |
-| `fixtures-tool/` | Developer-only Python fixture generation/checking sidecar. | Move later |
-| `matcher-c/` | Diagnostic C always-match WASM matcher. | Move later |
+| `tools/capture/` | Developer-only browser/Android capture scripts and ignored outputs. | No top-level clutter |
+| `tools/fixtures-tool/` | Developer-only Python fixture generation/checking sidecar. | No top-level clutter |
+| `tools/matcher-c/` | Diagnostic C always-match WASM matcher. | No top-level clutter |
 | `_site/`, `rp-web/dist/`, `node_modules`, Gradle/Rust/Python caches | Generated artifacts. | No, ignored only |
 | `.env` | Local build/deploy environment input. | No, ignored only |
 | `.agents/` | Local/project agent skill content. | Decide explicitly |
@@ -40,22 +39,14 @@ First pass target:
 .github/
 docs/
 fixtures/
-matcher/
 rp-web/
 scripts/
 site/
+tools/
 vendor/
 wallet-android/
 README.md
 .gitignore
-```
-
-Optional second pass:
-
-```text
-tools/capture/
-tools/fixtures-tool/
-tools/matcher-c/
 ```
 
 This keeps active product roots and shared fixtures visible while moving
@@ -67,8 +58,8 @@ debug/developer-only tooling out of the top level.
    - Keep active markdown specs under `docs/`.
    - Keep static Pages source HTML under `site/`.
    - Fix relative links in moved docs, especially archive/research references.
-   - Keep public Pages URLs stable by updating only source paths, not output
-     paths.
+   - Public Pages URLs use specific explainer names; legacy generic explainer
+     URLs are not preserved.
 
 2. Document the root contract in `README.md`.
    - Explain which top-level paths are product roots, shared fixtures,
@@ -78,29 +69,26 @@ debug/developer-only tooling out of the top level.
 
 3. Clean generated clutter without moving source.
    - Confirm ignored generated paths include `_site/`, `rp-web/dist/`,
-     `rp-web/node_modules/`, `matcher/target/`, Gradle build/cache outputs,
-     Python venv/cache, capture output folders, and `vendor/_src/`.
-   - Optionally add a safe `scripts/clean-generated.sh` that removes only
-     ignored generated artifacts.
+     `rp-web/node_modules/`, `wallet-android/app/matcher/target/`, Gradle
+      build/cache outputs, Python venv/cache, capture output folders, and
+      `vendor/_src/`.
+   - Add a safe `scripts/clean-generated.sh` that removes only ignored generated
+      artifacts.
    - Do not delete or move checked-in fixtures.
 
-4. Move low-risk developer-only tools in a separate commit.
+4. Move low-risk developer-only tools.
    - Move `capture/` to `tools/capture/`.
    - Move `fixtures-tool/` to `tools/fixtures-tool/`.
    - Move `matcher-c/` to `tools/matcher-c/`.
    - Update docs, scripts, and relative paths that refer to these directories.
-   - Pay particular attention to paths from `fixtures-tool` to `../fixtures`
+   - Pay particular attention to paths from `tools/fixtures-tool` to `../../fixtures`
      and scripts under `vendor/scripts`.
 
-5. Defer any `matcher/` move.
-   - `wallet-android/app/build.gradle` currently builds the Rust matcher from
-     sibling `../matcher` and copies the output into Android assets.
-   - If `matcher/` is moved, do it as its own isolated change with Gradle,
-     documentation, and Android validation updates.
+5. Move the Rust matcher into the Android app.
+   - `wallet-android/app/build.gradle` builds from `wallet-android/app/matcher`
+     and copies the output into Android assets.
 
-6. Decide what to do with `.agents/`.
-   - If project skills are intended to be shared, commit them deliberately.
-   - Otherwise add `.agents/` to `.gitignore`.
+6. Keep `.agents/` local-only unless shared skills are intentionally added.
 
 ## Validation plan
 
@@ -113,17 +101,17 @@ cd rp-web
 bun test
 bun run build
 
-cd ../matcher
+cd ../wallet-android/app/matcher
 cargo test
 
-cd ../wallet-android
+cd ../..
 ./gradlew :app:testDebugUnitTest --no-daemon
 
 cd ..
 bash vendor/scripts/regenerate-local-fixtures.sh
 ```
 
-For a `matcher/` relocation, also run:
+Because the Rust matcher is now app-local, also run:
 
 ```sh
 cd wallet-android

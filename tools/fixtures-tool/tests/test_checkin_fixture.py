@@ -3,8 +3,11 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+from pathlib import Path
 
 from fixtures_tool.constants import DOCTYPE, ELEMENT, NAMESPACE
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 def test_issue_fixture_and_parse_round_trip(tmp_path):
@@ -82,7 +85,7 @@ def test_checked_in_real_android_response_fixture_verifies():
         [
             sys.executable,
             "bin/check-android-response.py",
-            "../fixtures/responses/real-chrome-android-smart-checkin",
+            str(REPO_ROOT / "fixtures/responses/real-chrome-android-smart-checkin"),
         ],
         check=True,
         text=True,

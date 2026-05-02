@@ -1,7 +1,7 @@
 // Stable, capture-friendly event emitter.
 //
 // All events are logged to console with the `@@SHC@@<KIND>@@<json>` prefix so
-// the CDP capture script (capture/capture-dc-request.mjs and the future
+// the CDP capture script (tools/capture/capture-dc-request.mjs and the future
 // scripts/run-cdp-flow.mjs) can scrape them without DOM scraping.
 //
 // Same emitter also pushes to an in-memory ring buffer that the React UI

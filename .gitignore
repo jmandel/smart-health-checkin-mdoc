@@ -1,5 +1,32 @@
 _site/
+
+# Web build/dependencies
 rp-web/dist/
+rp-web/node_modules/
+
+# Android/Gradle build outputs
+wallet-android/.gradle/
+wallet-android/.kotlin/
+wallet-android/**/build/
+
+# Rust matcher build outputs
+wallet-android/app/matcher/target/
+
+# Developer tool outputs
+tools/capture/browser-branching/
+tools/capture/android-rp-flow/
+tools/capture/current-handler-run
+tools/fixtures-tool/.venv/
+tools/fixtures-tool/.pytest_cache/
+tools/fixtures-tool/**/__pycache__/
+tools/fixtures-tool/**/*.pyc
+tools/matcher-c/c_yes.wasm
+tools/matcher-c/*.o
+
+# Vendored upstream source checkouts
+vendor/_src/
+
+# Local environment and agent content
 .env
 .env.*
 .agents/

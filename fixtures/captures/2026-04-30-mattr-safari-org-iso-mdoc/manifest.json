@@ -3,7 +3,7 @@
   "createdAt": "2026-04-30T19:08:07Z",
   "source": "external-capture",
   "capturedFrom": "https://tools.mattrlabs.com/verify-credentials",
-  "capturedVia": "capture/probe-browser-branching.mjs --profile safari-macos --mode stub",
+  "capturedVia": "tools/capture/probe-browser-branching.mjs --profile safari-macos --mode stub",
   "browser": "Chromium with Safari macOS UA spoof",
   "notes": [
     "Mattr's verifier UA-branches: Chrome→openid4vp; Safari (macOS+iOS)→org-iso-mdoc.",

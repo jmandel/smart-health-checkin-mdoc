@@ -13,7 +13,7 @@ fixture.
 Typical one-command run, after `adb connect ...`:
 
 ```sh
-node capture/capture-android-rp-flow.mjs \
+node tools/capture/capture-android-rp-flow.mjs \
   --url http://127.0.0.1:3010 \
   --adb-auto-wallet
 ```
@@ -40,7 +40,7 @@ Override them with `--wallet-taps 'x,y,delayMs;x,y,delayMs'` if the UI moves.
 Output is split and then joined:
 
 ```text
-capture/android-rp-flow/<timestamp>/        # RP console events and request keys
+tools/capture/android-rp-flow/<timestamp>/  # RP console events and request keys
 /tmp/shc-handler-runs/run-*/rp-request/     # verifier private/public JWKs and request bytes
 /tmp/shc-handler-runs/run-*/rp-capture/     # RP event log copied into the wallet run
 /tmp/shc-handler-runs/run-*/analysis/hpke-opened/
@@ -59,16 +59,16 @@ hook around `navigator.credentials.get`, and writes a capture bundle.
 Useful runs:
 
 ```sh
-node capture/probe-browser-branching.mjs --profile chrome --mode stub
-node capture/probe-browser-branching.mjs --profile safari-macos --mode stub
-node capture/probe-browser-branching.mjs --profile safari-ios --mode stub
+node tools/capture/probe-browser-branching.mjs --profile chrome --mode stub
+node tools/capture/probe-browser-branching.mjs --profile safari-macos --mode stub
+node tools/capture/probe-browser-branching.mjs --profile safari-ios --mode stub
 ```
 
 By default the script opens `https://tools.mattrlabs.com/verify-credentials`.
 Click the verifier button in the opened browser. Output goes under:
 
 ```text
-capture/browser-branching/<timestamp>-<profile>-<mode>/
+tools/capture/browser-branching/<timestamp>-<profile>-<mode>/
 ```
 
 Key files:

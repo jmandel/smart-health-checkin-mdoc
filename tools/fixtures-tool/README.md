@@ -1,5 +1,9 @@
 # fixtures-tool
 
+Developer-only Python sidecar for fixture generation and byte-level validation.
+Run commands from this directory (`tools/fixtures-tool`) unless a script says
+otherwise.
+
 Developer-only Python sidecar for grounding response-side mdoc fixtures against
 IdentityPython's `pyMDOC-CBOR`.
 
@@ -10,14 +14,15 @@ against.
 ## Commands
 
 ```sh
+uv sync --dev
 uv run pytest
 
 uv run python bin/issue-checkin.py \
-  --out ../fixtures/responses/pymdoc-minimal \
+  --out ../../fixtures/responses/pymdoc-minimal \
   --force
 
 uv run python bin/parse-checkin.py \
-  ../fixtures/responses/pymdoc-minimal/document.cbor
+  ../../fixtures/responses/pymdoc-minimal/document.cbor
 ```
 
 ## Scope

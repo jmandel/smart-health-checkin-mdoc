@@ -37,7 +37,7 @@ def main() -> None:
 
 
 def check_generated_dir(generated_dir: Path) -> dict[str, Any]:
-    project_dir = Path(__file__).resolve().parents[2]
+    project_dir = Path(__file__).resolve().parents[3]
     document_path = generated_dir / "device-response.cbor"
     expected_smart_path = generated_dir / "smart-response.expected.json"
     metadata = json.loads((generated_dir / "metadata.json").read_text())

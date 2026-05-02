@@ -3,7 +3,7 @@
 ## Setup
 
 ```sh
-node capture/probe-browser-branching.mjs --profile safari-macos --mode stub
+node tools/capture/probe-browser-branching.mjs --profile safari-macos --mode stub
 ```
 
 ## What we observed

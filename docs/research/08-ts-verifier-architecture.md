@@ -110,7 +110,7 @@ That's the entire surface the RP app code touches. Everything below
    bytes; the wallet uses the same fixtures.
 3. **`device-request.ts`** — build the CBOR `DeviceRequest` with our
    `requestInfo.smart_health_checkin` tstr. Confirm shape against a Chrome 141
-   capture (see `capture/`).
+   capture (see `tools/capture/`).
 4. **`device-response.ts`** — parse, walk, extract the lone IssuerSignedItem.
 5. **`mso.ts`** — verify COSE_Sign1, recompute digests. Self-signed issuer is
    fine; we just check the cert chain ends at the embedded x5chain leaf.

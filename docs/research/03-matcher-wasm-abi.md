@@ -1,6 +1,6 @@
 # WASM matcher ABI (the `credman` import module)
 
-Authoritative source: `../matcher/credentialmanager.h` in this repo. Google has not
+Authoritative source: `tools/matcher-c/credentialmanager.h` in this repo. Google has not
 publicly published a formal spec; this header is the de-facto reference.
 
 ## Imports (host → matcher)
@@ -62,7 +62,7 @@ The `id` is a stable identifier for this registration (used to update or replace
 later). `credentials` is wallet-defined — we choose JSON so cJSON in the matcher can
 parse it directly.
 
-## Build recipe — C (mirrors CMWallet's `matcher/`)
+## Build recipe — C (mirrors CMWallet's matcher)
 
 ```sh
 clang \

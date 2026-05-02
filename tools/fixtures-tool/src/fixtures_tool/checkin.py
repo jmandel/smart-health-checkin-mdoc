@@ -227,7 +227,7 @@ def manifest_for(out_dir: Path, parsed: ParsedDocument) -> dict[str, Any]:
     ]
     return {
         "label": out_dir.name,
-        "source": "fixtures-tool/pyMDOC-CBOR",
+        "source": "tools/fixtures-tool/pyMDOC-CBOR",
         "pymdoccbor": "1.3.0",
         "protocol": "org-iso-mdoc",
         "docType": parsed.doc_type,

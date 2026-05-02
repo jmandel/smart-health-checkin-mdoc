@@ -7,7 +7,7 @@
 //!    `protocolTypes` list down to the GMS bridge
 //!    (`RegistryManagerProviderPlayServicesImpl`), so the host invokes every
 //!    registered DC matcher for every DC API request and the matcher decides.
-//!    See "Sources of truth" at the bottom of `matcher/README.md`.
+//!    See "Sources of truth" at the bottom of `wallet-android/app/matcher/README.md`.
 //! 2. Inside `data.deviceRequest` (base64url-no-pad of CBOR), the literal UTF-8
 //!    bytes of the doctype `org.smarthealthit.checkin.1` appear somewhere. CBOR
 //!    encodes tstrs verbatim, so substring search is sufficient — no CBOR parser
@@ -65,7 +65,7 @@ pub enum MatchOutcome {
 /// credential-set surface; older hosts only have the v1 single-entry
 /// surface. We probe `GetWasmVersion` and pick the right path.
 ///
-/// Mirrors `matcher-c/c_yes_matcher.c` field-by-field: title + subtitle
+/// Mirrors `tools/matcher-c/c_yes_matcher.c` field-by-field: title + subtitle
 /// + disclaimer above the entry, one (name, value) field row beneath.
 fn emit_one_entry<C: CredmanApi>(
     api: &mut C,

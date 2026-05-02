@@ -1,7 +1,7 @@
 # matcher-c
 
-Diagnostic always-yes matcher in C, sister to the Rust always-yes matcher
-at [`../matcher/src/bin/yes.rs`](../matcher/src/bin/yes.rs).
+Diagnostic always-yes matcher in C, sister to the Rust always-yes matcher at
+[`../../wallet-android/app/matcher/src/bin/yes.rs`](../../wallet-android/app/matcher/src/bin/yes.rs).
 
 The single source file `c_yes_matcher.c` always emits one
 `AddStringIdEntry` call titled `"SMART Health Check-in (c-diag)"`, with
@@ -16,7 +16,7 @@ April 2026). It carries the canonical `credman` / `credman_v2`–`v6` import
 ABI declarations.
 
 The build invocation mirrors the upstream pattern (also documented in
-`../docs/research/03-matcher-wasm-abi.md`): wasi-sdk's clang, `--target=wasm32-wasi`
+`../../docs/research/03-matcher-wasm-abi.md`): wasi-sdk's clang, `--target=wasm32-wasi`
 for the libc headers, `-nostdlib` to avoid pulling wasi crt + libc, and
 `--allow-undefined` so the host imports resolve at instantiation time.
 
@@ -38,7 +38,7 @@ other across versions).
 
 ```sh
 # 1. Stage the C matcher
-cp matcher-c/c_yes.wasm wallet-android/app/src/main/assets/matcher.wasm
+cp tools/matcher-c/c_yes.wasm wallet-android/app/src/main/assets/matcher.wasm
 
 # 2. Reinstall, suppressing Gradle's automatic Rust matcher rebuild
 ./gradlew :app:installDebug -Pskip-matcher
@@ -51,7 +51,7 @@ Outcomes:
 
 - **C entry appears**: WASM sandbox is healthy and the host is calling our
   matcher. If the Rust always-yes matcher (`yes.wasm`) **also** works, the
-  bug is in `matcher/src/lib.rs::request_is_eligible` — eligibility logic
+  bug is in `wallet-android/app/matcher/src/lib.rs::request_is_eligible` — eligibility logic
   is too strict for the actual request shape. Capture request bytes from
   the wallet's debug bundle and tighten the loop.
 - **C entry appears, Rust always-yes does not**: Rust toolchain or

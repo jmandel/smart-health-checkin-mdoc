@@ -121,4 +121,4 @@ encryption layer.
 5. Whether the verifier checks issuer cert chain at all by default (most do; this
    determines whether we get a "decoded but untrusted" or a hard reject).
 
-(1)-(3) are exactly what `capture/capture-dc-request.mjs` is designed to answer.
+(1)-(3) are exactly what `tools/capture/capture-dc-request.mjs` is designed to answer.

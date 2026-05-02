@@ -23,6 +23,8 @@ fn fixture(name: &str) -> Vec<u8> {
 fn project_fixture(path: &[&str]) -> Vec<u8> {
     let mut p = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     p.push("..");
+    p.push("..");
+    p.push("..");
     for segment in path {
         p.push(segment);
     }

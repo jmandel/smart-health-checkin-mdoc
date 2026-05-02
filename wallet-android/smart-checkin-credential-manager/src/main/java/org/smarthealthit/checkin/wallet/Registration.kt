@@ -19,7 +19,7 @@ import org.json.JSONObject
  * The registration carries:
  *   - credentialsBlob: a small JSON describing what the wallet offers
  *     (consumed at match time by the WASM matcher);
- *   - matcherBytes: the WASM matcher from `../matcher/`.
+ *   - matcherBytes: the WASM matcher from `wallet-android/app/matcher/`.
  */
 object Registration {
     private const val TAG = "SHCRegistration"

@@ -16,12 +16,12 @@
 #
 # No CMake needed for a single source file. Output:
 #
-#   matcher-c/c_yes.wasm
+#   tools/matcher-c/c_yes.wasm
 #
 # Then copy into the wallet's matcher.wasm slot to A/B against the Rust
 # matchers:
 #
-#   cp matcher-c/c_yes.wasm \
+#   cp tools/matcher-c/c_yes.wasm \
 #     wallet-android/app/src/main/assets/matcher.wasm
 #   ./gradlew :app:installDebug -Pskip-matcher
 

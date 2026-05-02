@@ -83,7 +83,7 @@ cd wallet-android
 cd ../rp-web
 bun test src/protocol/index.test.ts
 
-cd ../fixtures-tool
+cd ../tools/fixtures-tool
 uv run pytest tests/test_checkin_fixture.py
 ```
 

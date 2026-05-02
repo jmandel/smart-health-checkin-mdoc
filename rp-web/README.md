@@ -176,5 +176,5 @@ Every notable UI action emits a stable, single-line console event:
 @@SHC@@DCAPI_CALL_REQUESTED@@{...}
 ```
 
-These match the format consumed by `capture/capture-dc-request.mjs` and
-`capture/probe-browser-branching.mjs`.
+These match the format consumed by `tools/capture/capture-dc-request.mjs` and
+`tools/capture/probe-browser-branching.mjs`.

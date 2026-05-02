@@ -5,7 +5,7 @@ Self-contained Rust WASM matcher for the SMART Health Check-in wallet.
 The Credential Manager runs this in its sandbox to decide whether to surface
 our wallet entry for a given Digital Credentials API request. The eligibility
 rule is documented in
-[`../docs/profiles/org-iso-mdoc.md`](../docs/profiles/org-iso-mdoc.md) §"Matcher
+[`../../../docs/profiles/org-iso-mdoc.md`](../../../docs/profiles/org-iso-mdoc.md) §"Matcher
 contract":
 
 1. The outer Credential Manager request bytes must contain the literal
@@ -68,7 +68,7 @@ HEAD):
 ## Layout
 
 ```
-matcher/
+wallet-android/app/matcher/
   Cargo.toml
   build.sh                # the canonical build command
   src/
@@ -102,9 +102,9 @@ sudo apt install binaryen   # or: brew install binaryen
 # → target/wasm32-unknown-unknown/release/checkin.wasm
 ```
 
-The Gradle build in `wallet-android/app/build.gradle` invokes `build.sh` and
-copies the output into `wallet-android/app/src/main/assets/matcher.wasm`,
-replacing the placeholder shipped in earlier stages.
+The Gradle build in `wallet-android/app/build.gradle` invokes this directory's
+`build.sh` and copies the output into
+`wallet-android/app/src/main/assets/matcher.wasm`.
 
 ## Test
 
