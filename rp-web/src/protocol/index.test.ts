@@ -79,6 +79,37 @@ describe("fallback dynamic SMART Check-in element", () => {
     expect(validateSmartCheckinRequest({ version: "1", items: [{ id: "x" }] }).ok).toBe(false);
   });
 
+  test("validates additive profile-family selectors", () => {
+    const request = {
+      ...PATIENT_REQUEST,
+      items: [
+        {
+          id: "clinical-history",
+          title: "US Core clinical resources",
+          content: {
+            kind: "fhir.resources",
+            profilesFrom: ["http://hl7.org/fhir/us/core"],
+            profiles: [
+              "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
+              "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest",
+            ],
+          },
+          accept: ["application/fhir+json"],
+        },
+      ],
+    };
+
+    expect(validateSmartCheckinRequest(request).ok).toBe(true);
+    expect(validateSmartCheckinRequest({
+      ...request,
+      items: [{ ...request.items[0], content: { kind: "fhir.resources", profilesFrom: "http://hl7.org/fhir/us/core" } }],
+    }).ok).toBe(false);
+    expect(validateSmartCheckinRequest({
+      ...request,
+      items: [{ ...request.items[0], content: { kind: "fhir.resources", profilesFrom: { canonical: "http://hl7.org/fhir/us/core" } } }],
+    }).ok).toBe(false);
+  });
+
   test("validates response shape", () => {
     expect(
       validateSmartCheckinResponse({

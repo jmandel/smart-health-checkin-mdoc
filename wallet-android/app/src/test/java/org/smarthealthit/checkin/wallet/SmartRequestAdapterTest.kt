@@ -42,6 +42,21 @@ class SmartRequestAdapterTest {
     }
 
     @Test
+    fun routesUsCoreProfileFamilyArraysAsClinical() {
+        val request = parse(
+            """{"type":"smart-health-checkin-request","version":"1","id":"r1","items":[{"id":"clinical-history","title":"US Core clinical resources","summary":"US Core resources, including patient demographics, problems, medications, and allergies.","content":{"kind":"fhir.resources","profilesFrom":["http://hl7.org/fhir/us/core"],"profiles":["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient","http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"]},"accept":["application/fhir+json"]}]}""",
+        )
+
+        val item = request.items.single()
+        assertEquals(RequestKind.Clinical, item.kind)
+        assertEquals("US Core clinical resources", item.title)
+        assertEquals(
+            "US Core resources, including patient demographics, problems, medications, and allergies.",
+            item.subtitle,
+        )
+    }
+
+    @Test
     fun stripsCanonicalVersionBeforeQuestionnaireFetch() {
         assertEquals(
             "https://example.org/fhir/Questionnaire/intake",

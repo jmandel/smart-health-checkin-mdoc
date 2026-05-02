@@ -284,21 +284,17 @@ export interface FhirResourcesContentSelector {
    *
    *   "Give me any records conforming to US Core profiles."
    *
-   * Simple form:
+   * Example:
    *
-   *   profilesFrom: "http://hl7.org/fhir/us/core"
+   *   profilesFrom: ["http://hl7.org/fhir/us/core"]
    *
-   * Expanded form:
-   *
-   *   profilesFrom: {
-   *     canonical: "http://hl7.org/fhir/us/core",
-   *     package: "hl7.fhir.us.core"
-   *   }
-   *
-   * The canonical is the semantic identity. package and version are optional
-   * resolver hints.
+   * When profiles and profilesFrom are both present, they are additive: a
+   * resource can satisfy the item by matching an exact profile in profiles or
+   * by matching any profile from a collection in profilesFrom. Exact profiles
+   * can highlight specific records of interest, but they do not limit the
+   * broader profilesFrom request.
    */
-  profilesFrom?: OneOrMany<FhirProfileCollectionRef>;
+  profilesFrom?: FhirProfileCollectionRef[];
 
   /**
    * Optional narrowing by official FHIR resourceType names.
@@ -401,45 +397,13 @@ export interface QuestionnaireResourceObject {
 }
 
 /**
- * Reference to a FHIR publication, implementation guide, package, or profile
- * collection.
+ * Reference to a FHIR publication, implementation guide, or profile collection.
  *
  * Version 1 accepts canonical URLs only. Registered URNs would imply a registry
  * this profile does not define; deployments that need URNs can define an
  * extension.
  */
-export type FhirProfileCollectionRef =
-  | FhirCanonical
-  | FhirProfileCollectionRefObject;
-
-export interface FhirProfileCollectionRefObject {
-  /**
-   * Canonical URL for the FHIR publication / IG / profile collection.
-   *
-   * Example:
-   *
-   *   "http://hl7.org/fhir/us/core"
-   */
-  canonical: FhirCanonical;
-
-  /**
-   * Optional FHIR package id.
-   *
-   * Example:
-   *
-   *   "hl7.fhir.us.core"
-   *
-   * This is a resolver/distribution hint, not the semantic identity.
-   */
-  package?: string;
-
-  /**
-   * Optional package/publication/profile-collection version.
-   *
-   * Avoid requiring this unless exact version matching is important.
-   */
-  version?: string;
-}
+export type FhirProfileCollectionRef = FhirCanonical;
 
 /**
  * Response media types this verifier can consume.
@@ -486,7 +450,6 @@ export type FhirVersion = string;
  */
 export type FhirResourceType = string;
 
-export type OneOrMany<T> = T | T[];
 ```
 
 ### Canonical `|version` handling
@@ -532,7 +495,7 @@ Or broad resource profiles from a FHIR publication / IG / profile collection:
 ```json
 {
   "kind": "fhir.resources",
-  "profilesFrom": "http://hl7.org/fhir/us/core"
+  "profilesFrom": ["http://hl7.org/fhir/us/core"]
 }
 ```
 
@@ -541,7 +504,7 @@ Optional `resourceTypes` narrows a broad request using official FHIR resource ty
 ```json
 {
   "kind": "fhir.resources",
-  "profilesFrom": "http://hl7.org/fhir/us/core",
+  "profilesFrom": ["http://hl7.org/fhir/us/core"],
   "resourceTypes": ["Condition", "MedicationRequest", "Observation"]
 }
 ```
@@ -935,7 +898,7 @@ export const exampleRequest: SmartHealthCheckinRequest = {
       required: false,
       content: {
         kind: "fhir.resources",
-        profilesFrom: "http://hl7.org/fhir/us/core"
+        profilesFrom: ["http://hl7.org/fhir/us/core"]
       },
       accept: [
         "application/smart-health-card",
@@ -1104,13 +1067,15 @@ export const exampleResponse: SmartHealthCheckinResponse = {
 
 7. `profiles` values SHOULD be FHIR profile canonical URLs and MAY include a `|version` suffix.
 
-8. `profilesFrom` SHALL identify a FHIR publication, implementation guide, or profile collection by canonical URL. Package and version are optional resolver hints. Version 1 does not define registered URNs for profile collections.
+8. `profilesFrom` SHALL be a non-empty array of canonical URLs identifying FHIR publications, implementation guides, or profile collections. Version 1 does not define registered URNs for profile collections.
 
-9. `resourceTypes`, when present, SHALL use official FHIR resource type names.
+9. `profiles` and `profilesFrom`, when both present, are additive selectors: a resource may satisfy the item by matching any exact profile in `profiles` or by matching any profile from any collection in `profilesFrom`. Exact `profiles` can indicate specific records of interest, but they do not limit the broader `profilesFrom` request.
 
-10. For `content.kind = "questionnaire"`, the questionnaire MAY be a canonical URL, an inline `Questionnaire`, or both.
+10. `resourceTypes`, when present, SHALL use official FHIR resource type names.
 
-11. If the questionnaire is expressed as an object, it SHALL include at least one of `canonical` or `resource`.
+11. For `content.kind = "questionnaire"`, the questionnaire MAY be a canonical URL, an inline `Questionnaire`, or both.
+
+12. If the questionnaire is expressed as an object, it SHALL include at least one of `canonical` or `resource`.
 
 ### Response rules
 

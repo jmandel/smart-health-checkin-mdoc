@@ -6,19 +6,13 @@ export type SmartHealthCheckinAcceptedMediaType =
   | "application/fhir+json"
   | (string & {});
 
-export type FhirProfileCollectionRef =
-  | FhirCanonical
-  | {
-      canonical: FhirCanonical;
-      package?: string;
-      version?: string;
-    };
+export type FhirProfileCollectionRef = FhirCanonical;
 
 export type SmartCheckinContentSelector =
   | {
       kind: "fhir.resources";
       profiles?: ReadonlyArray<FhirCanonical>;
-      profilesFrom?: FhirProfileCollectionRef | ReadonlyArray<FhirProfileCollectionRef>;
+      profilesFrom?: ReadonlyArray<FhirProfileCollectionRef>;
       resourceTypes?: ReadonlyArray<FhirResourceType>;
     }
   | {
@@ -149,7 +143,7 @@ function validateContentSelector(content: Record<string, unknown>, path: string)
       return `${path}.resourceTypes must be an array of strings`;
     }
     if (content.profilesFrom !== undefined && !validProfilesFrom(content.profilesFrom)) {
-      return `${path}.profilesFrom must be a canonical URL string or object`;
+      return `${path}.profilesFrom must be a non-empty array of canonical URLs`;
     }
     return undefined;
   }
@@ -175,10 +169,7 @@ function validateContentSelector(content: Record<string, unknown>, path: string)
 }
 
 function validProfilesFrom(value: unknown): boolean {
-  if (typeof value === "string") return isCanonicalUrl(value);
-  if (Array.isArray(value)) return value.length > 0 && value.every(validProfilesFrom);
-  if (!isRecord(value)) return false;
-  return isCanonicalUrl(value.canonical);
+  return Array.isArray(value) && value.length > 0 && value.every((v) => typeof v === "string" && isCanonicalUrl(v));
 }
 
 export function validateSmartCheckinResponse(v: unknown): ValidationResult<SmartCheckinResponse> {

@@ -151,7 +151,7 @@ const SMART_REQUESTS: Array<{
   },
   {
     name: "us-core-checkin",
-    description: "Patient + Coverage + US Core clinical history + inline Questionnaire",
+    description: "Patient + Coverage + US Core clinical resources + inline Questionnaire",
     request: {
       type: "smart-health-checkin-request",
       version: "1",
@@ -182,13 +182,11 @@ const SMART_REQUESTS: Array<{
         },
         {
           id: "clinical-history",
-          title: "US Core clinical history",
+          title: "US Core clinical resources",
+          summary: "US Core resources, including patient demographics, problems, medications, and allergies.",
           content: {
             kind: "fhir.resources",
-            profilesFrom: {
-              canonical: "http://hl7.org/fhir/us/core",
-              package: "hl7.fhir.us.core",
-            },
+            profilesFrom: ["http://hl7.org/fhir/us/core"],
             profiles: [
               "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
               "http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns",

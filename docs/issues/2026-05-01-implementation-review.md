@@ -186,8 +186,10 @@ the constant in.
 
 - **Rule 5** (`fulfills` references must be valid request item ids): not
   checked. `validateSmartCheckinResponse` doesn't take the request as input.
-- **Rule 6** (`fhir.resources` SHALL have `profiles` or `profilesFrom`):
-  validator at line 1112 accepts `{ kind: "fhir.resources" }` with neither.
+- **Rule 6** (broad `fhir.resources` with no selectors is allowed):
+  resolved in the active spec; omitting `profiles`, `profilesFrom`, and
+  `resourceTypes` means any patient-specific FHIR resources the wallet can offer
+  and the patient chooses to share.
 - **Rule 10** (SHC artifacts SHALL NOT carry outer `fhirVersion`):
   `validateArtifact` at line 1213 doesn't reject stray `fhirVersion`. So
   W1 wouldn't be caught even if it fired.

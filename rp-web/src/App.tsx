@@ -458,13 +458,14 @@ function taskFromItem(item: SmartCheckinRequest["items"][number], answers: Recor
   const profiles = Array.isArray(content?.profiles)
     ? content.profiles.filter((v): v is string => typeof v === "string")
     : [];
+  const profileFamilies = profileFamilyCanonicals(content?.profilesFrom);
   const resourceTypes = Array.isArray(content?.resourceTypes)
     ? content.resourceTypes.filter((v): v is string => typeof v === "string")
     : [];
   const selectorDescription =
     profiles.join(", ") ||
     resourceTypes.join(", ") ||
-    (typeof content?.profilesFrom === "string" ? content.profilesFrom : undefined) ||
+    profileFamilies.join(", ") ||
     "FHIR resources";
   return {
     id,
@@ -490,8 +491,15 @@ function questionnaireCanonical(value: unknown): string | undefined {
 function profileTitle(profiles: string[], id: string): string {
   const joined = profiles.join(" ");
   if (joined.includes("C4DIC-Coverage")) return "Insurance information";
-  if (id === "clinical-history") return "Clinical history";
+  if (id === "clinical-history") return "Clinical resources";
   if (joined.includes("us-core-patient")) return "Patient demographics";
   if (profiles.some((profile) => profile.includes("/StructureDefinition/us-core-"))) return "Clinical history";
   return id.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function profileFamilyCanonicals(value: unknown): string[] {
+  if (typeof value === "string") return [value];
+  if (Array.isArray(value)) return value.filter((v): v is string => typeof v === "string");
+  const obj = asRecord(value);
+  return typeof obj?.canonical === "string" ? [obj.canonical] : [];
 }

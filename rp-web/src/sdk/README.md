@@ -96,11 +96,13 @@ const request: SmartCheckinRequest = {
       required: true,
       content: {
         kind: "fhir.resources",
-        profilesFrom: {
-          canonical: "http://hl7.org/fhir/us/core",
-          package: "hl7.fhir.us.core",
-          version: "7.0.0",
-        },
+        profilesFrom: ["http://hl7.org/fhir/us/core"],
+        profiles: [
+          "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
+          "http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns",
+          "http://hl7.org/fhir/us/core/StructureDefinition/us-core-allergyintolerance",
+          "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest",
+        ],
       },
       accept: ["application/fhir+json"],
     },
@@ -136,24 +138,22 @@ Use `profiles` when the requester needs specific StructureDefinitions:
 }
 ```
 
-Use `profilesFrom` when the requester means a profile family or package, such
-as "any US Core profile":
+Use `profilesFrom` when the requester means a profile family, such as "any
+US Core profile":
 
 ```json
 {
   "kind": "fhir.resources",
-  "profilesFrom": {
-    "canonical": "http://hl7.org/fhir/us/core",
-    "package": "hl7.fhir.us.core",
-    "version": "7.0.0"
-  }
+  "profilesFrom": ["http://hl7.org/fhir/us/core"]
 }
 ```
 
 Wallets may satisfy a `profilesFrom` request with resources they can match to
-that family. The core validator checks shape only; actual holder-side matching
-belongs in wallet/store logic because it depends on available patient data and
-profile knowledge.
+that family. If `profiles` and `profilesFrom` are both present, they are
+additive selectors: exact profiles highlight specific records of interest, but
+do not limit the broader profile-family request. The core validator checks shape
+only; actual holder-side matching belongs in wallet/store logic because it
+depends on available patient data and profile knowledge.
 
 ## `dcapi-verifier.ts`: browser verifier flow
 

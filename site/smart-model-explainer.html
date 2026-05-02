@@ -538,9 +538,10 @@
       <h2>Profile families: asking for "any US Core profiles"</h2>
       <p>
         Exact profile requests use <code>profiles</code>. Broad implementation
-        guide or profile-family requests use <code>profilesFrom</code>. The
-        canonical URL is the semantic identity; package and version are optional
-        resolver hints.
+        guide or profile-family requests use <code>profilesFrom</code>. Both
+        are arrays, and when both are present they are additive: exact profiles
+        highlight specific records of interest, but do not limit the broader
+        profile-family request.
       </p>
 
       <span class="label">Any US Core resource the wallet can share</span>
@@ -550,7 +551,7 @@
   "summary": "Patient records your app can share that conform to US Core profiles.",
   "content": {
     "kind": "fhir.resources",
-    "profilesFrom": "http://hl7.org/fhir/us/core"
+    "profilesFrom": ["http://hl7.org/fhir/us/core"]
   },
   "accept": ["application/fhir+json"]
 }</pre>
@@ -561,10 +562,7 @@
   "title": "Problems, medications, and labs",
   "content": {
     "kind": "fhir.resources",
-    "profilesFrom": {
-      "canonical": "http://hl7.org/fhir/us/core",
-      "package": "hl7.fhir.us.core"
-    },
+    "profilesFrom": ["http://hl7.org/fhir/us/core"],
     "resourceTypes": ["Condition", "MedicationRequest", "Observation"]
   },
   "accept": ["application/fhir+json", "application/smart-health-card"]
@@ -574,7 +572,7 @@
         <dt>profiles</dt>
         <dd>Exact StructureDefinition canonicals, such as US Core Patient.</dd>
         <dt>profilesFrom</dt>
-        <dd>A publication, implementation guide, or profile collection, such as US Core as a family.</dd>
+        <dd>Publication, implementation guide, or profile-collection canonical URLs, such as US Core as a family.</dd>
         <dt>resourceTypes</dt>
         <dd>Optional official FHIR resourceType narrowing within the profile family.</dd>
         <dt>no selectors</dt>
@@ -742,7 +740,7 @@
       "title": "US Core records",
       "content": {
         "kind": "fhir.resources",
-        "profilesFrom": "http://hl7.org/fhir/us/core"
+        "profilesFrom": ["http://hl7.org/fhir/us/core"]
       },
       "accept": ["application/fhir+json"]
     },

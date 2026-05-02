@@ -79,17 +79,15 @@ for "anything from US Core" instead of naming every StructureDefinition:
 ```json
 {
   "kind": "fhir.resources",
-  "profilesFrom": {
-    "canonical": "http://hl7.org/fhir/us/core",
-    "package": "hl7.fhir.us.core",
-    "version": "7.0.0"
-  }
+  "profilesFrom": ["http://hl7.org/fhir/us/core"]
 }
 ```
 
-The current adapter recognizes canonical families such as US Core for UI
-classification. Production holder matching can be more precise and should live
-behind `SmartHealthWalletStore`.
+When `profiles` and `profilesFrom` are both present, they are additive
+selectors: exact profiles highlight specific records of interest, but do not
+limit the broader profile-family request. The current adapter recognizes
+canonical families such as US Core for UI classification. Production holder
+matching can be more precise and should live behind `SmartHealthWalletStore`.
 
 ## Wallet-store boundary
 

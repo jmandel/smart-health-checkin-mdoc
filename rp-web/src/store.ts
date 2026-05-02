@@ -55,10 +55,7 @@ const INTAKE_QUESTIONNAIRE = {
 };
 
 const ACCEPT_FHIR = ["application/fhir+json"];
-const US_CORE_PROFILES_FROM = {
-  canonical: "http://hl7.org/fhir/us/core",
-  package: "hl7.fhir.us.core",
-};
+const US_CORE_PROFILE_FAMILIES = ["http://hl7.org/fhir/us/core"];
 const US_CORE_CLINICAL_PROFILES = [
   "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
   "http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns",
@@ -99,11 +96,11 @@ const US_CORE_CHECKIN: SmartCheckinRequest = {
     },
     {
       id: "clinical-history",
-      title: "US Core clinical history",
-      summary: "Patient, problems, medications, and allergies from US Core.",
+      title: "US Core clinical resources",
+      summary: "US Core resources, including patient demographics, problems, medications, and allergies.",
       content: {
         kind: "fhir.resources",
-        profilesFrom: US_CORE_PROFILES_FROM,
+        profilesFrom: US_CORE_PROFILE_FAMILIES,
         profiles: US_CORE_CLINICAL_PROFILES,
       },
       accept: ACCEPT_FHIR,
@@ -125,7 +122,7 @@ export const PRESETS: ReadonlyArray<Preset> = [
     id: "us-core-checkin",
     label: "US Core check-in",
     description:
-      "Patient demographics, insurance, US Core clinical history, and an inline intake Questionnaire.",
+      "Patient demographics, insurance, US Core clinical resources, and an inline intake Questionnaire.",
     request: US_CORE_CHECKIN,
   },
   {
