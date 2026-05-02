@@ -13,7 +13,7 @@ export type KioskSessionDescriptor = {
   type: "smart-health-checkin-kiosk-session";
   version: "1";
   protocol: typeof PROTOCOL_ID;
-  sessionId: string;
+  requestId: string;
   returnTransport: KioskReturnTransport;
   deviceRequest: string;
   encryptionInfo: string;
@@ -23,20 +23,20 @@ export type KioskSessionDescriptor = {
 };
 
 export function createKioskSessionDescriptor(input: {
-  sessionId: string;
+  requestId: string;
   requestBundle: OrgIsoMdocRequestBundle;
   returnTransport: KioskReturnTransport;
   origin?: string;
   createdAt?: string;
   expiresAt?: string;
 }): KioskSessionDescriptor {
-  if (!input.sessionId) throw new Error("sessionId is required");
+  if (!input.requestId) throw new Error("requestId is required");
   const request = input.requestBundle.navigatorArgument.digital.requests[0];
   return {
     type: "smart-health-checkin-kiosk-session",
     version: "1",
     protocol: PROTOCOL_ID,
-    sessionId: input.sessionId,
+    requestId: input.requestId,
     returnTransport: input.returnTransport,
     deviceRequest: request.data.deviceRequest,
     encryptionInfo: request.data.encryptionInfo,
@@ -57,7 +57,7 @@ export function encodeKioskSessionFragment(descriptor: KioskSessionDescriptor): 
     shc: "kiosk",
     v: descriptor.version,
     p: descriptor.protocol,
-    s: descriptor.sessionId,
+    r: descriptor.requestId,
     rt: descriptor.returnTransport.kind,
     dr: descriptor.deviceRequest,
     ei: descriptor.encryptionInfo,
@@ -85,14 +85,14 @@ export function decodeKioskSessionFragment(fragment: string): KioskSessionDescri
   if (params.get("v") !== "1") throw new Error("unsupported kiosk fragment version");
   if (params.get("p") !== PROTOCOL_ID) throw new Error(`unsupported kiosk protocol ${params.get("p") ?? ""}`);
 
-  const sessionId = requiredParam(params, "s");
+  const requestId = requiredParam(params, "r");
   const kind = requiredParam(params, "rt") as KioskReturnTransport["kind"];
   const returnTransport = decodeReturnTransport(kind, params);
   return {
     type: "smart-health-checkin-kiosk-session",
     version: "1",
     protocol: PROTOCOL_ID,
-    sessionId,
+    requestId,
     returnTransport,
     deviceRequest: requiredParam(params, "dr"),
     encryptionInfo: requiredParam(params, "ei"),

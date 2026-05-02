@@ -31,7 +31,7 @@ const rules = {
       knowsRequest: "data.requestId == ruleParams.requestId",
       allowedFields:
         "request.modifiedFields.all(field, field in [" +
-        "'requestId', 'routeId', 'sessionId', 'requestHash', 'createdAt', 'expiresAt', " +
+        "'requestId', 'createdAt', 'expiresAt', " +
         "'creatorKeyId', 'serviceKeyId', 'encryptedRequest'" +
         "])",
       timeShapeOk: "data.expiresAt > data.createdAt",
@@ -45,11 +45,11 @@ const rules = {
   },
   submissions: {
     bind: {
-      knowsRoute: "data.routeId == ruleParams.routeId",
+      knowsRequest: "data.requestId == ruleParams.requestId",
       allowedFields:
         "request.modifiedFields.all(field, field in [" +
-        "'routeId', 'sessionId', 'submissionId', 'requestId', 'requestHash', 'certHash', 'nonce', 'createdAt', " +
-        "'expiresAt', 'formId', 'totalPlaintextBytes', 'totalCiphertextBytes', " +
+        "'submissionId', 'requestId', 'createdAt', " +
+        "'expiresAt', 'totalPlaintextBytes', 'totalCiphertextBytes', " +
         "'payloadSha256', 'iv', 'storagePath', 'storageFileId', 'contentType', " +
         "'phoneEphemeralPublicKeyJwk'" +
         "])",
@@ -58,13 +58,13 @@ const rules = {
         `data.totalCiphertextBytes <= ${maxBlobBytes}`,
       contentOk: `data.contentType == '${blobContentType}'`,
       pathOk:
-        "data.storagePath == 'submissions/' + data.routeId + '/' + data.nonce + '.bin' && " +
-        "data.storagePath.startsWith('submissions/' + ruleParams.routeId + '/')",
+        "data.storagePath == 'submissions/' + data.requestId + '/' + data.submissionId + '.bin' && " +
+        "data.storagePath.startsWith('submissions/' + ruleParams.requestId + '/')",
       timeShapeOk: "data.expiresAt > data.createdAt",
     },
     allow: {
-      view: "knowsRoute",
-      create: "knowsRoute && allowedFields && sizeOk && contentOk && pathOk && timeShapeOk",
+      view: "knowsRequest",
+      create: "knowsRequest && allowedFields && sizeOk && contentOk && pathOk && timeShapeOk",
       update: "false",
       delete: "false",
     },

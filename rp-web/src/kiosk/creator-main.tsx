@@ -1,7 +1,7 @@
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import QRCode from "qrcode";
-import { SmartResponseReview, asRecord, smartValueFromOpenedResponse } from "../app/SmartResponseReview.tsx";
+import { SmartResponseReview, asRecord } from "../app/SmartResponseReview.tsx";
 import { PRESETS } from "../store.ts";
 import { DEMO_KIOSK_CRYPTO_CONFIG } from "./demo-keys.ts";
 import {
@@ -32,9 +32,9 @@ function CreatorApp() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [received, setReceived] = useState<ReceivedSubmission[]>([]);
-  const routeId = session?.verified.payload.routeId;
+  const requestId = session?.verified.payload.requestId;
 
-  const inbox = instantKioskProvider.useSubmissionRows(routeId);
+  const inbox = instantKioskProvider.useSubmissionRows(requestId);
 
   useEffect(() => {
     if (!session) {
@@ -44,8 +44,7 @@ function CreatorApp() {
     let cancelled = false;
     const rows = filterRowsForRequest({
       rows: inbox.rows,
-      routeId: session.verified.payload.routeId,
-      requestHash: session.verified.requestHash,
+      requestId: session.verified.payload.requestId,
     });
     Promise.all(rows.map((row) => openRow(session, row))).then((opened) => {
       if (!cancelled) setReceived(opened);
@@ -94,8 +93,8 @@ function CreatorApp() {
         <div className="clinic-header__inner">
           <div className="clinic-logo">QR</div>
           <div>
-            <div className="clinic-kicker">Kiosk mode</div>
-            <h1>SMART Health Check-in mailbox demo</h1>
+            <div className="clinic-kicker">Front desk</div>
+            <h1>SMART Health Check-in</h1>
           </div>
         </div>
       </header>
@@ -103,18 +102,17 @@ function CreatorApp() {
       <main className="portal kiosk-page">
         <section className="portal-card checkin-hero">
           <div className="hero-copy">
-            <div className="eyebrow">Desktop creator</div>
-            <h2>Mint an encrypted request pointer</h2>
+            <div className="eyebrow">Clinical check-in</div>
+            <h2>Start a patient check-in</h2>
             <p>
-              This page signs the full SMART request as JWS, encrypts it before
-              storing it in Instant, keeps the desktop response-decryption key in
-              memory, and listens for encrypted DC API results.
+              Display a QR code for the patient, then receive only the extracted
+              SMART Health Check-in response when they finish sharing from their phone.
             </p>
           </div>
           <div className="appointment-box">
-            <div className="appointment-box__label">Payload target</div>
+            <div className="appointment-box__label">Response limit</div>
             <div className="appointment-box__title">{formatBytes(KIOSK_MAX_PAYLOAD_BYTES)}</div>
-            <div className="appointment-box__meta">encrypted Storage blob + realtime pointer</div>
+            <div className="appointment-box__meta">encrypted response for this request</div>
           </div>
         </section>
 
@@ -144,26 +142,19 @@ function CreatorApp() {
               </div>
               <div className="kiosk-details">
                 <Field label="Request pointer" value={session.verified.payload.requestId} />
-                <Field label="Route" value={session.verified.payload.routeId} />
-                <Field label="Session" value={session.verified.payload.sessionId} />
                 <Field label="Request" value={session.verified.payload.smartRequest.title} />
                 <Field label="Expires" value={new Date(session.verified.payload.expiresAt).toLocaleString()} />
-                <Field label="JWS hash" value={session.verified.requestHash} />
                 <details>
                   <summary>Submit URL</summary>
                   <textarea className="json kiosk-url" readOnly value={session.submitUrl} />
                 </details>
                 <details>
-                  <summary>Instant request row (encrypted)</summary>
-                  <pre>{JSON.stringify(session.requestRow, null, 2)}</pre>
-                </details>
-                <details>
-                  <summary>Signed SMART request JWS payload</summary>
-                  <pre>{JSON.stringify(session.verified.payload, null, 2)}</pre>
-                </details>
-                <details>
-                  <summary>Demo-only desktop private key export</summary>
-                  <pre>{JSON.stringify(session.desktopPrivateJwk, null, 2)}</pre>
+                  <summary>Technical setup</summary>
+                  <pre>{JSON.stringify({
+                    requestRow: session.requestRow,
+                    signedRequestPayload: session.verified.payload,
+                    demoOnlyDesktopPrivateJwk: session.desktopPrivateJwk,
+                  }, null, 2)}</pre>
                 </details>
               </div>
             </div>
@@ -175,19 +166,19 @@ function CreatorApp() {
         <section className="portal-card">
           <div className="section-heading">
             <div>
-              <div className="eyebrow">Mailbox</div>
-              <h2>Received submissions</h2>
+              <div className="eyebrow">Patient response</div>
+              <h2>Check-in status</h2>
             </div>
             <span className="status-pill">{inbox.isLoading ? "Listening..." : `${received.length} rows`}</span>
           </div>
           {inbox.error ? <div className="notice notice--error">{inbox.error.message}</div> : null}
           {received.length === 0 ? (
-            <p className="muted">Encrypted phone submission pointers for this route will appear here.</p>
+            <p className="muted">The patient response for this request will appear here after the phone share completes.</p>
           ) : (
             <div className="task-list">
               {received.map((item) => (
                 <article className={item.error ? "task-item kiosk-submission" : "task-item task-item--done kiosk-submission"} key={item.row.id}>
-                  <div className="task-status">{item.error ? "Rejected" : "Opened"}</div>
+                  <div className="task-status">{item.error ? "Rejected" : "Received"}</div>
                   <div className="kiosk-submission__body">
                     <div className="task-title">{submissionTitle(item)}</div>
                     <div className="task-description">{item.error ?? submissionDescription(item)}</div>
@@ -229,26 +220,26 @@ function Field({ label, value }: { label: string; value: string }) {
 
 function submissionTitle(item: ReceivedSubmission): string {
   const payload = asRecord(item.plaintext?.payload);
-  if (payload?.kind === "dcapi-smart-checkin") {
-    return String(payload.requestLabel ?? payload.requestPresetLabel ?? payload.requestPresetId ?? "SMART Health Check-in response");
+  if (payload?.kind === "smart-health-checkin-response") {
+    return "SMART Health Check-in response";
   }
   return item.row.submissionId;
 }
 
 function submissionDescription(item: ReceivedSubmission): string {
   const payload = asRecord(item.plaintext?.payload);
-  if (payload?.kind === "dcapi-smart-checkin") {
-    const smart = smartValueFromOpenedResponse(payload.openedResponse);
+  if (payload?.kind === "smart-health-checkin-response") {
+    const smart = asRecord(payload.smartResponse);
     const artifactCount = Array.isArray(smart?.artifacts) ? smart.artifacts.length : 0;
     const statusCount = Array.isArray(smart?.requestStatus) ? smart.requestStatus.length : 0;
-    return `Opened DC API response: ${artifactCount} artifact(s), ${statusCount} item status row(s).`;
+    return `Received ${artifactCount} artifact(s) and ${statusCount} item status row(s).`;
   }
   return "Encrypted submission opened.";
 }
 
 function SubmissionDetails({ item }: { item: ReceivedSubmission }) {
   const payload = asRecord(item.plaintext?.payload);
-  if (payload?.kind !== "dcapi-smart-checkin") {
+  if (payload?.kind !== "smart-health-checkin-response") {
     return (
       <details className="kiosk-submission__details">
         <summary>Show decrypted payload</summary>
@@ -260,22 +251,18 @@ function SubmissionDetails({ item }: { item: ReceivedSubmission }) {
   return (
     <div className="kiosk-submission__details">
       <SmartResponseReview
-        openedResponse={payload.openedResponse}
+        openedResponse={{
+          smartResponseValidation: {
+            ok: true,
+            value: payload.smartResponse,
+          },
+        }}
         technicalDetails={{
           submissionRow: item.row,
-          request: payload.request,
-          requestHash: payload.requestHash,
-          preparedRequest: payload.preparedRequest,
-          credentialDebugJson: payload.credentialDebugJson,
-          submittedFrom: payload.submittedFrom,
+          smartResponse: payload.smartResponse,
           plaintextEnvelope: {
             requestId: item.plaintext?.requestId,
-            sessionId: item.plaintext?.sessionId,
-            routeId: item.plaintext?.routeId,
-            requestHash: item.plaintext?.requestHash,
-            nonce: item.plaintext?.nonce,
             submittedAt: item.plaintext?.submittedAt,
-            formId: item.plaintext?.formId,
           },
         }}
       />

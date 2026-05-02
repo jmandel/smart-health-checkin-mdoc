@@ -4,7 +4,6 @@ import { SmartCheckinButton, useDcApiSupport, type SmartCheckinVerifierState } f
 import { validateSmartCheckinRequest, type SmartCheckinRequest } from "../sdk/core.ts";
 import type {
   VerifierCredentialCompletion,
-  VerifierPreparedCredentialRequest,
 } from "../sdk/dcapi-verifier.ts";
 import { DEMO_KIOSK_CRYPTO_CONFIG } from "./demo-keys.ts";
 import { instantKioskProvider } from "./instant-mailbox.ts";
@@ -76,7 +75,6 @@ function SubmitApp() {
 
   async function submitCompletion(
     completion: VerifierCredentialCompletion,
-    prepared: VerifierPreparedCredentialRequest,
   ) {
     setSubmitting(true);
     setRow(undefined);
@@ -89,19 +87,17 @@ function SubmitApp() {
         throw new Error(requestValidation && !requestValidation.ok ? requestValidation.error : "SMART request is invalid.");
       }
 
-      setStatus("Encrypting opened DC API response...");
+      setStatus("Encrypting SMART response for the front desk...");
       const completed = await completeKioskRequest({
         provider: instantKioskProvider,
         request: requestStatus.resolved.verified,
         payload: buildDcapiPayload({
-          resolved: requestStatus.resolved,
-          prepared,
           completion,
         }),
       });
       setRow(completed.row);
       setStatus(
-        `Submitted ${formatBytes(completed.totalPlaintextBytes)}. The kiosk should receive the opened DC API result in realtime.`,
+        `Submitted ${formatBytes(completed.totalPlaintextBytes)}. The front desk should receive the SMART response in realtime.`,
       );
     } catch (e) {
       setStatus(e instanceof Error ? e.message : String(e));
@@ -152,11 +148,9 @@ function SubmitApp() {
           {resolved ? (
             <div className="kiosk-details">
               <Field label="Request pointer" value={resolved.verified.payload.requestId} />
-              <Field label="Route" value={resolved.verified.payload.routeId} />
               <Field label="Request" value={resolved.verified.payload.smartRequest.title} />
               <Field label="Expires" value={new Date(resolved.verified.payload.expiresAt).toLocaleString()} />
-              <Field label="Max encrypted blob" value={formatBytes(resolved.verified.payload.constraints.maxBlobBytes)} />
-              <Field label="JWS hash" value={resolved.verified.requestHash} />
+              <Field label="Response limit" value={formatBytes(resolved.verified.payload.constraints.maxPlaintextBytes)} />
               <p className="muted">
                 The QR only carries this pointer. The full SMART request was fetched
                 from the provider, decrypted locally, and verified as a trusted creator JWS.
@@ -197,8 +191,8 @@ function SubmitApp() {
               request={request}
               verifier={{ origin: location.origin }}
               disabled={!canShare}
-              onComplete={(completion, prepared) => {
-                void submitCompletion(completion, prepared);
+              onComplete={(completion) => {
+                void submitCompletion(completion);
               }}
               onError={(error) => {
                 setStatus(error.message);
@@ -234,34 +228,22 @@ function SubmitApp() {
 }
 
 function buildDcapiPayload(input: {
-  resolved: ResolvedKioskRequest;
-  prepared: VerifierPreparedCredentialRequest;
   completion: VerifierCredentialCompletion;
 }): Record<string, unknown> {
-  const request = input.resolved.verified.payload.smartRequest;
+  const smartResponseValidation = asRecord(input.completion.openedResponse.smartResponseValidation);
+  if (smartResponseValidation?.ok !== true) {
+    throw new Error("Wallet response did not contain a valid SMART Health Check-in response.");
+  }
   return {
-    kind: "dcapi-smart-checkin",
-    requestPresetId: request.presetId,
-    requestLabel: request.title,
-    request: request.request,
-    requestHash: input.resolved.verified.requestHash,
-    smartRequestHash: request.requestHash,
-    preparedRequest: {
-      handle: input.prepared.handle,
-      authorityKind: input.prepared.authorityKind,
-      publicArtifacts: input.prepared.publicArtifacts,
-    },
-    credentialDebugJson: input.completion.credentialDebugJson,
-    openedResponse: {
-      dcapiResponse: input.completion.openedResponse.dcapiResponse,
-      deviceResponse: input.completion.openedResponse.deviceResponse,
-      smartResponseValidation: input.completion.openedResponse.smartResponseValidation,
-    },
-    submittedFrom: {
-      origin: location.origin,
-      userAgent: navigator.userAgent,
-    },
+    kind: "smart-health-checkin-response",
+    smartResponse: smartResponseValidation.value,
   };
+}
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
 }
 
 function RequestTaskList({ request }: { request: SmartCheckinRequest }) {
@@ -297,7 +279,7 @@ function selectorDescription(content: SmartCheckinRequest["items"][number]["cont
 }
 
 function buttonLabel(state: SmartCheckinVerifierState, submitting: boolean, submitted: boolean): string {
-  if (submitting) return "Sending result to kiosk...";
+  if (submitting) return "Sending SMART response...";
   if (submitted) return "Check-in information sent";
   switch (state.phase) {
     case "preparing":
@@ -305,9 +287,9 @@ function buttonLabel(state: SmartCheckinVerifierState, submitting: boolean, subm
     case "requesting":
       return "Opening health app...";
     case "completing":
-      return "Opening wallet response...";
+      return "Validating SMART response...";
     case "complete":
-      return "Wallet response opened";
+      return "SMART response ready";
     case "error":
       return "Try sharing again";
     case "idle":
@@ -322,12 +304,6 @@ function Field({ label, value }: { label: string; value: string }) {
       <code>{value}</code>
     </div>
   );
-}
-
-function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : undefined;
 }
 
 const root = document.getElementById("root");

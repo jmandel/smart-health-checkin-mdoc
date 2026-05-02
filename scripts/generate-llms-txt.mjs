@@ -27,7 +27,7 @@ const MARKDOWN_ORDER = [
   "rp-web/src/sdk/react.README.md",
   "rp-web/src/protocol/README.md",
   "wallet-android/README.md",
-  "wallet-android/app/matcher/README.md",
+  "wallet-android/app/matcher-rs/README.md",
   "tools/README.md",
 ];
 

@@ -1,6 +1,5 @@
 import { validateSmartCheckinRequest, type SmartCheckinRequest } from "../sdk/core.ts";
 
-export const KIOSK_FORM_ID = "smart-health-checkin-kiosk-demo";
 export const KIOSK_MAX_PAYLOAD_BYTES = 25 * 1024 * 1024;
 export const KIOSK_MAX_BLOB_BYTES = KIOSK_MAX_PAYLOAD_BYTES + 1024;
 export const KIOSK_BLOB_CONTENT_TYPE = "application/octet-stream";
@@ -9,7 +8,6 @@ export const KIOSK_TTL_MS = 10 * 60 * 1000;
 export const KIOSK_RESPONSE_INFO = "smart-health-checkin-kiosk-response-v1";
 export const KIOSK_REQUEST_INFO = "smart-health-checkin-kiosk-request-v1";
 export const KIOSK_REQUEST_JWS_TYP = "smart-health-checkin+kiosk-request+jws";
-export const KIOSK_SUBMISSION_POINTER_NAMESPACE = "submissions";
 export const KIOSK_CREATOR_ISSUER = "smart-health-checkin-demo-creator";
 export const KIOSK_SUBMISSION_SERVICE_AUDIENCE = "smart-health-checkin-demo-submission-service";
 
@@ -24,20 +22,15 @@ export type KioskRequestPayload = {
   iss: typeof KIOSK_CREATOR_ISSUER;
   aud: typeof KIOSK_SUBMISSION_SERVICE_AUDIENCE;
   requestId: string;
-  sessionId: string;
-  routeId: string;
   createdAt: number;
   expiresAt: number;
   submitTo: {
     backend: "instantdb";
     appId: string;
-    pointerNamespace: typeof KIOSK_SUBMISSION_POINTER_NAMESPACE;
-    storagePrefix: string;
   };
   smartRequest: {
     presetId: string;
     requestId: string;
-    requestHash: string;
     title: string;
     request: SmartCheckinRequest;
   };
@@ -50,11 +43,7 @@ export type KioskRequestPayload = {
     desktopPublicKeyJwk: JsonWebKey;
   };
   constraints: {
-    maxSubmissions: number;
     maxPlaintextBytes: number;
-    maxBlobBytes: number;
-    allowedContentTypes: [typeof KIOSK_BLOB_CONTENT_TYPE];
-    formId: typeof KIOSK_FORM_ID;
   };
   minter: {
     keyId: string;
@@ -71,7 +60,6 @@ export type EncryptedKioskRequest = {
   expiresAt: number;
   creatorKeyId: string;
   recipientKeyId: string;
-  jwsSha256: string;
   iv: string;
   ciphertext: string;
   ephemeralPublicKeyJwk: JsonWebKey;
@@ -81,7 +69,6 @@ export type VerifiedKioskRequest = {
   header: KioskRequestJwsHeader;
   payload: KioskRequestPayload;
   jws: string;
-  requestHash: string;
 };
 
 export type KioskRequestPointer = {
@@ -90,13 +77,7 @@ export type KioskRequestPointer = {
 
 export type SubmissionPlaintext = {
   requestId: string;
-  sessionId: string;
-  routeId: string;
-  requestHash: string;
-  certHash?: string;
-  nonce: string;
   submittedAt: number;
-  formId: typeof KIOSK_FORM_ID;
   payload: Record<string, unknown>;
 };
 
@@ -175,27 +156,20 @@ export async function createKioskRequestJws(input: {
 }): Promise<VerifiedKioskRequest> {
   const now = input.now ?? Date.now();
   const requestId = randomBase64Url(32);
-  const sessionId = randomBase64Url(32);
-  const routeId = randomBase64Url(32);
   const payload: KioskRequestPayload = {
     v: 1,
     iss: KIOSK_CREATOR_ISSUER,
     aud: KIOSK_SUBMISSION_SERVICE_AUDIENCE,
     requestId,
-    sessionId,
-    routeId,
     createdAt: now,
     expiresAt: now + KIOSK_TTL_MS,
     submitTo: {
       backend: "instantdb",
       appId: input.transportAppId,
-      pointerNamespace: KIOSK_SUBMISSION_POINTER_NAMESPACE,
-      storagePrefix: storagePrefixForRouteId(routeId),
     },
     smartRequest: {
       presetId: input.smartRequest.presetId,
       requestId: input.smartRequest.request.id,
-      requestHash: await smartRequestHash(input.smartRequest.request),
       title: input.smartRequest.title,
       request: input.smartRequest.request,
     },
@@ -208,11 +182,7 @@ export async function createKioskRequestJws(input: {
       desktopPublicKeyJwk: input.desktopPublicKeyJwk,
     },
     constraints: {
-      maxSubmissions: 1,
       maxPlaintextBytes: KIOSK_MAX_PAYLOAD_BYTES,
-      maxBlobBytes: KIOSK_MAX_BLOB_BYTES,
-      allowedContentTypes: [KIOSK_BLOB_CONTENT_TYPE],
-      formId: KIOSK_FORM_ID,
     },
     minter: {
       keyId: input.creatorKeyId,
@@ -228,7 +198,6 @@ export async function createKioskRequestJws(input: {
     header,
     payload,
     jws,
-    requestHash: await kioskRequestHash(jws),
   };
 }
 
@@ -269,7 +238,6 @@ export async function encryptKioskRequestJws(input: {
     expiresAt: input.verified.payload.expiresAt,
     creatorKeyId: input.verified.header.kid,
     recipientKeyId: input.verified.payload.encryptRequestTo.keyId,
-    jwsSha256: input.verified.requestHash,
     iv: base64UrlEncode(iv),
     ciphertext: base64UrlEncode(ciphertext),
     ephemeralPublicKeyJwk: await exportPublicJwk(ephemeralKeyPair.publicKey),
@@ -311,9 +279,6 @@ export async function openEncryptedKioskRequest(input: {
   if (verified.payload.requestId !== input.encrypted.requestId) {
     throw new Error("Encrypted request pointer does not match the signed request.");
   }
-  if (verified.requestHash !== input.encrypted.jwsSha256) {
-    throw new Error("Encrypted request hash does not match decrypted JWS.");
-  }
   return verified;
 }
 
@@ -350,12 +315,11 @@ export async function verifyKioskRequestJws(input: {
     header,
     payload,
     jws: input.jws,
-    requestHash: await kioskRequestHash(input.jws),
   };
 }
 
 export async function encryptSubmissionPlaintext(
-  request: Pick<VerifiedKioskRequest, "payload" | "requestHash">,
+  request: Pick<VerifiedKioskRequest, "payload">,
   plaintext: SubmissionPlaintext,
 ): Promise<EncryptedPayload> {
   const encoded = utf8(canonicalJson(plaintext));
@@ -371,17 +335,17 @@ export async function encryptSubmissionPlaintext(
   const key = await deriveAesKey({
     privateKey: phoneKeyPair.privateKey,
     publicKey: desktopPublicKey,
-    salt: request.requestHash,
+    salt: request.payload.requestId,
     info: KIOSK_RESPONSE_INFO,
   });
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const ciphertext = new Uint8Array(await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv: bufferSource(iv), additionalData: bufferSource(utf8(request.requestHash)) },
+    { name: "AES-GCM", iv: bufferSource(iv), additionalData: bufferSource(utf8(request.payload.requestId)) },
     key,
     bufferSource(encoded),
   ));
-  if (ciphertext.byteLength > request.payload.constraints.maxBlobBytes) {
-    throw new Error(`Encrypted blob is ${ciphertext.byteLength} bytes; maximum is ${request.payload.constraints.maxBlobBytes}.`);
+  if (ciphertext.byteLength > KIOSK_MAX_BLOB_BYTES) {
+    throw new Error(`Encrypted blob is ${ciphertext.byteLength} bytes; maximum is ${KIOSK_MAX_BLOB_BYTES}.`);
   }
   return {
     iv: base64UrlEncode(iv),
@@ -392,7 +356,7 @@ export async function encryptSubmissionPlaintext(
 }
 
 export async function decryptSubmissionPlaintext(input: {
-  request: Pick<VerifiedKioskRequest, "payload" | "requestHash">;
+  request: Pick<VerifiedKioskRequest, "payload">;
   desktopPrivateKey: CryptoKey;
   phoneEphemeralPublicKeyJwk: JsonWebKey;
   iv: string;
@@ -402,14 +366,14 @@ export async function decryptSubmissionPlaintext(input: {
   const key = await deriveAesKey({
     privateKey: input.desktopPrivateKey,
     publicKey: phonePublicKey,
-    salt: input.request.requestHash,
+    salt: input.request.payload.requestId,
     info: KIOSK_RESPONSE_INFO,
   });
   const plaintext = await crypto.subtle.decrypt(
     {
       name: "AES-GCM",
       iv: bufferSource(base64UrlDecode(input.iv)),
-      additionalData: bufferSource(utf8(input.request.requestHash)),
+      additionalData: bufferSource(utf8(input.request.payload.requestId)),
     },
     key,
     bufferSource(input.ciphertext),
@@ -417,14 +381,6 @@ export async function decryptSubmissionPlaintext(input: {
   const parsed = JSON.parse(utf8Decode(new Uint8Array(plaintext)));
   assertSubmissionPlaintext(parsed);
   return parsed;
-}
-
-export async function kioskRequestHash(jws: string): Promise<string> {
-  return sha256Base64Url(utf8(jws));
-}
-
-export async function smartRequestHash(request: SmartCheckinRequest): Promise<string> {
-  return sha256Base64Url(utf8(canonicalJson(request)));
 }
 
 export function buildSubmitUrl(baseUrl: string | URL, pointer: KioskRequestPointer): string {
@@ -440,8 +396,8 @@ export function kioskRequestPointerFromLocationHash(hash: string): KioskRequestP
   return { requestId };
 }
 
-export function storagePrefixForRouteId(routeId: string): string {
-  return `submissions/${routeId}/`;
+export function storagePrefixForRequestId(requestId: string): string {
+  return `submissions/${requestId}/`;
 }
 
 async function signCompactJws(
@@ -470,23 +426,10 @@ async function validateKioskRequestPayload(
   if (payload.aud !== KIOSK_SUBMISSION_SERVICE_AUDIENCE) return "Kiosk request has the wrong audience.";
   if (payload.submitTo.backend !== "instantdb") return "Unsupported mailbox backend.";
   if (payload.submitTo.appId !== expectedTransportAppId) return "Kiosk request was minted for a different transport app.";
-  if (payload.submitTo.pointerNamespace !== KIOSK_SUBMISSION_POINTER_NAMESPACE) {
-    return "Kiosk request points at an unsupported submission namespace.";
-  }
-  if (payload.submitTo.storagePrefix !== storagePrefixForRouteId(payload.routeId)) {
-    return "Kiosk request storage prefix is inconsistent.";
-  }
   if (payload.expiresAt <= now) return "This kiosk request has expired.";
   if (payload.createdAt > now + 60_000) return "This kiosk request appears to be from the future.";
-  if (payload.constraints.formId !== KIOSK_FORM_ID) return "Kiosk request was minted for a different form.";
   if (payload.constraints.maxPlaintextBytes > KIOSK_MAX_PAYLOAD_BYTES) {
     return "Kiosk request allows a payload size above this app's limit.";
-  }
-  if (payload.constraints.maxBlobBytes > KIOSK_MAX_BLOB_BYTES) {
-    return "Kiosk request allows a blob size above this app's limit.";
-  }
-  if (!payload.constraints.allowedContentTypes.includes(KIOSK_BLOB_CONTENT_TYPE)) {
-    return "Kiosk request does not allow encrypted blob uploads.";
   }
   if (payload.encryptRequestTo.alg !== "ECDH-P256+HKDF-SHA256+AES-GCM") {
     return "Unsupported kiosk request encryption algorithm.";
@@ -500,8 +443,6 @@ async function validateKioskRequestPayload(
   }
   const requestValidation = validateSmartCheckinRequest(payload.smartRequest.request);
   if (!requestValidation.ok) return `Embedded SMART request is invalid: ${requestValidation.error}`;
-  const actualHash = await smartRequestHash(requestValidation.value);
-  if (payload.smartRequest.requestHash !== actualHash) return "Embedded SMART request hash does not match.";
   return undefined;
 }
 
@@ -558,8 +499,8 @@ function assertKioskRequestJwsHeader(value: unknown): asserts value is KioskRequ
 
 function assertKioskRequestPayload(value: unknown): asserts value is KioskRequestPayload {
   if (!isRecord(value)) throw new Error("Kiosk request payload is not an object.");
-  if (typeof value.requestId !== "string" || typeof value.sessionId !== "string" || typeof value.routeId !== "string") {
-    throw new Error("Kiosk request is missing routing identifiers.");
+  if (typeof value.requestId !== "string") {
+    throw new Error("Kiosk request is missing its request identifier.");
   }
   if (!isRecord(value.submitTo) || !isRecord(value.smartRequest) || !isRecord(value.constraints)) {
     throw new Error("Kiosk request is missing required sections.");
@@ -578,7 +519,7 @@ function assertEncryptedKioskRequest(value: unknown): asserts value is Encrypted
   if (value.contentType !== KIOSK_ENCRYPTED_REQUEST_CONTENT_TYPE) {
     throw new Error("Unsupported encrypted kiosk request content type.");
   }
-  for (const field of ["requestId", "creatorKeyId", "recipientKeyId", "jwsSha256", "iv", "ciphertext"] as const) {
+  for (const field of ["requestId", "creatorKeyId", "recipientKeyId", "iv", "ciphertext"] as const) {
     if (typeof value[field] !== "string" || value[field].length === 0) {
       throw new Error(`Encrypted kiosk request is missing ${field}.`);
     }
@@ -588,14 +529,8 @@ function assertEncryptedKioskRequest(value: unknown): asserts value is Encrypted
 
 function assertSubmissionPlaintext(value: unknown): asserts value is SubmissionPlaintext {
   if (!isRecord(value)) throw new Error("Submission plaintext is not an object.");
-  if (value.formId !== KIOSK_FORM_ID) throw new Error("Submission formId mismatch.");
-  if (
-    typeof value.requestId !== "string" ||
-    typeof value.sessionId !== "string" ||
-    typeof value.routeId !== "string" ||
-    typeof value.requestHash !== "string"
-  ) {
-    throw new Error("Submission is missing session identifiers.");
+  if (typeof value.requestId !== "string") {
+    throw new Error("Submission is missing its request identifier.");
   }
   if (!isRecord(value.payload)) throw new Error("Submission payload is invalid.");
 }

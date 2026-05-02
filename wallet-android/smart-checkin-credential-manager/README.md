@@ -36,7 +36,7 @@ lifecycleScope.launch {
 
 The registry entry includes:
 
-- `matcher.wasm`, built from `wallet-android/app/matcher/` and copied into the
+- `matcher.wasm`, built from `wallet-android/app/matcher-rs/` and copied into the
   app assets;
 - a small JSON credentials blob describing one SMART Health Check-in credential:
   title, subtitle, doctype, namespace, response element, and package name.

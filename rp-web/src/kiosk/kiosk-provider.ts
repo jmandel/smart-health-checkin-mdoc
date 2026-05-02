@@ -11,7 +11,6 @@ import {
   importCreatorPrivateKey,
   importSubmissionServicePrivateKey,
   KIOSK_BLOB_CONTENT_TYPE,
-  KIOSK_FORM_ID,
   KIOSK_MAX_BLOB_BYTES,
   KIOSK_MAX_PAYLOAD_BYTES,
   openEncryptedKioskRequest,
@@ -29,9 +28,6 @@ export { KIOSK_MAX_PAYLOAD_BYTES } from "./protocol.ts";
 export type KioskRequestRow = {
   id: string;
   requestId: string;
-  routeId: string;
-  sessionId: string;
-  requestHash: string;
   createdAt: number;
   expiresAt: number;
   creatorKeyId: string;
@@ -41,16 +37,10 @@ export type KioskRequestRow = {
 
 export type KioskSubmissionRow = {
   id: string;
-  routeId: string;
-  sessionId: string;
   submissionId: string;
   requestId: string;
-  requestHash?: string;
-  certHash: string;
-  nonce: string;
   createdAt: number;
   expiresAt: number;
-  formId: typeof KIOSK_FORM_ID;
   totalPlaintextBytes: number;
   totalCiphertextBytes: number;
   payloadSha256: string;
@@ -73,7 +63,6 @@ export type KioskTransportProvider = {
   configured: boolean;
   writeRequest(input: {
     payload: KioskRequestPayload;
-    requestHash: string;
     encryptedRequest: EncryptedKioskRequest;
   }): Promise<KioskRequestRow>;
   readRequest(requestId: string): Promise<KioskRequestRow>;
@@ -84,7 +73,7 @@ export type KioskTransportProvider = {
     totalPlaintextBytes: number;
   }): Promise<KioskSubmissionRow>;
   downloadSubmissionBlob(row: KioskSubmissionRow): Promise<Uint8Array<ArrayBuffer>>;
-  useSubmissionRows(routeId: string | undefined): KioskSubmissionRows;
+  useSubmissionRows(requestId: string | undefined): KioskSubmissionRows;
 };
 
 export type KioskCryptoConfig = {
@@ -153,7 +142,6 @@ export async function initiateKioskRequest(input: {
   });
   const requestRow = await input.provider.writeRequest({
     payload: verified.payload,
-    requestHash: verified.requestHash,
     encryptedRequest,
   });
   return {
@@ -181,9 +169,6 @@ export async function resolveKioskRequest(input: {
     expectedTransportAppId: input.provider.appId,
   });
   if (requestRow.requestId !== verified.payload.requestId) throw new Error("Request row id does not match signed request.");
-  if (requestRow.requestHash !== verified.requestHash) throw new Error("Request row hash does not match signed request.");
-  if (requestRow.routeId !== verified.payload.routeId) throw new Error("Request row route does not match signed request.");
-  if (requestRow.sessionId !== verified.payload.sessionId) throw new Error("Request row session does not match signed request.");
   return {
     pointer: { requestId: input.requestId },
     requestRow,
@@ -200,13 +185,7 @@ export async function completeKioskRequest(input: {
   ensureProviderConfigured(input.provider);
   const plaintext: SubmissionPlaintext = {
     requestId: input.request.payload.requestId,
-    sessionId: input.request.payload.sessionId,
-    routeId: input.request.payload.routeId,
-    requestHash: input.request.requestHash,
-    certHash: input.request.requestHash,
-    nonce: crypto.randomUUID(),
     submittedAt: input.now ?? Date.now(),
-    formId: KIOSK_FORM_ID,
     payload: input.payload,
   };
   const totalPlaintextBytes = utf8(canonicalJson(plaintext)).byteLength;
@@ -238,11 +217,6 @@ export async function openKioskSubmission(input: {
     ciphertext,
   });
   if (plaintext.requestId !== input.request.payload.requestId) throw new Error("requestId mismatch");
-  if (plaintext.sessionId !== input.request.payload.sessionId) throw new Error("sessionId mismatch");
-  if (plaintext.routeId !== input.request.payload.routeId) throw new Error("routeId mismatch");
-  if (plaintext.requestHash !== input.request.requestHash) throw new Error("requestHash mismatch");
-  if (plaintext.nonce !== input.row.nonce) throw new Error("nonce mismatch");
-  if (plaintext.formId !== input.row.formId) throw new Error("formId mismatch");
   return { row: input.row, plaintext };
 }
 
@@ -254,15 +228,12 @@ export function buildPointerSubmitUrl(baseUrl: string | URL, requestId: string):
 
 export function filterRowsForRequest(input: {
   rows: KioskSubmissionRow[];
-  routeId: string;
-  requestHash: string;
+  requestId: string;
 }): KioskSubmissionRow[] {
   return input.rows.filter((row) =>
-    row.routeId === input.routeId &&
-    (row.requestHash ?? row.certHash) === input.requestHash &&
-    row.storagePath.startsWith(`submissions/${row.routeId}/`) &&
+    row.requestId === input.requestId &&
+    row.storagePath.startsWith(`submissions/${row.requestId}/`) &&
     row.contentType === KIOSK_BLOB_CONTENT_TYPE &&
-    row.formId === KIOSK_FORM_ID &&
     row.totalPlaintextBytes <= KIOSK_MAX_PAYLOAD_BYTES &&
     row.totalCiphertextBytes <= KIOSK_MAX_BLOB_BYTES
   );

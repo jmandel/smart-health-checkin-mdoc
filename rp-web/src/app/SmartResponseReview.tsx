@@ -29,11 +29,14 @@ export function SmartResponseReview({
   const docType = readPath<string>(doc, ["docType"]);
   const status = readPath<number>(deviceResponse, ["status"]);
   const cipherText = readPath<string>(payload, ["dcapiResponse", "cipherText", "base64url"]);
+  const hasMdocDetails = Boolean(deviceResponse || cipherText);
 
   return (
     <div className="result">
       <div className="summary">
-        <span className="status-pill status-pill--done">HPKE opened</span>
+        <span className="status-pill status-pill--done">
+          {hasMdocDetails ? "HPKE opened" : "SMART response received"}
+        </span>
         {digestMatches !== undefined ? (
           <span className={digestMatches ? "status-pill status-pill--done" : "status-pill"}>
             digest {digestMatches ? "matched" : "unchecked"}
@@ -139,7 +142,7 @@ export function SmartResponseReview({
         <summary>Technical details</summary>
         <div className="technical-details__grid">
           <details>
-            <summary>Opened DC API response</summary>
+            <summary>{hasMdocDetails ? "Opened DC API response" : "SMART response"}</summary>
             <pre className="json result__pre">{JSON.stringify(payload, null, 2)}</pre>
           </details>
           {technicalDetails ? (

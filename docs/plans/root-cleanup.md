@@ -21,7 +21,7 @@ deployment, Android Gradle wiring, fixture paths, or existing tests.
 | `site/` | Static GitHub Pages source HTML. | Yes |
 | `scripts/` | Repo-level automation such as Pages build and Android handler pull. | Yes |
 | `rp-web/` | Bun/React relying-party verifier, SDK, kiosk pages, TS tests/tools. | Yes |
-| `wallet-android/` | Android Gradle app/library modules and app-owned Rust matcher at `wallet-android/app/matcher/`. | Yes |
+| `wallet-android/` | Android Gradle app/library modules and app-owned Rust matcher at `wallet-android/app/matcher-rs/`. | Yes |
 | `fixtures/` | Shared checked-in fixtures used by TS, Android, Python, and Pages. | Yes |
 | `vendor/` | Pinned upstream reference metadata and scripts; `_src` is ignored. | Yes for now |
 | `tools/capture/` | Developer-only browser/Android capture scripts and ignored outputs. | No top-level clutter |
@@ -69,7 +69,7 @@ debug/developer-only tooling out of the top level.
 
 3. Clean generated clutter without moving source.
    - Confirm ignored generated paths include `_site/`, `rp-web/dist/`,
-     `rp-web/node_modules/`, `wallet-android/app/matcher/target/`, Gradle
+     `rp-web/node_modules/`, `wallet-android/app/matcher-rs/target/`, Gradle
       build/cache outputs, Python venv/cache, capture output folders, and
       `vendor/_src/`.
    - Add a safe `scripts/clean-generated.sh` that removes only ignored generated
@@ -85,7 +85,7 @@ debug/developer-only tooling out of the top level.
      and scripts under `vendor/scripts`.
 
 5. Move the Rust matcher into the Android app.
-   - `wallet-android/app/build.gradle` builds from `wallet-android/app/matcher`
+   - `wallet-android/app/build.gradle` builds from `wallet-android/app/matcher-rs`
      and copies the output into Android assets.
 
 6. Keep `.agents/` local-only unless shared skills are intentionally added.
@@ -101,7 +101,7 @@ cd rp-web
 bun test
 bun run build
 
-cd ../wallet-android/app/matcher
+cd ../wallet-android/app/matcher-rs
 cargo test
 
 cd ../..

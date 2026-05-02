@@ -137,7 +137,7 @@ describe("kiosk session SDK", () => {
       nonce: new Uint8Array(Array.from({ length: 32 }, (_, i) => i)),
     });
     const descriptor = createKioskSessionDescriptor({
-      sessionId: "session-123",
+      requestId: "request-123",
       requestBundle: context.bundle,
       returnTransport: {
         kind: "worker-relay",

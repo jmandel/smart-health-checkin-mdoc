@@ -8,7 +8,7 @@ become:
 | --- | --- | --- |
 | `@smart-health-checkin/core` | `core.ts` | Transport-neutral SMART request/response model and validation. |
 | `@smart-health-checkin/dcapi-verifier` | `dcapi-verifier.ts` | Browser Digital Credentials API verifier flow and verifier-authority seam. |
-| `@smart-health-checkin/kiosk-session` | `kiosk-session.ts` | QR/session descriptors that do not depend on a specific relay/backend. |
+| `@smart-health-checkin/kiosk-session` | `kiosk-session.ts` | QR request descriptors that do not depend on a specific relay/backend. |
 | `@smart-health-checkin/react` | `react.tsx` | Optional React hooks/components. Documented separately in [`react.README.md`](react.README.md). |
 
 The non-React barrel, `index.ts`, intentionally does **not** export
@@ -263,18 +263,18 @@ In that server-owned version, the browser receives public request material and
 an opaque `handle`; the backend stores HPKE private key material and opens the
 uploaded credential response.
 
-## `kiosk-session.ts`: QR/session descriptors
+## `kiosk-session.ts`: QR request descriptors
 
-Use `kiosk-session.ts` to describe cross-device kiosk sessions without choosing
+Use `kiosk-session.ts` to describe cross-device kiosk requests without choosing
 a specific transport.
 
-The descriptor answers: "what session is this phone joining, where is the relay
+The descriptor answers: "what request is this phone joining, where is the relay
 or return channel, and what should the phone display before invoking the wallet?"
 
 Typical flow:
 
 ```text
-Kiosk creates session descriptor
+Kiosk creates request descriptor
   -> encodes descriptor into URL fragment or QR payload
   -> phone opens portal
   -> portal decodes descriptor

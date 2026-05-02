@@ -68,7 +68,7 @@ HEAD):
 ## Layout
 
 ```
-wallet-android/app/matcher/
+wallet-android/app/matcher-rs/
   Cargo.toml
   build.sh                # the canonical build command
   src/

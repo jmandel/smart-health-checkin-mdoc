@@ -316,7 +316,7 @@
           <p>
             The desktop starts the request and displays a QR. The phone resolves
             the pointer, runs the same presentation, and returns an encrypted
-            opened result for the desktop to render.
+            SMART response for the desktop to render.
           </p>
         </div>
       </div>
@@ -354,16 +354,17 @@
             <strong>The phone runs the same presentation flow.</strong>
             The submit page reuses the React <code>SmartCheckinButton</code>,
             calls the Digital Credentials API, opens and validates the wallet
-            response, then encrypts that opened result to the kiosk session key.
+            response, extracts the SMART response, and encrypts only that
+            SMART response to the kiosk's desktop key.
           </div>
         </li>
         <li>
           <div>
             <strong>The kiosk receives and reviews.</strong>
             The creator page watches provider submission rows, downloads each
-            encrypted blob, decrypts it in browser memory, validates the
-            route/session/request hash/nonce/form binding, and renders the same
-            response review UI as the same-device requester page.
+            encrypted blob for this request, decrypts it in browser memory,
+            checks the request binding, and renders the same SMART response
+            review UI as the same-device requester page.
           </div>
         </li>
       </ol>
@@ -390,11 +391,11 @@
         </div>
         <div class="compact-step">
           <strong>3. Complete</strong>
-          Phone encrypts the opened wallet result and writes a submission row.
+          Phone encrypts the SMART response and writes a submission row.
         </div>
         <div class="compact-step">
           <strong>4. Review</strong>
-          Kiosk downloads, decrypts, validates bindings, and renders the result.
+          Kiosk downloads, decrypts, validates the request binding, and renders the result.
         </div>
       </div>
 
@@ -406,7 +407,7 @@
   readRequest(requestId): Promise&lt;KioskRequestRow&gt;;
   writeSubmission(...): Promise&lt;KioskSubmissionRow&gt;;
   downloadSubmissionBlob(row): Promise&lt;Uint8Array&gt;;
-  useSubmissionRows(routeId): KioskSubmissionRows;
+  useSubmissionRows(requestId): KioskSubmissionRows;
 };</pre>
     </section>
 
@@ -418,13 +419,13 @@
         treated as untrusted transport.
       </p>
       <div class="callout">
-        <strong>What Instant can see:</strong> routing identifiers, timestamps,
-        key IDs, content types, sizes, hashes, storage paths, and ciphertext.
+        <strong>What Instant can see:</strong> request IDs, timestamps, key IDs,
+        content types, sizes, storage paths, and ciphertext.
       </div>
       <div class="callout warn">
         <strong>What Instant should not see:</strong> the plaintext SMART
-        request, requested FHIR profiles, questionnaires, opened wallet result,
-        or returned clinical artifacts.
+        request, requested FHIR profiles, questionnaires, raw/opened mdoc
+        response, or returned clinical artifacts.
       </div>
       <p>
         Demo public and private keys are checked into the repo so the static

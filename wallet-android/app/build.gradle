@@ -47,7 +47,7 @@ android {
 // Build the Rust WASM matcher and copy it into Android assets before any
 // Android task that needs the assets dir.
 //
-// The matcher source lives under this app at `app/matcher/`. Its `build.sh`
+// The matcher source lives under this app at `app/matcher-rs/`. Its `build.sh`
 // invokes
 // `cargo +nightly -Z panic-immediate-abort -Z build-std --target
 // wasm32-unknown-unknown` and post-processes with wasm-opt -Oz.
@@ -61,7 +61,7 @@ android {
 // Manager registration type behavior. Default `both` keeps the modern
 // AndroidX path plus the legacy magic-string fallback visible during device
 // diagnostics.
-def matcherDir = project.file("matcher")
+def matcherDir = project.file("matcher-rs")
 def matcherBin = project.hasProperty("matcher-always-match") ? "yes" : "checkin"
 def matcherWasm = file("$matcherDir/target/wasm32-unknown-unknown/release/${matcherBin}.wasm")
 def matcherAsset = file("src/main/assets/matcher.wasm")

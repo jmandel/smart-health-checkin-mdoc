@@ -10,7 +10,7 @@ wallet-android/.kotlin/
 wallet-android/**/build/
 
 # Rust matcher build outputs
-wallet-android/app/matcher/target/
+wallet-android/app/matcher-rs/target/
 
 # Developer tool outputs
 tools/capture/browser-branching/

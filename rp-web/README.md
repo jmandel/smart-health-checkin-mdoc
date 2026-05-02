@@ -67,7 +67,7 @@ The app now has reusable SDK-shaped modules under `src/sdk/`:
 
 | Doc | Covers |
 | --- | --- |
-| [`src/sdk/README.md`](src/sdk/README.md) | Transport-neutral SMART request/response model, browser DC API verifier flow, verifier authority seam, kiosk session descriptor helpers. |
+| [`src/sdk/README.md`](src/sdk/README.md) | Transport-neutral SMART request/response model, browser DC API verifier flow, verifier authority seam, kiosk request descriptor helpers. |
 | [`src/sdk/react.README.md`](src/sdk/react.README.md) | Optional React hooks/components over the verifier SDK. |
 
 `src/sdk/index.ts` is intentionally React-free. Import React bindings directly
@@ -93,7 +93,7 @@ The page shows:
 The active protocol helper builds direct `org-iso-mdoc` requests with
 `data.deviceRequest` and `data.encryptionInfo`.
 
-## Kiosk mailbox demo
+## Kiosk check-in demo
 
 The static kiosk apps are written against a provider abstraction in
 `src/kiosk/kiosk-provider.ts`, not directly against InstantDB. The high-level
@@ -103,8 +103,8 @@ workflow is:
 | --- | --- | --- |
 | Kiosk/creator | `initiateKioskRequest` | Sign the full SMART request as ES256 JWS, encrypt that JWS for the submission service key, store it through the provider, and return a small QR pointer URL. |
 | Phone/submitter | `resolveKioskRequest` | Read the provider request row by pointer, decrypt it locally, verify the creator JWS with a baked trusted demo key, and recover the embedded SMART request. |
-| Phone/submitter | `completeKioskRequest` | Encrypt the opened DC API result to the kiosk's per-session desktop key and write the submission through the provider. |
-| Kiosk/creator | `openKioskSubmission` | Download the encrypted submission blob through the provider, decrypt it in browser memory, validate route/session/hash/nonce/form bindings, and render the result. |
+| Phone/submitter | `completeKioskRequest` | Encrypt the extracted SMART response to the kiosk's per-request desktop key and write the submission through the provider. |
+| Kiosk/creator | `openKioskSubmission` | Download the encrypted submission blob through the provider, decrypt it in browser memory, validate the request binding, and render the SMART response. |
 
 `KioskTransportProvider` is the narrow transport interface. A provider supplies
 `appId`, `configured`, `writeRequest`, `readRequest`, `writeSubmission`,
@@ -114,12 +114,13 @@ realtime subscriptions, or blob downloads are implemented.
 
 The current provider is `instantKioskProvider` in `src/kiosk/instant-mailbox.ts`.
 It uses InstantDB for small request/submission pointer rows and Instant Storage
-for encrypted response blobs under `submissions/<routeId>/`. Instant is treated
+for encrypted response blobs under `submissions/<requestId>/`. Instant is treated
 as untrusted transport: request details such as FHIR profiles and questionnaires
 are inside a signed JWS that is encrypted before storage, and submitted wallet
-results are encrypted before upload. Instant sees routing IDs, timestamps,
-sizes/hashes, key IDs, and ciphertext, not plaintext SMART request/response
-details.
+results are reduced to the extracted SMART response and encrypted before upload.
+Instant sees request IDs, timestamps, sizes/hashes, key IDs, storage paths, and
+ciphertext, not plaintext SMART request/response details or raw/opened mdoc
+responses.
 
 The QR contains only `#r=<requestId>`. The phone resolves that pointer through
 the provider, decrypts the request with the demo submission-service private key,
@@ -127,10 +128,10 @@ verifies the JWS against the baked trusted demo creator public key, and then run
 the normal Digital Credentials API flow via the reusable React
 `SmartCheckinButton`.
 
-The creator page subscribes to provider submissions for its route and
-automatically downloads/decrypts matching blobs. Opened results reuse the same
-review component as the same-device requester page: rendered artifact cards,
-item status, and expandable technical details.
+The creator page subscribes to provider submissions for its request ID and
+automatically downloads/decrypts matching blobs. The decrypted payload contains
+the SMART response only; the raw HPKE/DC API envelope and parsed mdoc
+`DeviceResponse` are intentionally not uploaded in the kiosk path.
 
 Demo key material lives in `src/kiosk/demo-keys.ts`. It is intentionally checked
 in so the static demo can run without a server. These keys are not secret and

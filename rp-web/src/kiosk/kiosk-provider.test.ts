@@ -12,7 +12,6 @@ import {
 } from "./kiosk-provider.ts";
 import {
   KIOSK_BLOB_CONTENT_TYPE,
-  KIOSK_FORM_ID,
   type EncryptedPayload,
   type SubmissionPlaintext,
   type VerifiedKioskRequest,
@@ -79,28 +78,22 @@ test("kiosk provider workflow stores opaque requests and opens encrypted submiss
     cryptoConfig: DEMO_KIOSK_CRYPTO_CONFIG,
     requestId: initiated.verified.payload.requestId,
   });
-  expect(resolved.verified.requestHash).toBe(initiated.verified.requestHash);
   expect(resolved.verified.payload.smartRequest.request.items[1]?.summary).toBe("Migraine Check-in");
 
   const completed = await completeKioskRequest({
     provider,
     request: resolved.verified,
     payload: {
-      kind: "dcapi-smart-checkin",
-      openedResponse: {
-        smartResponseValidation: {
-          ok: true,
-          value: {
-            type: "smart-health-checkin-response",
-            version: "1",
-            requestId: SMART_REQUEST.id,
-            artifacts: [],
-            requestStatus: [
-              { item: "patient", status: "unavailable" },
-              { item: "intake", status: "fulfilled" },
-            ],
-          },
-        },
+      kind: "smart-health-checkin-response",
+      smartResponse: {
+        type: "smart-health-checkin-response",
+        version: "1",
+        requestId: SMART_REQUEST.id,
+        artifacts: [],
+        requestStatus: [
+          { item: "patient", status: "unavailable" },
+          { item: "intake", status: "fulfilled" },
+        ],
       },
     },
   });
@@ -111,8 +104,10 @@ test("kiosk provider workflow stores opaque requests and opens encrypted submiss
     desktopPrivateKey: initiated.desktopPrivateKey,
     row: completed.row,
   });
-  expect(opened.plaintext.requestHash).toBe(initiated.verified.requestHash);
-  expect(opened.plaintext.payload.kind).toBe("dcapi-smart-checkin");
+  expect(opened.plaintext.requestId).toBe(initiated.verified.payload.requestId);
+  expect(opened.plaintext.payload.kind).toBe("smart-health-checkin-response");
+  expect(JSON.stringify(opened.plaintext.payload)).not.toContain("dcapiResponse");
+  expect(JSON.stringify(opened.plaintext.payload)).not.toContain("deviceResponse");
 });
 
 function createMemoryProvider(): KioskTransportProvider {
@@ -127,9 +122,6 @@ function createMemoryProvider(): KioskTransportProvider {
       const row: KioskRequestRow = {
         id: crypto.randomUUID(),
         requestId: input.payload.requestId,
-        routeId: input.payload.routeId,
-        sessionId: input.payload.sessionId,
-        requestHash: input.requestHash,
         createdAt: input.payload.createdAt,
         expiresAt: input.payload.expiresAt,
         creatorKeyId: input.payload.minter.keyId,
@@ -157,9 +149,9 @@ function createMemoryProvider(): KioskTransportProvider {
       if (!blob) throw new Error("missing blob");
       return blob;
     },
-    useSubmissionRows(routeId) {
+    useSubmissionRows(requestId) {
       return {
-        rows: routeId ? submissions.filter((row) => row.routeId === routeId) : [],
+        rows: requestId ? submissions.filter((row) => row.requestId === requestId) : [],
         isLoading: false,
       };
     },
@@ -172,19 +164,14 @@ function memorySubmissionRow(input: {
   encrypted: EncryptedPayload;
   totalPlaintextBytes: number;
 }): KioskSubmissionRow {
-  const storagePath = `submissions/${input.request.payload.routeId}/${input.plaintext.nonce}.bin`;
+  const submissionId = crypto.randomUUID();
+  const storagePath = `submissions/${input.request.payload.requestId}/${submissionId}.bin`;
   return {
     id: crypto.randomUUID(),
-    routeId: input.request.payload.routeId,
-    sessionId: input.request.payload.sessionId,
-    submissionId: crypto.randomUUID(),
+    submissionId,
     requestId: input.request.payload.requestId,
-    requestHash: input.request.requestHash,
-    certHash: input.request.requestHash,
-    nonce: input.plaintext.nonce,
     createdAt: Date.now(),
     expiresAt: input.request.payload.expiresAt,
-    formId: KIOSK_FORM_ID,
     totalPlaintextBytes: input.totalPlaintextBytes,
     totalCiphertextBytes: input.encrypted.ciphertext.byteLength,
     payloadSha256: input.encrypted.payloadSha256,

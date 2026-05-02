@@ -1,7 +1,7 @@
 # matcher-c
 
 Diagnostic always-yes matcher in C, sister to the Rust always-yes matcher at
-[`../../wallet-android/app/matcher/src/bin/yes.rs`](../../wallet-android/app/matcher/src/bin/yes.rs).
+[`../../wallet-android/app/matcher-rs/src/bin/yes.rs`](../../wallet-android/app/matcher-rs/src/bin/yes.rs).
 
 The single source file `c_yes_matcher.c` always emits one
 `AddStringIdEntry` call titled `"SMART Health Check-in (c-diag)"`, with
@@ -51,7 +51,7 @@ Outcomes:
 
 - **C entry appears**: WASM sandbox is healthy and the host is calling our
   matcher. If the Rust always-yes matcher (`yes.wasm`) **also** works, the
-  bug is in `wallet-android/app/matcher/src/lib.rs::request_is_eligible` — eligibility logic
+  bug is in `wallet-android/app/matcher-rs/src/lib.rs::request_is_eligible` — eligibility logic
   is too strict for the actual request shape. Capture request bytes from
   the wallet's debug bundle and tighten the loop.
 - **C entry appears, Rust always-yes does not**: Rust toolchain or

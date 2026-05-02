@@ -3,11 +3,10 @@ import { db, INSTANT_APP_ID, instantConfigured } from "../instant/db.ts";
 import type { KioskRequestRow, KioskSubmissionRow, KioskTransportProvider } from "./kiosk-provider.ts";
 import {
   KIOSK_BLOB_CONTENT_TYPE,
-  KIOSK_FORM_ID,
   KIOSK_MAX_BLOB_BYTES,
   KIOSK_MAX_PAYLOAD_BYTES,
   randomBase64Url,
-  storagePrefixForRouteId,
+  storagePrefixForRequestId,
   type EncryptedPayload,
 } from "./protocol.ts";
 
@@ -17,15 +16,9 @@ export async function writeEncryptedKioskRequest(
   if (input.payload.requestId !== input.encryptedRequest.requestId) {
     throw new Error("Encrypted request pointer does not match signed request payload.");
   }
-  if (input.requestHash !== input.encryptedRequest.jwsSha256) {
-    throw new Error("Encrypted request hash does not match signed request hash.");
-  }
   const row: KioskRequestRow = {
     id: id(),
     requestId: input.payload.requestId,
-    routeId: input.payload.routeId,
-    sessionId: input.payload.sessionId,
-    requestHash: input.requestHash,
     createdAt: input.payload.createdAt,
     expiresAt: input.payload.expiresAt,
     creatorKeyId: input.payload.minter.keyId,
@@ -69,34 +62,23 @@ export async function writeEncryptedSubmission(input: {
     throw new Error(`Encrypted blob exceeds ${formatBytes(KIOSK_MAX_BLOB_BYTES)}.`);
   }
   if (input.plaintext.requestId !== input.request.payload.requestId) throw new Error("Submission requestId does not match kiosk request.");
-  if (input.plaintext.routeId !== input.request.payload.routeId) throw new Error("Submission routeId does not match kiosk request.");
-  if (input.plaintext.sessionId !== input.request.payload.sessionId) throw new Error("Submission sessionId does not match kiosk request.");
-  if (input.plaintext.requestHash !== input.request.requestHash) throw new Error("Submission request hash does not match kiosk request.");
-  if (!input.request.payload.constraints.allowedContentTypes.includes(KIOSK_BLOB_CONTENT_TYPE)) {
-    throw new Error("Kiosk request does not allow encrypted blob uploads.");
-  }
-  const routeId = input.request.payload.routeId;
-  const storagePath = storagePathForSubmission(routeId, input.plaintext.nonce);
+  const requestId = input.request.payload.requestId;
+  const submissionId = randomBase64Url(18);
+  const storagePath = storagePathForSubmission(requestId, submissionId);
   const uploaded = await db.storage.uploadFile(
     storagePath,
     new Blob([arrayBufferCopy(input.encrypted.ciphertext)], { type: KIOSK_BLOB_CONTENT_TYPE }),
     {
       contentType: KIOSK_BLOB_CONTENT_TYPE,
-      contentDisposition: `attachment; filename="${input.plaintext.nonce}.bin"`,
+      contentDisposition: `attachment; filename="${submissionId}.bin"`,
     },
   );
   const row: KioskSubmissionRow = {
     id: id(),
-    routeId,
-    sessionId: input.request.payload.sessionId,
-    submissionId: randomBase64Url(18),
-    requestId: input.request.payload.requestId,
-    requestHash: input.request.requestHash,
-    certHash: input.request.requestHash,
-    nonce: input.plaintext.nonce,
+    submissionId,
+    requestId,
     createdAt: Date.now(),
     expiresAt: input.request.payload.expiresAt,
-    formId: KIOSK_FORM_ID,
     totalPlaintextBytes: input.totalPlaintextBytes,
     totalCiphertextBytes: input.encrypted.ciphertext.byteLength,
     payloadSha256: input.encrypted.payloadSha256,
@@ -109,15 +91,15 @@ export async function writeEncryptedSubmission(input: {
 
   await db.transact(
     db.tx.submissions[row.id]!
-      .ruleParams({ routeId })
+      .ruleParams({ requestId })
       .update(row),
   );
   return row;
 }
 
 export async function downloadEncryptedSubmissionBlob(row: KioskSubmissionRow): Promise<Uint8Array<ArrayBuffer>> {
-  const expectedPath = storagePathForSubmission(row.routeId, row.nonce);
-  if (row.storagePath !== expectedPath) throw new Error("storagePath does not match route and nonce.");
+  const expectedPath = storagePathForSubmission(row.requestId, row.submissionId);
+  if (row.storagePath !== expectedPath) throw new Error("storagePath does not match request and submission.");
   if (row.contentType !== KIOSK_BLOB_CONTENT_TYPE) throw new Error("Unsupported encrypted blob content type.");
   if (row.totalCiphertextBytes > KIOSK_MAX_BLOB_BYTES) throw new Error("Encrypted blob size exceeds this app's limit.");
 
@@ -140,24 +122,8 @@ export async function downloadEncryptedSubmissionBlob(row: KioskSubmissionRow): 
   return bytes;
 }
 
-export function filterRowsForSession(input: {
-  rows: KioskSubmissionRow[];
-  routeId: string;
-  requestHash: string;
-}): KioskSubmissionRow[] {
-  return input.rows.filter((row) =>
-    row.routeId === input.routeId &&
-    (row.requestHash ?? row.certHash) === input.requestHash &&
-    row.storagePath === storagePathForSubmission(row.routeId, row.nonce) &&
-    row.contentType === KIOSK_BLOB_CONTENT_TYPE &&
-    row.formId === KIOSK_FORM_ID &&
-    row.totalPlaintextBytes <= KIOSK_MAX_PAYLOAD_BYTES &&
-    row.totalCiphertextBytes <= KIOSK_MAX_BLOB_BYTES
-  );
-}
-
-export function storagePathForSubmission(routeId: string, nonce: string): string {
-  return `${storagePrefixForRouteId(routeId)}${nonce}.bin`;
+export function storagePathForSubmission(requestId: string, submissionId: string): string {
+  return `${storagePrefixForRequestId(requestId)}${submissionId}.bin`;
 }
 
 function arrayBufferCopy(bytes: Uint8Array): ArrayBuffer {
@@ -180,20 +146,20 @@ export const instantKioskProvider: KioskTransportProvider = {
   readRequest: readEncryptedKioskRequest,
   writeSubmission: writeEncryptedSubmission,
   downloadSubmissionBlob: downloadEncryptedSubmissionBlob,
-  useSubmissionRows(routeId) {
-    const query = routeId
+  useSubmissionRows(requestId) {
+    const query = requestId
       ? {
           submissions: {
             $: {
-              where: { routeId },
+              where: { requestId },
               order: { createdAt: "asc" as const },
             },
           },
         }
       : null;
-    const result = db.useQuery(query, routeId ? { ruleParams: { routeId } } : undefined);
+    const result = db.useQuery(query, requestId ? { ruleParams: { requestId } } : undefined);
     return {
-      rows: routeId && result.data?.submissions ? (result.data.submissions as KioskSubmissionRow[]) : [],
+      rows: requestId && result.data?.submissions ? (result.data.submissions as KioskSubmissionRow[]) : [],
       isLoading: result.isLoading,
       error: result.error,
     };

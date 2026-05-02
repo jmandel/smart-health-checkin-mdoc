@@ -5,7 +5,7 @@
 // `int main()`, emit one entry. No JSON, no base64. No allocations, so no
 // libc needed — we build with `-nostdlib`.
 //
-// Sister to the Rust always-yes matcher at wallet-android/app/matcher/src/bin/yes.rs. If C
+// Sister to the Rust always-yes matcher at wallet-android/app/matcher-rs/src/bin/yes.rs. If C
 // works and Rust doesn't, suspect Rust toolchain issues (target choice,
 // build-std, panic-immediate-abort) tripping the host's WASM sandbox.
 

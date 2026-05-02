@@ -29,10 +29,10 @@ Not part of the CMWallet POC — only the matcher technique is reused.
 | [site/smart-model-explainer.html](site/smart-model-explainer.html) | High-level SMART Health Check-in request/response model explainer source. |
 | [site/kiosk-flow-explainer.html](site/kiosk-flow-explainer.html) | Cross-device kiosk flow explainer source for the in-person wrapper over the same presentation flow. |
 | [site/wire-protocol-explainer.html](site/wire-protocol-explainer.html) | Byte-level Digital Credentials API/direct mdoc explainer source using the checked-in real request/response fixtures. |
-| [rp-web/src/sdk/README.md](rp-web/src/sdk/README.md) | TypeScript SDK documentation for the transport-neutral SMART model, browser DC API verifier, verifier authority seam, and kiosk session descriptors. |
+| [rp-web/src/sdk/README.md](rp-web/src/sdk/README.md) | TypeScript SDK documentation for the transport-neutral SMART model, browser DC API verifier, verifier authority seam, and kiosk request descriptors. |
 | [rp-web/src/sdk/react.README.md](rp-web/src/sdk/react.README.md) | Optional React bindings documentation for hooks/components over the non-React verifier SDK. |
 | [wallet-android/README.md](wallet-android/README.md) | Android wallet library/module guide, including links to each Gradle module README. |
-| [wallet-android/app/matcher/README.md](wallet-android/app/matcher/README.md) | Rust WASM matcher built by the Android app and registered with Credential Manager. |
+| [wallet-android/app/matcher-rs/README.md](wallet-android/app/matcher-rs/README.md) | Rust WASM matcher built by the Android app and registered with Credential Manager. |
 | [fixtures/](fixtures/) | Checked-in byte fixtures and normalized captures used by tests and inspectors. |
 | [tools/](tools/) | Developer-only capture scripts, fixture-generation tooling, and diagnostic matcher utilities. |
 | [docs/research/](docs/research/) | Reference material for DC API, matcher ABI, mdoc response, encryption, and verifier architecture. |
@@ -45,7 +45,7 @@ core code is organized around reusable library boundaries:
 
 | Library area | Start here | Notes |
 | --- | --- | --- |
-| TypeScript core/verifier SDK | [`rp-web/src/sdk/README.md`](rp-web/src/sdk/README.md) | Framework-neutral SMART request/response validation, browser DC API verifier flow, verifier authority seam, kiosk session descriptor helpers. |
+| TypeScript core/verifier SDK | [`rp-web/src/sdk/README.md`](rp-web/src/sdk/README.md) | Framework-neutral SMART request/response validation, browser DC API verifier flow, verifier authority seam, kiosk request descriptor helpers. |
 | React bindings | [`rp-web/src/sdk/react.README.md`](rp-web/src/sdk/react.README.md) | Optional hooks/components over the same verifier authority API; intentionally not re-exported from the non-React SDK barrel. |
 | Android wallet libraries | [`wallet-android/README.md`](wallet-android/README.md) | Gradle module split for core SMART logic, mdoc transport, Credential Manager registration, Compose UI, and demo app wiring. |
 
@@ -67,9 +67,9 @@ wrapper to sign/encrypt a full SMART request, store it through the configured
 provider, and display a QR containing only a request pointer. The submit page
 resolves that pointer through the same provider contract, decrypts and verifies
 the request locally, runs the Digital Credentials API flow, then completes the
-request by writing an encrypted result through the provider. The current provider
+request by writing an encrypted SMART response through the provider. The current provider
 uses InstantDB rows plus Instant Storage blobs as untrusted transport; see
-[`rp-web/README.md`](rp-web/README.md#kiosk-mailbox-demo) for the interface and
+[`rp-web/README.md`](rp-web/README.md#kiosk-check-in-demo) for the interface and
 Instant-specific details.
 
 Local artifact build:

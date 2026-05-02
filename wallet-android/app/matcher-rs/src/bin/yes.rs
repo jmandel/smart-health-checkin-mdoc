@@ -4,8 +4,8 @@
 //!
 //! Use this to disambiguate "Your info wasn't found" failures:
 //!
-//!   1. Build:  bash wallet-android/app/matcher/build.sh yes
-//!   2. Swap:   cp wallet-android/app/matcher/target/wasm32-unknown-unknown/release/yes.wasm \
+//!   1. Build:  bash wallet-android/app/matcher-rs/build.sh yes
+//!   2. Swap:   cp wallet-android/app/matcher-rs/target/wasm32-unknown-unknown/release/yes.wasm \
 //!                wallet-android/app/src/main/assets/matcher.wasm
 //!   3. Build the app, register, trigger a request.
 //!

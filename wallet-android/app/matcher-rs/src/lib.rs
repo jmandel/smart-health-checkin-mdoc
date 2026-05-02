@@ -7,7 +7,7 @@
 //!    `protocolTypes` list down to the GMS bridge
 //!    (`RegistryManagerProviderPlayServicesImpl`), so the host invokes every
 //!    registered DC matcher for every DC API request and the matcher decides.
-//!    See "Sources of truth" at the bottom of `wallet-android/app/matcher/README.md`.
+//!    See "Sources of truth" at the bottom of `wallet-android/app/matcher-rs/README.md`.
 //! 2. Inside `data.deviceRequest` (base64url-no-pad of CBOR), the literal UTF-8
 //!    bytes of the doctype `org.smarthealthit.checkin.1` appear somewhere. CBOR
 //!    encodes tstrs verbatim, so substring search is sufficient — no CBOR parser

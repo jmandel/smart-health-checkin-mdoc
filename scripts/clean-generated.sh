@@ -13,7 +13,7 @@ paths=(
   "$ROOT/wallet-android/smart-checkin-mdoc/build"
   "$ROOT/wallet-android/smart-checkin-credential-manager/build"
   "$ROOT/wallet-android/smart-checkin-ui-compose/build"
-  "$ROOT/wallet-android/app/matcher/target"
+  "$ROOT/wallet-android/app/matcher-rs/target"
   "$ROOT/tools/capture/browser-branching"
   "$ROOT/tools/capture/android-rp-flow"
   "$ROOT/tools/capture/current-handler-run"
