@@ -1019,9 +1019,9 @@ bun run inspect:response /tmp/shc-handler-runs/run-*/device-response.cbor --out 
               <td>Use an up-to-date allowlist of trusted browser package names and official signing cert fingerprints.</td>
             </tr>
             <tr>
-              <td>Issuer trust</td>
-              <td>Self-signed issuer cert. Useful for integrity and debugging, not third-party attestation.</td>
-              <td>Add real issuer/IACA/VICAL only if product requirements demand it.</td>
+              <td>Clinical source trust</td>
+              <td>The demo mdoc issuer certificate is fixture material. SMART artifacts carry their own media semantics: signed SMART Health Cards retain issuer proof, while raw FHIR JSON is treated as patient-mediated content.</td>
+              <td>Deployments can add source-specific policy when they require source attestation; it is not assumed by the transport demo.</td>
             </tr>
             <tr>
               <td>HPKE binding</td>
@@ -1031,7 +1031,7 @@ bun run inspect:response /tmp/shc-handler-runs/run-*/device-response.cbor --out 
             <tr>
               <td>Request carrier</td>
               <td><code>requestInfo["org.smarthealthit.checkin.request"]</code> is load-bearing.</td>
-              <td>Keep the dynamic element fallback documented but disabled unless a platform hides requestInfo.</td>
+              <td>The archived dynamic element-name experiments are not part of the active profile.</td>
             </tr>
           </tbody>
         </table>

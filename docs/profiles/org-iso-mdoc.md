@@ -293,8 +293,8 @@ same `device-response.cbor`.
 
 ## Fallbacks and archived profiles
 
-The `shc1j.<base64url(JSON)>` dynamic element-name fallback is not active. It is
-only a contingency if a future platform hides `requestInfo`.
+Dynamic element-name request encodings were explored early and are not active.
+The current profile uses `requestInfo` as the normative SMART request carrier.
 
 OpenID4VP / `dc_api.jwt` / DCQL research is archived under `../archive/` and is
 not part of the active implementation.

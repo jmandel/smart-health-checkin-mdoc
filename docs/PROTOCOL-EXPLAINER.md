@@ -28,9 +28,9 @@ ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]
 
 `SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md` defines the active
 transport-neutral `SmartHealthCheckinRequest` /
-`SmartHealthCheckinResponse` payloads. Encoding the request JSON into a claim
-name (`shc1j...`) is only a fallback if a real platform API hides
-`requestInfo`.
+`SmartHealthCheckinResponse` payloads. Real Chrome/Android fixture captures
+confirm that `requestInfo` survives into the wallet, so archived claim-name
+experiments are not part of the active profile.
 
 ## Roles
 
@@ -70,10 +70,9 @@ The wallet:
 - HPKE-seals it for the verifier key from `encryptionInfo`;
 - returns `{"protocol":"org-iso-mdoc","data":{"response":"<b64u>"}}`.
 
-If `requestInfo` is missing, the wallet may support a contingency parser for
-`shc1j.<base64url(json)>` element identifiers, but that is not the normal path.
 The promoted real Chrome/Android fixture proves `requestInfo` survives in the
-current Android path.
+current Android path. The wallet therefore treats `requestInfo` as the active
+request carrier, not as a speculative or optional path.
 
 ## DeviceRequest
 
@@ -257,19 +256,11 @@ SMART response JSON:
 }
 ```
 
-## Fallback Claim-Name Encoding
+## Archived claim-name encoding
 
-If a platform wallet API exposes requested namespace/element pairs but hides
-`requestInfo`, we can move the same SMART request JSON into an element
-identifier:
-
-```text
-shc1j.<base64url(UTF-8 compact JSON)>
-```
-
-`shc1d.<base64url(deflate(JSON))>` is reserved for the same fallback if size
-limits force compression. This is intentionally not used unless `requestInfo`
-fails in real platform tests.
+Earlier design notes explored placing SMART request JSON directly in dynamic
+mdoc element names. That path is archived. The active profile keeps a stable
+element name and carries the SMART request in `ItemsRequest.requestInfo`.
 
 ## Debug artifacts
 

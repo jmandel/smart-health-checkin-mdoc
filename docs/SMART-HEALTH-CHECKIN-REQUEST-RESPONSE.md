@@ -1196,6 +1196,13 @@ For `application/fhir+json`, the artifact explicitly declares:
 
 This mirrors the useful part of SMART Health Cards — an explicit FHIR version paired with FHIR content — while avoiding a false claim that raw FHIR JSON has independent issuer proof.
 
-## 12. Open questions
+## 12. Transport constraints
 
-1. Should the protocol define a maximum response size or leave this to transport/profile constraints?
+The request/response payload schema does not define one universal maximum
+response size. Size policy belongs to the transport or deployment profile.
+
+For the front-desk kiosk flow, the request advertises `constraints.maxPlaintextBytes`
+and the Instant-backed transport enforces that limit before accepting an
+encrypted submission. Same-device Digital Credentials API demos should still
+prefer compact response artifacts, but the active direct-mdoc profile does not
+depend on alternate claim-name encodings.

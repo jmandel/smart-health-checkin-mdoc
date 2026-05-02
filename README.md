@@ -20,11 +20,8 @@ Not part of the CMWallet POC — only the matcher technique is reused.
 
 | File | Purpose |
 | ---- | ------- |
-| [docs/CONTEXT.md](docs/CONTEXT.md) | Problem statement, the idiosyncratic mdoc design, why we're doing this, and what both sides build. |
 | [docs/SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md](docs/SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md) | Draft active transport-neutral SMART Health Check-in clinical request/response payload shape. |
 | [docs/PROTOCOL-EXPLAINER.md](docs/PROTOCOL-EXPLAINER.md) | Medium-high-level protocol walkthrough: roles, data movement, trust boundaries, and component contracts. |
-| [docs/PLAN.md](docs/PLAN.md) | Current implementation state, proof points, validation commands, and remaining work. |
-| [docs/OPEN-QUESTIONS.md](docs/OPEN-QUESTIONS.md) | Narrow list of unresolved questions for the active direct-mdoc path. |
 | [docs/profiles/org-iso-mdoc.md](docs/profiles/org-iso-mdoc.md) | Exact active wire profile and mdoc/COSE invariants. |
 | [site/smart-model-explainer.html](site/smart-model-explainer.html) | High-level SMART Health Check-in request/response model explainer source. |
 | [site/kiosk-flow-explainer.html](site/kiosk-flow-explainer.html) | Cross-device kiosk flow explainer source for the in-person wrapper over the same presentation flow. |
@@ -95,8 +92,8 @@ The workflow in `.github/workflows/deploy-pages.yml` builds `_site` and deploys
 it with the GitHub Pages artifact action on pushes to `main` or manual workflow
 dispatches.
 
-Read order for a fresh pickup: `docs/CONTEXT.md` →
+Read order for a fresh pickup: start with the public site, then
 `docs/SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md` →
-`docs/PROTOCOL-EXPLAINER.md` → `docs/profiles/org-iso-mdoc.md` →
-`docs/PLAN.md` → `docs/OPEN-QUESTIONS.md`. Use `docs/archive/` only for
-historical context.
+`docs/PROTOCOL-EXPLAINER.md` → `docs/profiles/org-iso-mdoc.md`.
+Planning, early-context, research, and archive documents are historical and are
+not part of the public `llms.txt` pickup path.
