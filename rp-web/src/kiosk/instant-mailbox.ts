@@ -30,7 +30,7 @@ export async function writeEncryptedKioskRequest(
       .ruleParams({ requestId: row.requestId })
       .update(row),
   );
-  assertSynced(result, "Kiosk request");
+  assertTransactAccepted(result, "Kiosk request");
   return row;
 }
 
@@ -95,7 +95,7 @@ export async function writeEncryptedSubmission(input: {
       .ruleParams({ requestId })
       .update(row),
   );
-  assertSynced(result, "Phone response");
+  assertTransactAccepted(result, "Phone response");
   return row;
 }
 
@@ -128,13 +128,15 @@ export function storagePathForSubmission(requestId: string, submissionId: string
   return `${storagePrefixForRequestId(requestId)}${submissionId}.bin`;
 }
 
-function assertSynced(result: unknown, label: string): void {
+function assertTransactAccepted(result: unknown, label: string): void {
+  // db.transact resolves with status "synced" when the server has confirmed the
+  // mutation, or "enqueued" when InstantDB's local-first queue accepted it and
+  // will replay it once the connection is ready. Both indicate the SDK has
+  // taken responsibility for delivery; "error"/"timeout" rejections never
+  // resolve here, so anything else is unexpected.
   const status = isRecord(result) && typeof result.status === "string" ? result.status : undefined;
-  if (status !== "synced") {
-    const hint = status === "enqueued"
-      ? " Instant queued the transaction instead of confirming it over the live connection."
-      : "";
-    throw new Error(`${label} was not confirmed by Instant. Current status: ${status ?? "unknown"}.${hint}`);
+  if (status !== "synced" && status !== "enqueued") {
+    throw new Error(`${label} was not accepted by Instant. Current status: ${status ?? "unknown"}.`);
   }
 }
 
