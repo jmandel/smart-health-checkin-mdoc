@@ -23,7 +23,8 @@ for page in \
   index.html \
   smart-model-explainer.html \
   kiosk-flow-explainer.html \
-  wire-protocol-explainer.html
+  wire-protocol-explainer.html \
+  wire-protocol-inspector.html
 do
   cp "$ROOT/site/$page" "$SITE_DIR/$page"
 done
