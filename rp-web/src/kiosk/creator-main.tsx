@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useMemo, useState } from "react";
+import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import QRCode from "qrcode";
 import { SmartResponseReview, asRecord } from "../app/SmartResponseReview.tsx";
@@ -12,7 +12,7 @@ import {
   type KioskSubmissionRow,
   type SubmissionPlaintext,
 } from "./kiosk-provider.ts";
-import { instantKioskProvider, readSubmissionRows } from "./instant-mailbox.ts";
+import { instantKioskProvider } from "./instant-mailbox.ts";
 import "../app/styles.css";
 
 const KIOSK_REQUEST_PRESET = PRESETS.find((preset) => preset.id === "all-of-the-above") ?? PRESETS[0]!;
@@ -31,17 +31,18 @@ function CreatorApp() {
   const [session, setSession] = useState<KioskSession>();
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string>();
-  const [pollError, setPollError] = useState<string>();
-  const [polledRows, setPolledRows] = useState<KioskSubmissionRow[]>([]);
-  const [responseRefreshCounter, setResponseRefreshCounter] = useState(0);
   const [received, setReceived] = useState<ReceivedSubmission[]>([]);
   const requestId = session?.verified.payload.requestId;
 
   const inbox = instantKioskProvider.useSubmissionRows(requestId);
-  const submissionRows = useMemo(() => mergeSubmissionRows(inbox.rows, polledRows), [inbox.rows, polledRows]);
-  const submissionRowsKey = submissionRows.map((row) => `${row.id}:${row.storagePath}:${row.totalCiphertextBytes}`).join("|");
+  const observedRows = requestId
+    ? filterRowsForRequest({
+        rows: inbox.rows,
+        requestId,
+      })
+    : [];
   const receivedOk = received.some((item) => item.plaintext && !item.error);
-  const pendingRows = submissionRows.length > 0 && !receivedOk;
+  const pendingRows = observedRows.length > 0 && !receivedOk;
 
   useEffect(() => {
     let cancelled = false;
@@ -69,48 +70,13 @@ function CreatorApp() {
       return;
     }
     let cancelled = false;
-    const rows = filterRowsForRequest({
-      rows: submissionRows,
-      requestId: session.verified.payload.requestId,
-    });
-    Promise.all(rows.map((row) => openRow(session, row))).then((opened) => {
+    Promise.all(observedRows.map((row) => openRow(session, row))).then((opened) => {
       if (!cancelled) setReceived(opened);
     });
     return () => {
       cancelled = true;
     };
-  }, [session, submissionRowsKey, responseRefreshCounter]);
-
-  useEffect(() => {
-    if (!requestId) {
-      setPolledRows([]);
-      setPollError(undefined);
-      return;
-    }
-    const currentRequestId = requestId;
-    if (receivedOk) return;
-    let cancelled = false;
-    async function poll() {
-      try {
-        const rows = await readSubmissionRows(currentRequestId);
-        if (!cancelled) {
-          setPolledRows(rows);
-          if (rows.length > 0) setResponseRefreshCounter((value) => value + 1);
-          setPollError(undefined);
-        }
-      } catch (e) {
-        if (!cancelled) setPollError(e instanceof Error ? e.message : String(e));
-      }
-    }
-    void poll();
-    const timer = window.setInterval(() => {
-      void poll();
-    }, 2_000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-    };
-  }, [requestId, receivedOk]);
+  }, [session, inbox.rows]);
 
   return (
     <>
@@ -185,6 +151,7 @@ function CreatorApp() {
                     <Field label="Request" value={session.verified.payload.smartRequest.title} />
                     <Field label="Expires" value={new Date(session.verified.payload.expiresAt).toLocaleString()} />
                     <Field label="Pointer" value={session.verified.payload.requestId} />
+                    <Field label="Request write" value="Instant confirmed synced before QR display" />
                   </div>
                   <textarea className="json kiosk-url" readOnly value={session.submitUrl} />
                   <pre>{JSON.stringify({
@@ -209,7 +176,6 @@ function CreatorApp() {
             </span>
           </div>
           {inbox.error ? <div className="notice notice--error">{inbox.error.message}</div> : null}
-          {pollError ? <div className="notice notice--error">Could not refresh phone responses: {pollError}</div> : null}
           {received.length === 0 ? (
             <p className="muted">After you approve sharing on your phone, this screen will update automatically.</p>
           ) : (
@@ -227,18 +193,30 @@ function CreatorApp() {
               ))}
             </div>
           )}
+          <div className="kiosk-details">
+            <details>
+              <summary>Live response channel</summary>
+              <Field label="Provider" value={instantKioskProvider.name} />
+              <Field label="Watching pointer" value={requestId ?? "not ready"} />
+              <Field label="Subscription" value={inbox.error ? `Error: ${inbox.error.message}` : inbox.isLoading ? "Connecting" : "Live"} />
+              <Field label="Rows observed" value={String(inbox.rows.length)} />
+              <Field label="Rows for this QR" value={String(observedRows.length)} />
+              <Field label="Opened responses" value={String(received.filter((item) => item.plaintext && !item.error).length)} />
+              <pre>{JSON.stringify({
+                requestId,
+                subscription: {
+                  isLoading: inbox.isLoading,
+                  error: inbox.error?.message,
+                },
+                rows: inbox.rows.map(submissionDebugRow),
+                opened: received.map(submissionDebugItem),
+              }, null, 2)}</pre>
+            </details>
+          </div>
         </section>
       </main>
     </>
   );
-}
-
-function mergeSubmissionRows(...rowSets: KioskSubmissionRow[][]): KioskSubmissionRow[] {
-  const rowsById = new Map<string, KioskSubmissionRow>();
-  for (const row of rowSets.flat()) {
-    rowsById.set(row.id, row);
-  }
-  return Array.from(rowsById.values()).sort((a, b) => a.createdAt - b.createdAt);
 }
 
 function initialKioskSession(): Promise<KioskSession> {
@@ -370,6 +348,30 @@ function SubmissionDetails({ item }: { item: ReceivedSubmission }) {
       />
     </div>
   );
+}
+
+function submissionDebugRow(row: KioskSubmissionRow): Record<string, unknown> {
+  return {
+    id: row.id,
+    submissionId: row.submissionId,
+    requestId: row.requestId,
+    createdAt: new Date(row.createdAt).toISOString(),
+    expiresAt: new Date(row.expiresAt).toISOString(),
+    totalPlaintextBytes: row.totalPlaintextBytes,
+    totalCiphertextBytes: row.totalCiphertextBytes,
+    payloadSha256: row.payloadSha256,
+    storagePath: row.storagePath,
+    storageFileId: row.storageFileId,
+    contentType: row.contentType,
+  };
+}
+
+function submissionDebugItem(item: ReceivedSubmission): Record<string, unknown> {
+  return {
+    ...submissionDebugRow(item.row),
+    openStatus: item.error ? "error" : item.plaintext ? "opened" : "pending",
+    error: item.error,
+  };
 }
 
 const root = document.getElementById("root");

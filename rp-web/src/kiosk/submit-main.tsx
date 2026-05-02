@@ -96,9 +96,7 @@ function SubmitApp() {
         }),
       });
       setRow(completed.row);
-      setStatus(
-        `Submitted ${formatBytes(completed.totalPlaintextBytes)}. The front desk should receive the SMART response in realtime.`,
-      );
+      setStatus("Your check-in information was sent. You can return to the kiosk.");
     } catch (e) {
       setStatus(e instanceof Error ? e.message : String(e));
     } finally {
@@ -120,21 +118,32 @@ function SubmitApp() {
         <div className="clinic-header__inner">
           <div className="clinic-logo">PH</div>
           <div>
-            <div className="clinic-kicker">Kiosk mode</div>
-            <h1>Phone wallet handoff</h1>
+            <div className="clinic-kicker">Patient check-in</div>
+            <h1>SMART Health Check-in</h1>
           </div>
         </div>
       </header>
 
       <main className="portal kiosk-page">
+        <section className="portal-card checkin-hero checkin-hero--patient">
+          <div className="hero-copy">
+            <div className="eyebrow">Welcome</div>
+            <h2>Share your check-in information</h2>
+            <p>
+              Review what the kiosk is asking for, then open your health app to
+              send the requested information back to the front desk.
+            </p>
+          </div>
+        </section>
+
         <section className="portal-card">
           <div className="section-heading">
             <div>
-              <div className="eyebrow">Request pointer</div>
-              <h2>Decrypt and verify kiosk request</h2>
+              <div className="eyebrow">Step 1</div>
+              <h2>{request ? "Review the request" : "Loading check-in request"}</h2>
             </div>
             <span className={requestStatus.state === "ready" ? "status-pill status-pill--done" : "status-pill"}>
-              {requestStatus.state === "ready" ? "Verified" : requestStatus.state === "checking" ? "Checking" : "Blocked"}
+              {requestStatus.state === "ready" ? "Ready" : requestStatus.state === "checking" ? "Loading" : "Blocked"}
             </span>
           </div>
 
@@ -145,28 +154,17 @@ function SubmitApp() {
               Missing Instant app id. Set BUN_PUBLIC_INSTANT_APP_ID or update src/instant/public-config.ts.
             </div>
           ) : null}
-          {resolved ? (
-            <div className="kiosk-details">
-              <Field label="Request pointer" value={resolved.verified.payload.requestId} />
-              <Field label="Request" value={resolved.verified.payload.smartRequest.title} />
-              <Field label="Expires" value={new Date(resolved.verified.payload.expiresAt).toLocaleString()} />
-              <Field label="Response limit" value={formatBytes(resolved.verified.payload.constraints.maxPlaintextBytes)} />
-              <p className="muted">
-                The QR only carries this pointer. The full SMART request was fetched
-                from the provider, decrypted locally, and verified as a trusted creator JWS.
-              </p>
-              <details>
-                <summary>Signed SMART request payload</summary>
-                <pre>{JSON.stringify(resolved.verified.payload, null, 2)}</pre>
-              </details>
-            </div>
+
+          {request ? <RequestTaskList request={request} /> : null}
+          {requestValidation && !requestValidation.ok ? (
+            <div className="notice notice--error">{requestValidation.error}</div>
           ) : null}
         </section>
 
         <section className="portal-card">
           <div className="section-heading">
             <div>
-              <div className="eyebrow">Digital Credentials API</div>
+              <div className="eyebrow">Step 2</div>
               <h2>Share from your health app</h2>
             </div>
             <span className={dcApi.state === "supported" ? "status-pill status-pill--done" : "status-pill"}>
@@ -174,9 +172,8 @@ function SubmitApp() {
             </span>
           </div>
 
-          {request ? <RequestTaskList request={request} /> : <div className="notice notice--error">No SMART request is available.</div>}
-          {requestValidation && !requestValidation.ok ? (
-            <div className="notice notice--error">{requestValidation.error}</div>
+          {!request && requestStatus.state !== "checking" ? (
+            <div className="notice notice--error">No SMART Health Check-in request is available.</div>
           ) : null}
           {dcApi.state !== "supported" ? (
             <div className="support-note support-note--warn">
@@ -214,13 +211,50 @@ function SubmitApp() {
           ) : null}
 
           {status ? <div className={row ? "notice notice--success" : "notice"}>{status}</div> : null}
-          {row ? (
-            <div className="kiosk-details">
-              <Field label="Submission" value={row.submissionId} />
-              <Field label="Encrypted blob" value={formatBytes(row.totalCiphertextBytes)} />
-              <Field label="Storage path" value={row.storagePath} />
+        </section>
+
+        <section className="portal-card">
+          <div className="section-heading">
+            <div>
+              <div className="eyebrow">For developers</div>
+              <h2>Technical details</h2>
             </div>
-          ) : null}
+          </div>
+          <div className="kiosk-details">
+            <details>
+              <summary>Show request and response transport details</summary>
+              {resolved ? (
+                <>
+                  <Field label="Request pointer" value={resolved.verified.payload.requestId} />
+                  <Field label="Request" value={resolved.verified.payload.smartRequest.title} />
+                  <Field label="Expires" value={new Date(resolved.verified.payload.expiresAt).toLocaleString()} />
+                  <Field label="Response limit" value={formatBytes(resolved.verified.payload.constraints.maxPlaintextBytes)} />
+                  <p className="muted">
+                    The QR carried only this pointer. The full SMART request was fetched
+                    from the provider, decrypted locally, and verified as a trusted creator JWS.
+                  </p>
+                </>
+              ) : null}
+              {row ? (
+                <>
+                  <Field label="Instant write" value="Confirmed synced" />
+                  <Field label="Submission" value={row.submissionId} />
+                  <Field label="Encrypted blob" value={formatBytes(row.totalCiphertextBytes)} />
+                  <Field label="Storage path" value={row.storagePath} />
+                  <Field label="Storage file" value={row.storageFileId} />
+                </>
+              ) : null}
+              <pre>{JSON.stringify({
+                requestPointer: resolved?.verified.payload.requestId ?? parsed.pointer?.requestId,
+                requestState: requestStatus.state,
+                requestError: requestStatus.state === "error" ? requestStatus.error : undefined,
+                dcApiState: dcApi.state,
+                requestRow: resolved?.requestRow,
+                signedRequestPayload: resolved?.verified.payload,
+                submissionRow: row ? submissionDebugRow(row) : undefined,
+              }, null, 2)}</pre>
+            </details>
+          </div>
         </section>
       </main>
     </>
@@ -295,6 +329,22 @@ function buttonLabel(state: SmartCheckinVerifierState, submitting: boolean, subm
     case "idle":
       return "Share check-in information";
   }
+}
+
+function submissionDebugRow(row: KioskSubmissionRow): Record<string, unknown> {
+  return {
+    id: row.id,
+    submissionId: row.submissionId,
+    requestId: row.requestId,
+    createdAt: new Date(row.createdAt).toISOString(),
+    expiresAt: new Date(row.expiresAt).toISOString(),
+    totalPlaintextBytes: row.totalPlaintextBytes,
+    totalCiphertextBytes: row.totalCiphertextBytes,
+    payloadSha256: row.payloadSha256,
+    storagePath: row.storagePath,
+    storageFileId: row.storageFileId,
+    contentType: row.contentType,
+  };
 }
 
 function Field({ label, value }: { label: string; value: string }) {
