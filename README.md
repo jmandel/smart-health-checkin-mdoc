@@ -1,75 +1,103 @@
 # smart-health-checkin-mdoc
 
-Working folder for a **new, independent Android wallet app plus relying-party
-web verifier** for W3C Digital Credentials API requests using direct
-`org-iso-mdoc`. The prototype now has a real Chrome/Android handler capture
-promoted into fixtures, plus Android/TypeScript/Python tests that validate the
-request parser, HPKE-opened response bytes, MSO digest binding, and COSE
-signatures.
+A **SMART Health Check-in** prototype: a transport-neutral check-in
+request/response model bound to the W3C Digital Credentials API over direct
+`org-iso-mdoc`. The repo ships an end-to-end demo — Android wallet, web
+verifier, and a cross-device kiosk flow — driven by checked-in byte fixtures
+captured from a real Chrome/Android session and exercised by Android,
+TypeScript, and Python test suites that validate request parsing, HPKE-opened
+response bytes, MSO digest binding, and COSE signatures.
 
-The current checked-in implementation carries the transport-neutral SMART
-Health Check-in request JSON from
-[`docs/SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md`](docs/SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md) in
-`ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]`, over the same
-direct mdoc transport with stable response element
-`smart_health_checkin_response`.
+Live demo: <https://jmandel.github.io/smart-health-checkin-mdoc/>
 
-Not part of the CMWallet POC — only the matcher technique is reused.
+## Quickstart
 
-## Files
+```sh
+cd rp-web && bun install && cd ..
+scripts/serve-pages.sh         # builds _site, serves http://localhost:3015/
+```
 
-| File | Purpose |
-| ---- | ------- |
-| [docs/SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md](docs/SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md) | Draft active transport-neutral SMART Health Check-in clinical request/response payload shape. |
-| [docs/PROTOCOL-EXPLAINER.md](docs/PROTOCOL-EXPLAINER.md) | Medium-high-level protocol walkthrough: roles, data movement, trust boundaries, and component contracts. |
-| [docs/profiles/org-iso-mdoc.md](docs/profiles/org-iso-mdoc.md) | Exact active wire profile and mdoc/COSE invariants. |
-| [site/smart-model-explainer.html](site/smart-model-explainer.html) | High-level SMART Health Check-in request/response model explainer source. |
-| [site/kiosk-flow-explainer.html](site/kiosk-flow-explainer.html) | Cross-device kiosk flow explainer source for the in-person wrapper over the same presentation flow. |
-| [site/wire-protocol-explainer.html](site/wire-protocol-explainer.html) | Byte-level Digital Credentials API/direct mdoc explainer source using the checked-in real request/response fixtures. |
-| [rp-web/src/sdk/README.md](rp-web/src/sdk/README.md) | TypeScript SDK documentation for the transport-neutral SMART model, browser DC API verifier, verifier authority seam, and kiosk request descriptors. |
-| [rp-web/src/sdk/react.README.md](rp-web/src/sdk/react.README.md) | Optional React bindings documentation for hooks/components over the non-React verifier SDK. |
-| [wallet-android/README.md](wallet-android/README.md) | Android wallet library/module guide, including links to each Gradle module README. |
-| [wallet-android/app/matcher-rs/README.md](wallet-android/app/matcher-rs/README.md) | Rust WASM matcher built by the Android app and registered with Credential Manager. |
-| [fixtures/](fixtures/) | Checked-in byte fixtures and normalized captures used by tests and inspectors. |
-| [tools/](tools/) | Developer-only capture scripts, fixture-generation tooling, and diagnostic matcher utilities. |
-| [docs/research/](docs/research/) | Reference material for DC API, matcher ABI, mdoc response, encryption, and verifier architecture. |
-| [docs/archive/](docs/archive/) | Historical plans, old profile docs, OpenID4VP notes, and alternate explainer drafts. |
+The preview serves the same `_site` artifact GitHub Pages deploys, so kiosk
+URLs live under `/verifier/` exactly as in production.
 
-## Libraries and SDKs
+## Where to start
 
-The current repo still builds as a demo web verifier plus Android app, but the
-core code is organized around reusable library boundaries:
+For a fresh pickup, in order:
 
-| Library area | Start here | Notes |
-| --- | --- | --- |
-| TypeScript core/verifier SDK | [`rp-web/src/sdk/README.md`](rp-web/src/sdk/README.md) | Framework-neutral SMART request/response validation, browser DC API verifier flow, verifier authority seam, kiosk request descriptor helpers. |
-| React bindings | [`rp-web/src/sdk/react.README.md`](rp-web/src/sdk/react.README.md) | Optional hooks/components over the same verifier authority API; intentionally not re-exported from the non-React SDK barrel. |
-| Android wallet libraries | [`wallet-android/README.md`](wallet-android/README.md) | Gradle module split for core SMART logic, mdoc transport, Credential Manager registration, Compose UI, and demo app wiring. |
+1. The deployed site (or the local preview above).
+2. [`docs/SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md`](docs/SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md)
+   — the transport-neutral request/response model.
+3. [`docs/PROTOCOL-EXPLAINER.md`](docs/PROTOCOL-EXPLAINER.md) — roles, data
+   movement, and trust boundaries.
+4. [`docs/profiles/org-iso-mdoc.md`](docs/profiles/org-iso-mdoc.md) — the
+   active wire profile and mdoc/COSE invariants.
+
+Plans, research, and archive material under `docs/plans/`, `docs/research/`,
+and `docs/archive/` are historical and not part of the public pickup path.
+
+## Major components
+
+- **SMART Health Check-in protocol.** A transport-neutral JSON
+  request/response model used by every component. Defined in
+  [`docs/SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md`](docs/SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md);
+  walked through in [`docs/PROTOCOL-EXPLAINER.md`](docs/PROTOCOL-EXPLAINER.md).
+
+- **`org-iso-mdoc` wire profile.** The active binding to the W3C Digital
+  Credentials API: the SMART request rides inside
+  `ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]` and the
+  SMART response comes back in the stable mdoc element
+  `smart_health_checkin_response`. See
+  [`docs/profiles/org-iso-mdoc.md`](docs/profiles/org-iso-mdoc.md).
+
+- **TypeScript verifier SDK.** Framework-neutral SMART request/response
+  validation, browser DC API verifier flow, verifier-authority seam, and
+  kiosk request descriptor helpers. Optional React bindings ship alongside.
+  Start at [`rp-web/src/sdk/README.md`](rp-web/src/sdk/README.md) and
+  [`rp-web/src/sdk/react.README.md`](rp-web/src/sdk/react.README.md).
+
+- **Web verifier and kiosk demo.** React app under
+  [`rp-web/`](rp-web/README.md) hosting the same-device verifier and the
+  cross-device kiosk flow (desktop creator ↔ phone submitter over an
+  untrusted realtime mailbox). The transport sits behind a small provider
+  interface; the shipped provider uses InstantDB rows plus Instant Storage
+  blobs. Slim row schema documented in
+  [`docs/plans/kiosk-transport-row-slim.md`](docs/plans/kiosk-transport-row-slim.md).
+
+- **Android wallet.** Modular Gradle project under
+  [`wallet-android/`](wallet-android/README.md) that registers credentials
+  with Credential Manager and answers direct mdoc requests carrying SMART
+  Health Check-in payloads, including the Rust WASM matcher
+  ([`wallet-android/app/matcher-rs/README.md`](wallet-android/app/matcher-rs/README.md)).
+
+- **Public site.** Landing page and HTML explainers in
+  [`site/`](site/index.html): the SMART model explainer, the kiosk flow
+  explainer, and a byte-level wire-protocol inspector that fetches the same
+  checked-in fixtures the test suites use.
+
+- **Fixtures and tools.** [`fixtures/`](fixtures/) holds normalized,
+  checked-in byte captures shared across every language's tests;
+  [`tools/`](tools/) collects developer-only capture scripts,
+  fixture-generation utilities, and diagnostic matchers.
 
 ## GitHub Pages deployment
 
-This repo can publish the verifier, kiosk demo, and explainers as one static
-GitHub Pages site. The landing page source is `site/index.html`; the Pages build
-places the verifier at `/verifier/`, the kiosk creator at
-`/verifier/creator.html`, the phone submission page at `/verifier/submit.html`,
-the SMART model explainer at `/smart-model-explainer.html`, the kiosk flow
-explainer at `/kiosk-flow-explainer.html`, the byte-level wire-protocol
-explainer at `/wire-protocol-explainer.html`, an LLM-friendly generated docs
-bundle at `/llms.txt`, and the checked-in test fixtures at `/fixtures/` so the
-wire page can fetch the same captures used by the test suites. The old
-generic explainer URLs are not kept; use the specific explainer URLs above.
+The repo deploys as one static site via
+[`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml) on
+pushes to `main` and on manual workflow dispatch.
 
-The kiosk pages are static apps over a provider abstraction. The creator calls a
-wrapper to sign/encrypt a full SMART request, store it through the configured
-provider, and display a QR containing only a request pointer. The submit page
-resolves that pointer through the same provider contract, decrypts and verifies
-the request locally, runs the Digital Credentials API flow, then completes the
-request by writing an encrypted SMART response through the provider. The current provider
-uses InstantDB rows plus Instant Storage blobs as untrusted transport; see
-[`rp-web/README.md`](rp-web/README.md#kiosk-check-in-demo) for the interface and
-Instant-specific details.
+| Path | Page |
+| --- | --- |
+| `/` | Landing page (`site/index.html`) |
+| `/verifier/` | Same-device verifier |
+| `/verifier/creator.html` | Kiosk creator (desktop) |
+| `/verifier/submit.html` | Kiosk submit (phone) |
+| `/smart-model-explainer.html` | SMART Health Check-in model explainer |
+| `/kiosk-flow-explainer.html` | Cross-device kiosk flow explainer |
+| `/wire-protocol-explainer.html` | Byte-level wire-protocol explainer |
+| `/llms.txt` | Generated LLM-friendly docs bundle |
+| `/fixtures/` | Checked-in test fixtures |
 
-Local artifact build:
+Local artifact build (no preview server):
 
 ```sh
 cd rp-web && bun install
@@ -77,23 +105,3 @@ cd ..
 scripts/build-pages.sh
 ```
 
-Local Pages-equivalent preview:
-
-```sh
-scripts/serve-pages.sh          # builds _site, then serves http://localhost:3015/
-PORT=4173 scripts/serve-pages.sh
-```
-
-Use this preview when testing the static apps locally. It serves the same `_site`
-artifact that the GitHub Actions workflow uploads, so kiosk URLs live under
-`/verifier/` just like the deployed Pages site.
-
-The workflow in `.github/workflows/deploy-pages.yml` builds `_site` and deploys
-it with the GitHub Pages artifact action on pushes to `main` or manual workflow
-dispatches.
-
-Read order for a fresh pickup: start with the public site, then
-`docs/SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md` →
-`docs/PROTOCOL-EXPLAINER.md` → `docs/profiles/org-iso-mdoc.md`.
-Planning, early-context, research, and archive documents are historical and are
-not part of the public `llms.txt` pickup path.
