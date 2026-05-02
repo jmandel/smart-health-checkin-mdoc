@@ -79,7 +79,6 @@ export type SubmissionPlaintext = {
 export type EncryptedPayload = {
   iv: string;
   ciphertext: Uint8Array;
-  payloadSha256: string;
   phoneEphemeralPublicKeyJwk: JsonWebKey;
 };
 
@@ -336,7 +335,6 @@ export async function encryptSubmissionPlaintext(
   return {
     iv: base64UrlEncode(iv),
     ciphertext,
-    payloadSha256: await sha256Base64Url(encoded),
     phoneEphemeralPublicKeyJwk: await exportPublicJwk(phoneKeyPair.publicKey),
   };
 }

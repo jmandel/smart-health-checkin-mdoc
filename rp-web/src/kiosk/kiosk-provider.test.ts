@@ -11,7 +11,6 @@ import {
   type KioskTransportProvider,
 } from "./kiosk-provider.ts";
 import {
-  KIOSK_BLOB_CONTENT_TYPE,
   type EncryptedPayload,
   type SubmissionPlaintext,
   type VerifiedKioskRequest,
@@ -120,10 +119,6 @@ function createMemoryProvider(): KioskTransportProvider {
       const row: KioskRequestRow = {
         id: crypto.randomUUID(),
         requestId: input.payload.requestId,
-        createdAt: input.payload.createdAt,
-        expiresAt: input.payload.expiresAt,
-        creatorKeyId: input.payload.minter.keyId,
-        serviceKeyId: input.payload.encryptRequestTo.keyId,
         encryptedRequest: input.encryptedRequest,
       };
       requests.set(row.requestId, row);
@@ -168,15 +163,9 @@ function memorySubmissionRow(input: {
     id: crypto.randomUUID(),
     submissionId,
     requestId: input.request.payload.requestId,
-    createdAt: Date.now(),
-    expiresAt: input.request.payload.expiresAt,
-    totalPlaintextBytes: input.totalPlaintextBytes,
-    totalCiphertextBytes: input.encrypted.ciphertext.byteLength,
-    payloadSha256: input.encrypted.payloadSha256,
     iv: input.encrypted.iv,
     storagePath,
     storageFileId: crypto.randomUUID(),
-    contentType: KIOSK_BLOB_CONTENT_TYPE,
     phoneEphemeralPublicKeyJwk: input.encrypted.phoneEphemeralPublicKeyJwk,
   };
 }

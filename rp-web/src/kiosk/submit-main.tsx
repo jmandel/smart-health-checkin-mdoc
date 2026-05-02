@@ -11,6 +11,7 @@ import {
   completeKioskRequest,
   formatBytes,
   resolveKioskRequest,
+  type CompletedKioskRequest,
   type KioskSubmissionRow,
   type ResolvedKioskRequest,
 } from "./kiosk-provider.ts";
@@ -31,7 +32,7 @@ function SubmitApp() {
   const [requestStatus, setRequestStatus] = useState<RequestStatus>({ state: "checking" });
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<string>();
-  const [row, setRow] = useState<KioskSubmissionRow>();
+  const [row, setRow] = useState<CompletedKioskRequest>();
 
   const parsed = useMemo(() => {
     try {
@@ -95,7 +96,7 @@ function SubmitApp() {
           completion,
         }),
       });
-      setRow(completed.row);
+      setRow(completed);
       setStatus("Your check-in information was sent. You can return to the kiosk.");
     } catch (e) {
       setStatus(e instanceof Error ? e.message : String(e));
@@ -242,10 +243,10 @@ function SubmitApp() {
               {row ? (
                 <>
                   <Field label="Instant write" value="Confirmed synced" />
-                  <Field label="Submission" value={row.submissionId} />
+                  <Field label="Submission" value={row.row.submissionId} />
                   <Field label="Encrypted blob" value={formatBytes(row.totalCiphertextBytes)} />
-                  <Field label="Storage path" value={row.storagePath} />
-                  <Field label="Storage file" value={row.storageFileId} />
+                  <Field label="Storage path" value={row.row.storagePath} />
+                  <Field label="Storage file" value={row.row.storageFileId} />
                 </>
               ) : null}
               <pre>{JSON.stringify({
@@ -255,7 +256,7 @@ function SubmitApp() {
                 dcApiState: dcApi.state,
                 requestRow: resolved?.requestRow,
                 signedRequestPayload: resolved?.verified.payload,
-                submissionRow: row ? submissionDebugRow(row) : undefined,
+                submissionRow: row ? submissionDebugRow(row.row) : undefined,
               }, null, 2)}</pre>
             </details>
           </div>
@@ -340,14 +341,8 @@ function submissionDebugRow(row: KioskSubmissionRow): Record<string, unknown> {
     id: row.id,
     submissionId: row.submissionId,
     requestId: row.requestId,
-    createdAt: new Date(row.createdAt).toISOString(),
-    expiresAt: new Date(row.expiresAt).toISOString(),
-    totalPlaintextBytes: row.totalPlaintextBytes,
-    totalCiphertextBytes: row.totalCiphertextBytes,
-    payloadSha256: row.payloadSha256,
     storagePath: row.storagePath,
     storageFileId: row.storageFileId,
-    contentType: row.contentType,
   };
 }
 

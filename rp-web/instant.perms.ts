@@ -1,9 +1,5 @@
 import type { InstantRules } from "@instantdb/react";
 
-const maxPayloadBytes = 25 * 1024 * 1024;
-const maxBlobBytes = maxPayloadBytes + 1024;
-const blobContentType = "application/octet-stream";
-
 const rules = {
   "$default": {
     allow: {
@@ -34,14 +30,12 @@ const rules = {
       knowsRequest: "data.requestId == ruleParams.requestId",
       allowedFields:
         "request.modifiedFields.all(field, field in [" +
-        "'requestId', 'createdAt', 'expiresAt', " +
-        "'creatorKeyId', 'serviceKeyId', 'encryptedRequest'" +
+        "'requestId', 'encryptedRequest'" +
         "])",
-      timeShapeOk: "data.expiresAt > data.createdAt",
     },
     allow: {
       view: "knowsRequest",
-      create: "knowsRequest && allowedFields && timeShapeOk",
+      create: "knowsRequest && allowedFields",
       update: "false",
       delete: "false",
     },
@@ -51,23 +45,16 @@ const rules = {
       knowsRequest: "data.requestId == ruleParams.requestId",
       allowedFields:
         "request.modifiedFields.all(field, field in [" +
-        "'submissionId', 'requestId', 'createdAt', " +
-        "'expiresAt', 'totalPlaintextBytes', 'totalCiphertextBytes', " +
-        "'payloadSha256', 'iv', 'storagePath', 'storageFileId', 'contentType', " +
-        "'phoneEphemeralPublicKeyJwk'" +
+        "'submissionId', 'requestId', 'storagePath', 'storageFileId', " +
+        "'iv', 'phoneEphemeralPublicKeyJwk'" +
         "])",
-      sizeOk:
-        `data.totalPlaintextBytes <= ${maxPayloadBytes} && ` +
-        `data.totalCiphertextBytes <= ${maxBlobBytes}`,
-      contentOk: `data.contentType == '${blobContentType}'`,
       pathOk:
         "data.storagePath == 'submissions/' + data.requestId + '/' + data.submissionId + '.bin' && " +
         "data.storagePath.startsWith('submissions/' + ruleParams.requestId + '/')",
-      timeShapeOk: "data.expiresAt > data.createdAt",
     },
     allow: {
       view: "knowsRequest",
-      create: "knowsRequest && allowedFields && sizeOk && contentOk && pathOk && timeShapeOk",
+      create: "knowsRequest && allowedFields && pathOk",
       update: "false",
       delete: "false",
     },

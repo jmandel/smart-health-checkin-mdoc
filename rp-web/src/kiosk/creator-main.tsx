@@ -360,14 +360,8 @@ function submissionDebugRow(row: KioskSubmissionRow): Record<string, unknown> {
     id: row.id,
     submissionId: row.submissionId,
     requestId: row.requestId,
-    createdAt: new Date(row.createdAt).toISOString(),
-    expiresAt: new Date(row.expiresAt).toISOString(),
-    totalPlaintextBytes: row.totalPlaintextBytes,
-    totalCiphertextBytes: row.totalCiphertextBytes,
-    payloadSha256: row.payloadSha256,
     storagePath: row.storagePath,
     storageFileId: row.storageFileId,
-    contentType: row.contentType,
   };
 }
 

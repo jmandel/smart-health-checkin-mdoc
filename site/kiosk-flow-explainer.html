@@ -419,8 +419,9 @@
         treated as untrusted transport.
       </p>
       <div class="callout">
-        <strong>What Instant can see:</strong> request IDs, timestamps, key IDs,
-        content types, sizes, storage paths, and ciphertext.
+        <strong>What Instant can see:</strong> request IDs, submission IDs,
+        storage paths, ciphertext, and the per-submission IV plus the phone's
+        ephemeral ECDH public key needed to derive the response key.
       </div>
       <div class="callout warn">
         <strong>What Instant should not see:</strong> the plaintext SMART

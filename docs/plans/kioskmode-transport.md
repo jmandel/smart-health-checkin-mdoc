@@ -1,5 +1,14 @@
 Below is the shape I’d build.
 
+> **Status (historical planning doc):** This file captures the original
+> design exploration and uses earlier terminology (`sessionId`, `routeId`,
+> `certHash`, `nonce`). The shipped implementation collapses these into a
+> single random `requestId` and ships a slimmer transport row schema. See
+> [`docs/plans/kiosk-transport-row-slim.md`](kiosk-transport-row-slim.md) for
+> the current schema, and `rp-web/src/kiosk/protocol.ts`,
+> `rp-web/src/kiosk/instant-mailbox.ts`, and `rp-web/instant.perms.ts` for the
+> code of record.
+
 # Goal
 
 A GitHub Pages static app where:

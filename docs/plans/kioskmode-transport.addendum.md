@@ -1,5 +1,14 @@
 Yes. The previous plan mostly stays the same, but the **transport layer changes** because 5 MB submissions are too large for the realtime row itself.
 
+> **Status (historical planning doc):** Documents the move from inline‑ciphertext
+> rows to Instant Storage pointer rows. Field names below (`routeId`,
+> `certHash`, `nonce`, `ciphertextBytes`, `contentType`, `createdAt`,
+> `expiresAt`, `sessionId`) predate the shipped implementation. Today the
+> pointer row is `{ submissionId, requestId, storagePath, storageFileId, iv,
+> phoneEphemeralPublicKeyJwk }`. See
+> [`docs/plans/kiosk-transport-row-slim.md`](kiosk-transport-row-slim.md) and
+> `rp-web/src/instant/schema.ts` for the current shape.
+
 # Plan update: support large blobs
 
 ## What changes

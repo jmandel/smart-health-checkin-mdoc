@@ -10,8 +10,6 @@ import {
   generateDesktopEncryptionKeyPair,
   importCreatorPrivateKey,
   importSubmissionServicePrivateKey,
-  KIOSK_BLOB_CONTENT_TYPE,
-  KIOSK_MAX_BLOB_BYTES,
   KIOSK_MAX_PAYLOAD_BYTES,
   openEncryptedKioskRequest,
   utf8,
@@ -28,10 +26,6 @@ export { KIOSK_MAX_PAYLOAD_BYTES } from "./protocol.ts";
 export type KioskRequestRow = {
   id: string;
   requestId: string;
-  createdAt: number;
-  expiresAt: number;
-  creatorKeyId: string;
-  serviceKeyId: string;
   encryptedRequest: EncryptedKioskRequest;
 };
 
@@ -39,15 +33,9 @@ export type KioskSubmissionRow = {
   id: string;
   submissionId: string;
   requestId: string;
-  createdAt: number;
-  expiresAt: number;
-  totalPlaintextBytes: number;
-  totalCiphertextBytes: number;
-  payloadSha256: string;
   iv: string;
   storagePath: string;
   storageFileId: string;
-  contentType: string;
   phoneEphemeralPublicKeyJwk: JsonWebKey;
 };
 
@@ -104,6 +92,7 @@ export type CompletedKioskRequest = {
   row: KioskSubmissionRow;
   plaintext: SubmissionPlaintext;
   totalPlaintextBytes: number;
+  totalCiphertextBytes: number;
 };
 
 export type OpenedKioskSubmission = {
@@ -195,7 +184,7 @@ export async function completeKioskRequest(input: {
     encrypted,
     totalPlaintextBytes,
   });
-  return { row, plaintext, totalPlaintextBytes };
+  return { row, plaintext, totalPlaintextBytes, totalCiphertextBytes: encrypted.ciphertext.byteLength };
 }
 
 export async function openKioskSubmission(input: {
@@ -228,10 +217,7 @@ export function filterRowsForRequest(input: {
 }): KioskSubmissionRow[] {
   return input.rows.filter((row) =>
     row.requestId === input.requestId &&
-    row.storagePath.startsWith(`submissions/${row.requestId}/`) &&
-    row.contentType === KIOSK_BLOB_CONTENT_TYPE &&
-    row.totalPlaintextBytes <= KIOSK_MAX_PAYLOAD_BYTES &&
-    row.totalCiphertextBytes <= KIOSK_MAX_BLOB_BYTES
+    row.storagePath.startsWith(`submissions/${row.requestId}/`)
   );
 }
 

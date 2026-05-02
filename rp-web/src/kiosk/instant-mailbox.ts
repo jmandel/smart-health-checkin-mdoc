@@ -19,10 +19,6 @@ export async function writeEncryptedKioskRequest(
   const row: KioskRequestRow = {
     id: id(),
     requestId: input.payload.requestId,
-    createdAt: input.payload.createdAt,
-    expiresAt: input.payload.expiresAt,
-    creatorKeyId: input.payload.minter.keyId,
-    serviceKeyId: input.payload.encryptRequestTo.keyId,
     encryptedRequest: input.encryptedRequest,
   };
   const result = await db.transact(
@@ -78,15 +74,9 @@ export async function writeEncryptedSubmission(input: {
     id: id(),
     submissionId,
     requestId,
-    createdAt: Date.now(),
-    expiresAt: input.request.payload.expiresAt,
-    totalPlaintextBytes: input.totalPlaintextBytes,
-    totalCiphertextBytes: input.encrypted.ciphertext.byteLength,
-    payloadSha256: input.encrypted.payloadSha256,
     iv: input.encrypted.iv,
     storagePath,
     storageFileId: uploaded.data.id,
-    contentType: KIOSK_BLOB_CONTENT_TYPE,
     phoneEphemeralPublicKeyJwk: input.encrypted.phoneEphemeralPublicKeyJwk,
   };
 
@@ -102,8 +92,6 @@ export async function writeEncryptedSubmission(input: {
 export async function downloadEncryptedSubmissionBlob(row: KioskSubmissionRow): Promise<Uint8Array<ArrayBuffer>> {
   const expectedPath = storagePathForSubmission(row.requestId, row.submissionId);
   if (row.storagePath !== expectedPath) throw new Error("storagePath does not match request and submission.");
-  if (row.contentType !== KIOSK_BLOB_CONTENT_TYPE) throw new Error("Unsupported encrypted blob content type.");
-  if (row.totalCiphertextBytes > KIOSK_MAX_BLOB_BYTES) throw new Error("Encrypted blob size exceeds this app's limit.");
 
   const result = await db.queryOnce({
     $files: {
@@ -118,8 +106,8 @@ export async function downloadEncryptedSubmissionBlob(row: KioskSubmissionRow): 
   const response = await fetch(file.url);
   if (!response.ok) throw new Error(`Encrypted blob download failed: ${response.status} ${response.statusText}`);
   const bytes = new Uint8Array(await response.arrayBuffer());
-  if (bytes.byteLength !== row.totalCiphertextBytes) {
-    throw new Error(`Encrypted blob size mismatch: expected ${row.totalCiphertextBytes}, got ${bytes.byteLength}.`);
+  if (bytes.byteLength > KIOSK_MAX_BLOB_BYTES) {
+    throw new Error(`Encrypted blob exceeds this app's limit of ${formatBytes(KIOSK_MAX_BLOB_BYTES)}.`);
   }
   return bytes;
 }
@@ -170,7 +158,6 @@ export const instantKioskProvider: KioskTransportProvider = {
           submissions: {
             $: {
               where: { requestId },
-              order: { createdAt: "asc" as const },
             },
           },
         }
