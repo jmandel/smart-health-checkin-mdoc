@@ -1,107 +1,34 @@
 #!/usr/bin/env bun
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outputPath = path.resolve(process.argv[2] ?? path.join(ROOT, "_site", "llms.txt"));
 
-const EXPLAINER_SOURCES = [
+// Curated allowlist. Order is the order sources appear in the bundle.
+// Goal: high-signal docs an LLM helper needs to reason about the spec, the
+// protocol, the demos, and the reference SDK / wallet libraries -- without
+// pulling in transient plans, research notes, or vendored material.
+const HTML_EXPLAINERS = [
   "site/index.html",
   "site/smart-model-explainer.html",
   "site/kiosk-flow-explainer.html",
   "site/wire-protocol-explainer.html",
 ];
 
-const MARKDOWN_ORDER = [
+const MARKDOWN_SOURCES = [
   "README.md",
   "docs/CONTEXT.md",
   "docs/SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md",
   "docs/PROTOCOL-EXPLAINER.md",
-  "docs/profiles/README.md",
   "docs/profiles/org-iso-mdoc.md",
-  "docs/PLAN.md",
-  "docs/OPEN-QUESTIONS.md",
   "rp-web/README.md",
   "rp-web/src/sdk/README.md",
   "rp-web/src/sdk/react.README.md",
-  "rp-web/src/protocol/README.md",
   "wallet-android/README.md",
   "wallet-android/app/matcher-rs/README.md",
-  "tools/README.md",
 ];
-
-const SKIPPED_DIRECTORIES = new Set([
-  ".git",
-  ".gradle",
-  ".idea",
-  ".agents",
-  ".pytest_cache",
-  ".venv",
-  "target",
-  "__pycache__",
-  "node_modules",
-  "dist",
-  "build",
-  "_site",
-]);
-
-function toPosixPath(filePath) {
-  return filePath.split(path.sep).join("/");
-}
-
-async function listFiles(dir) {
-  const entries = await readdir(dir, { withFileTypes: true });
-  const files = [];
-  for (const entry of entries) {
-    if (SKIPPED_DIRECTORIES.has(entry.name)) {
-      continue;
-    }
-    const fullPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...(await listFiles(fullPath)));
-    } else if (entry.isFile()) {
-      files.push(fullPath);
-    }
-  }
-  return files;
-}
-
-function isMarkdownDoc(relPath) {
-  if (!relPath.endsWith(".md")) {
-    return false;
-  }
-  if (relPath.startsWith("docs/archive/") || relPath.startsWith("docs/research/archive/")) {
-    return false;
-  }
-  if (relPath === "README.md" || relPath.startsWith("docs/")) {
-    return true;
-  }
-  if (relPath.startsWith("rp-web/")) {
-    return relPath.endsWith("README.md") || relPath.endsWith(".README.md");
-  }
-  if (relPath.startsWith("wallet-android/")) {
-    return relPath.endsWith("README.md");
-  }
-  if (
-    relPath.startsWith("fixtures/") ||
-    relPath === "tools/README.md" ||
-    relPath.startsWith("tools/fixtures-tool/") ||
-    relPath.startsWith("tools/capture/") ||
-    relPath.startsWith("tools/matcher-c/")
-  ) {
-    return relPath.endsWith("README.md");
-  }
-  if (relPath.startsWith("vendor/")) {
-    return relPath === "vendor/README.md" || relPath === "vendor/INDEX.md" || relPath === "vendor/FIXTURES.md";
-  }
-  return false;
-}
-
-function markdownSortKey(relPath) {
-  const orderedIndex = MARKDOWN_ORDER.indexOf(relPath);
-  return orderedIndex === -1 ? 10_000 : orderedIndex;
-}
 
 function decodeHtml(text) {
   return text
@@ -166,24 +93,29 @@ async function readIfPresent(relPath) {
   }
 }
 
-const allFiles = await listFiles(ROOT);
-const markdownSources = allFiles
-  .map((file) => toPosixPath(path.relative(ROOT, file)))
-  .filter(isMarkdownDoc)
-  .sort((a, b) => markdownSortKey(a) - markdownSortKey(b) || a.localeCompare(b));
-
 const sources = [];
-for (const relPath of EXPLAINER_SOURCES) {
+const missing = [];
+
+for (const relPath of HTML_EXPLAINERS) {
   const html = await readIfPresent(relPath);
-  if (html !== undefined) {
-    sources.push({ path: relPath, content: htmlToMarkdown(html) });
+  if (html === undefined) {
+    missing.push(relPath);
+    continue;
   }
+  sources.push({ path: relPath, content: htmlToMarkdown(html) });
 }
-for (const relPath of markdownSources) {
+
+for (const relPath of MARKDOWN_SOURCES) {
   const markdown = await readIfPresent(relPath);
-  if (markdown !== undefined) {
-    sources.push({ path: relPath, content: markdown.trim() });
+  if (markdown === undefined) {
+    missing.push(relPath);
+    continue;
   }
+  sources.push({ path: relPath, content: markdown.trim() });
+}
+
+if (missing.length > 0) {
+  throw new Error(`Missing curated llms.txt source(s): ${missing.join(", ")}`);
 }
 
 const sourceIndex = sources.map((source) => `- ${source.path}`).join("\n");
@@ -194,8 +126,11 @@ const sections = sources
 const output = `# SMART Health Check-in docs for LLMs
 
 This file is generated during the Pages build by \`scripts/generate-llms-txt.mjs\`.
-It follows the \`llms.txt\` convention and concatenates the public explainers,
-active docs, and project README files into one Markdown-friendly reference.
+It follows the \`llms.txt\` convention and concatenates a curated set of
+high-signal sources -- the public explainers, the active spec, the protocol
+profile, and the reference SDK / wallet READMEs -- into one Markdown-friendly
+reference. Transient plans, design history, internal research notes, and
+vendored material are intentionally excluded; see the GitHub repo for those.
 
 ## Source index
 
@@ -206,4 +141,7 @@ ${sections}
 
 await mkdir(path.dirname(outputPath), { recursive: true });
 await writeFile(outputPath, output);
-console.log(`Generated ${path.relative(ROOT, outputPath)} from ${sources.length} sources`);
+const sizeKb = (new Blob([output]).size / 1024).toFixed(1);
+console.log(
+  `Generated ${path.relative(ROOT, outputPath)} from ${sources.length} sources (${sizeKb} KB)`
+);

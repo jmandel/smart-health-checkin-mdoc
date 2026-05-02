@@ -3,21 +3,29 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SMART Health Check-in Digital Credentials demo</title>
+  <title>SMART Health Check-in over W3C Digital Credentials API</title>
+  <meta name="description" content="Patient-directed clinical data exchange. A web verifier asks a patient wallet for FHIR resources, questionnaires, and SMART Health Cards over the W3C Digital Credentials API." />
   <style>
     :root {
       --ink: #172033;
       --muted: #5f6f86;
+      --soft-ink: #2d3e58;
       --rule: #d9e2ec;
       --soft: #f7fafc;
+      --softer: #fcfdfe;
       --blue: #006fb7;
+      --blue-soft: #eef6ff;
       --green: #08795b;
-      --measure: 1040px;
+      --green-soft: #ecfbf5;
+      --amber: #92590a;
+      --amber-soft: #fff8e6;
+      --slate: #36506e;
+      --code: #0e1726;
+      --code-fg: #e7eef9;
+      --measure: 1080px;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -29,11 +37,81 @@
     .page {
       max-width: var(--measure);
       margin: 0 auto;
-      padding: 44px 24px 72px;
+      padding: 0 24px 64px;
     }
 
-    header {
-      padding-bottom: 32px;
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 0 14px;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .topbar .brand {
+      flex: 1;
+      font-size: 0.86rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #43597a;
+    }
+
+    .topbar .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .icon-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--rule);
+      background: #fff;
+      color: #2c4262;
+      font-size: 0.86rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .icon-link:hover { background: var(--soft); }
+    .icon-link svg { width: 16px; height: 16px; }
+
+    .llm-widget {
+      display: inline-flex;
+      align-items: stretch;
+      border-radius: 8px;
+      border: 1px solid var(--rule);
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .llm-widget > * {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border: 0;
+      background: transparent;
+      font: inherit;
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: #2c4262;
+      text-decoration: none;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .llm-widget > * + * { border-left: 1px solid var(--rule); }
+    .llm-widget button:hover, .llm-widget a:hover { background: var(--soft); }
+    .llm-widget svg { width: 14px; height: 14px; }
+
+    header.hero {
+      padding: 38px 0 28px;
       border-bottom: 1px solid var(--rule);
     }
 
@@ -46,23 +124,21 @@
       text-transform: uppercase;
     }
 
-    h1,
-    h2,
-    h3 {
+    h1, h2, h3 {
       margin: 0;
       line-height: 1.13;
       letter-spacing: -0.025em;
     }
 
     h1 {
-      max-width: 780px;
-      font-size: clamp(2.5rem, 5vw, 4.8rem);
-      letter-spacing: -0.055em;
+      max-width: 880px;
+      font-size: clamp(2.2rem, 4.4vw, 4rem);
+      letter-spacing: -0.045em;
     }
 
     h2 {
       margin-bottom: 14px;
-      font-size: clamp(1.55rem, 3vw, 2.1rem);
+      font-size: clamp(1.5rem, 2.6vw, 2rem);
     }
 
     h3 {
@@ -70,319 +146,634 @@
       font-size: 1.1rem;
     }
 
-    p {
-      max-width: 74ch;
-      margin: 0 0 14px;
-    }
+    p { max-width: 74ch; margin: 0 0 14px; }
 
     .lede {
       margin-top: 18px;
       color: var(--muted);
-      font-size: 1.16rem;
+      font-size: 1.14rem;
+      max-width: 78ch;
+    }
+
+    .one-liner {
+      margin-top: 14px;
+      padding: 10px 14px;
+      border-left: 3px solid var(--slate);
+      background: var(--soft);
+      color: var(--soft-ink);
+      font-size: 0.96rem;
+      max-width: 78ch;
+    }
+
+    .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 22px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--rule);
+      background: var(--soft);
+      color: #43597a;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
     }
 
     a {
       color: var(--blue);
-      font-weight: 750;
+      font-weight: 700;
       text-underline-offset: 0.16em;
     }
 
     section {
-      padding: 34px 0;
+      padding: 38px 0;
       border-bottom: 1px solid var(--rule);
     }
 
-    section:last-child {
-      border-bottom: 0;
-    }
+    section:last-child { border-bottom: 0; }
 
-    .architecture-grid {
+    .section-lead { color: var(--soft-ink); }
+
+    /* Anchor example */
+    .anchor-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 18px;
-      max-width: 920px;
-      margin: 24px auto 0;
+      margin: 18px 0 8px;
+    }
+
+    .anchor-card {
+      padding: 18px 20px;
+      border: 1px solid var(--rule);
+      border-radius: 14px;
+      background: var(--softer);
+      min-width: 0;
+    }
+
+    .anchor-card.req { border-left: 4px solid var(--blue); }
+    .anchor-card.res { border-left: 4px solid var(--green); }
+
+    .anchor-card h3 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 1rem;
+    }
+
+    .anchor-card .role-tag {
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .anchor-card pre {
+      margin: 0;
+      padding: 14px 16px;
+      background: var(--code);
+      color: var(--code-fg);
+      border-radius: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .anchor-card pre .key { color: #9bd0ff; }
+    .anchor-card pre .str { color: #ffd58a; }
+    .anchor-card pre .num { color: #c5f5d4; }
+    .anchor-card pre .com { color: #7d93b1; font-style: italic; }
+
+    .invariant {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: var(--blue-soft);
+      color: #1a3553;
+      font-size: 0.95rem;
+      max-width: none;
+    }
+
+    .invariant code {
+      background: rgba(15, 23, 42, 0.06);
+      padding: 0.04em 0.3em;
+      border-radius: 4px;
+    }
+
+    .deeper-line {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    /* Layers */
+    .layers-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 22px;
+    }
+
+    .layer {
+      padding: 18px 20px;
+      border: 1px solid var(--rule);
+      border-radius: 14px;
+      background: var(--soft);
+      min-width: 0;
+    }
+
+    .layer.smart { border-left: 4px solid var(--slate); background: #fff; }
+    .layer.transport { border-left: 4px solid var(--blue); }
+    .layer.kiosk { border-left: 4px solid var(--green); }
+
+    .layer h3 { margin-bottom: 8px; }
+
+    .layer p {
+      color: #33445c;
+      font-size: 0.95rem;
+      margin-bottom: 10px;
+    }
+
+    .layer .layer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+    }
+
+    .layer .layer-links a { font-size: 0.92rem; }
+
+    /* Demo cards */
+    .demo-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 22px;
     }
 
     .demo-card {
       display: flex;
       flex-direction: column;
-      align-items: flex-start;
-      gap: 16px;
-      min-height: 286px;
-      padding: 30px 32px;
+      gap: 14px;
+      padding: 24px 26px;
       border: 1px solid var(--rule);
       border-radius: 16px;
       background: #fff;
-      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.07);
     }
 
-    .demo-card.portal {
-      grid-column: 1;
-    }
-
-    .demo-card.kiosk {
-      grid-column: 2;
-    }
-
-    .demo-card h3 {
-      margin-bottom: 8px;
-      font-size: 1.36rem;
-    }
-
-    .demo-card-header {
+    .demo-card .demo-head {
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
-      width: 100%;
-      gap: 16px;
+      gap: 14px;
     }
 
-    .demo-copy {
-      flex: 1;
-    }
+    .demo-card h3 { font-size: 1.3rem; margin-bottom: 6px; }
 
-    .demo-copy p {
-      margin-bottom: 0;
-      color: #40516a;
+    .demo-card p {
       font-size: 0.96rem;
-      line-height: 1.55;
+      color: #40516a;
+      max-width: none;
+      margin-bottom: 0;
     }
 
-    .demo-icon {
-      display: grid;
-      place-items: center;
-      width: 56px;
-      height: 56px;
-      border-radius: 15px;
-      background: #eef6ff;
-      color: var(--blue);
-    }
-
-    .demo-icon.kiosk {
-      background: #ecfbf5;
-      color: var(--green);
-    }
-
-    .demo-icon svg {
-      width: 34px;
-      height: 34px;
-      fill: none;
-      stroke: currentColor;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      stroke-width: 1.9;
-    }
-
-    .badge {
+    .demo-card .badge {
       display: inline-flex;
-      width: fit-content;
-      border-radius: 999px;
+      align-items: center;
       padding: 3px 12px;
-      background: #dbeafe;
+      border-radius: 999px;
+      background: var(--blue-soft);
       color: #1d4ed8;
-      font-size: 0.76rem;
-      font-weight: 900;
+      font-size: 0.74rem;
+      font-weight: 800;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       white-space: nowrap;
     }
 
-    .badge.kiosk {
-      background: #e7f8ef;
-      color: var(--green);
+    .demo-card.kiosk .badge { background: var(--green-soft); color: var(--green); }
+
+    .demo-card .actions {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+      margin-top: auto;
+      padding-top: 4px;
     }
 
-    .card-links {
+    .demo-card .btn {
+      display: inline-flex;
+      justify-content: center;
+      width: 100%;
+      padding: 12px 18px;
+      border-radius: 10px;
+      background: var(--blue);
+      color: #fff;
+      font-weight: 700;
+      text-decoration: none;
+      font-size: 1rem;
+      letter-spacing: 0.01em;
+    }
+
+    .demo-card.kiosk .btn { background: var(--green); }
+    .demo-card .btn:hover { filter: brightness(0.92); }
+    .demo-card .secondary {
+      align-self: center;
+      font-size: 0.92rem;
+    }
+
+    .no-device {
+      grid-column: 1 / -1;
+      margin-top: 4px;
+      padding: 14px 18px;
+      border: 1px dashed var(--rule);
+      border-radius: 12px;
+      background: var(--soft);
+      color: var(--soft-ink);
+      font-size: 0.94rem;
+    }
+
+    /* Resource map */
+    .ref-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .ref-col {
+      padding: 18px 20px;
+      border: 1px solid var(--rule);
+      border-radius: 14px;
+      background: var(--softer);
+      min-width: 0;
+    }
+
+    .ref-col h3 {
+      margin-bottom: 12px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #43597a;
+    }
+
+    .ref-col ul { list-style: none; padding: 0; margin: 0; }
+
+    .ref-col li {
+      margin-bottom: 12px;
+      font-size: 0.94rem;
+      line-height: 1.4;
+    }
+
+    .ref-col li:last-child { margin-bottom: 0; }
+
+    .ref-col li small {
+      color: var(--muted);
+      display: block;
+      font-size: 0.82rem;
+      margin-top: 1px;
+      font-weight: 400;
+    }
+
+    /* Site footer */
+    .site-foot {
+      margin-top: 28px;
+      padding: 18px 0 0;
+      border-top: 1px solid var(--rule);
       display: flex;
       flex-wrap: wrap;
-      gap: 10px 14px;
-      margin-top: 2px;
+      align-items: center;
+      gap: 14px;
+      color: var(--muted);
+      font-size: 0.88rem;
     }
 
-    .layer {
-      min-width: 0;
-      padding: 18px 20px 20px;
-      border: 1px solid var(--rule);
-      border-radius: 16px;
-      background: var(--soft);
-    }
-
-    .layer.kiosk-wrapper {
-      grid-column: 2;
-      border-left: 4px solid var(--green);
-      background: #f4fcf8;
-    }
-
-    .layer.transport {
-      grid-column: 1 / -1;
-      border-left: 4px solid var(--blue);
-    }
-
-    .layer.smart {
-      grid-column: 1 / -1;
-      border-left: 4px solid #36506e;
-      background: #fff;
-    }
-
-    .layer h3 {
-      margin-bottom: 8px;
-    }
-
-    .layer p {
-      margin-bottom: 12px;
-      color: #33445c;
-      font-size: 0.95rem;
-    }
+    .site-foot .spacer { flex: 1; }
+    .site-foot a { color: var(--soft-ink); }
 
     code {
-      padding: 0.08em 0.24em;
+      padding: 0.05em 0.3em;
       background: #edf3f8;
       color: #21334d;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
       overflow-wrap: anywhere;
     }
 
-    @media (max-width: 760px) {
-      body {
-        font-size: 16px;
-      }
+    abbr[title] {
+      text-decoration: underline dotted;
+      text-decoration-color: var(--rule);
+      text-underline-offset: 0.18em;
+      cursor: help;
+    }
 
-      .page {
-        padding: 30px 18px 56px;
-      }
+    @media (max-width: 980px) {
+      .layers-grid { grid-template-columns: 1fr; }
+      .ref-grid { grid-template-columns: 1fr 1fr; }
+    }
 
-      .architecture-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .demo-card.portal,
-      .demo-card.kiosk,
-      .layer.kiosk-wrapper,
-      .layer.transport,
-      .layer.smart {
-        grid-column: 1;
-      }
+    @media (max-width: 720px) {
+      body { font-size: 16px; }
+      .page { padding: 0 18px 56px; }
+      .topbar { flex-wrap: wrap; }
+      .topbar .brand { flex-basis: 100%; margin-bottom: 6px; }
+      .anchor-grid, .demo-grid { grid-template-columns: 1fr; }
+      .ref-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <main class="page">
-    <header>
-      <p class="eyebrow">Patient-directed clinical data exchange</p>
+    <div class="topbar">
+      <div class="brand">SMART Health Check-in</div>
+      <div class="topbar-actions">
+        <a class="icon-link" href="https://github.com/jmandel/smart-health-checkin-mdoc" target="_blank" rel="noopener" aria-label="View source on GitHub">
+          <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path></svg>
+          GitHub
+        </a>
+        <div class="llm-widget" role="group" aria-label="LLM-friendly docs bundle">
+          <button id="copy-llms" type="button" title="Copy concatenated docs (llms.txt) to clipboard for an LLM session">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="4" y="4" width="9" height="11" rx="1.5"></rect>
+              <path d="M3 12V2.5A1.5 1.5 0 0 1 4.5 1h7"></path>
+            </svg>
+            <span id="copy-llms-label">Copy llms.txt</span>
+          </button>
+          <a href="./llms.txt" target="_blank" rel="noopener" title="Open llms.txt in a new tab">Open ↗</a>
+        </div>
+      </div>
+    </div>
+
+    <header class="hero">
       <h1>SMART Health Check-in over W3C Digital Credentials API</h1>
+      <div class="pills" aria-label="Project status">
+        <span class="pill">Open prototype</span>
+        <span class="pill">Spec: v1 draft</span>
+        <span class="pill">MIT licensed</span>
+      </div>
       <p class="lede">
-        A web verifier asks a patient wallet for check-in information: FHIR
-        resources, questionnaires, SMART Health Cards, and per-item status in a
-        user-approved response.
+        A web verifier &mdash; clinic, kiosk, or patient portal &mdash; asks a patient wallet for
+        check-in information: <abbr title="Fast Healthcare Interoperability Resources">FHIR</abbr>
+        resources, <abbr title="FHIR Questionnaire / QuestionnaireResponse">questionnaires</abbr>,
+        <abbr title="SMART Health Cards: signed JWS payload of FHIR data">SMART Health Cards</abbr>,
+        and per-item status &mdash; in a user-approved, encrypted response.
       </p>
     </header>
 
-    <section>
-      <h2>One presentation model</h2>
-      <p>
-        SMART Health Check-in defines an application-level request and response
-        shape for patient-directed clinical sharing. The request is a list of
-        consentable items such as demographics, insurance, clinical summaries,
-        intake questionnaires, SMART Health Cards, or other FHIR resources. The
-        response returns artifacts that fulfill those items.
+    <section id="demos" aria-labelledby="demos-h">
+      <h2 id="demos-h">Try the demos</h2>
+      <div class="demo-grid">
+        <article class="demo-card">
+          <div class="demo-head">
+            <div>
+              <h3>Check in from a phone</h3>
+              <p>
+                The patient is on their own phone. They tap a button, choose their health app,
+                approve the items, and the page renders the wallet's response in place.
+              </p>
+            </div>
+            <span class="badge">Online</span>
+          </div>
+          <div class="actions">
+            <a class="btn" href="./verifier/" target="_blank" rel="noopener">Open verifier</a>
+            <a class="secondary" href="./smart-model-explainer.html">How it works →</a>
+          </div>
+        </article>
+        <article class="demo-card kiosk">
+          <div class="demo-head">
+            <div>
+              <h3>Check in at a kiosk</h3>
+              <p>
+                Staff starts check-in on a workstation. A QR code appears. The patient scans it on
+                their phone, runs the same presentation, and the kiosk receives the encrypted SMART
+                response.
+              </p>
+            </div>
+            <span class="badge">In-person</span>
+          </div>
+          <div class="actions">
+            <a class="btn" href="./verifier/creator.html" target="_blank" rel="noopener">Open kiosk creator</a>
+            <a class="secondary" href="./kiosk-flow-explainer.html">How it works →</a>
+          </div>
+        </article>
+        <div class="no-device">
+          <strong>No device handy?</strong> The
+          <a href="./wire-protocol-explainer.html#artifact-viewer">wire-protocol explainer</a>
+          drives a byte-by-byte viewer over the checked-in fixtures &mdash; the same captures the
+          test suites validate. Walk a real request and response without any hardware.
+        </div>
+      </div>
+    </section>
+
+    <section id="model" aria-labelledby="model-h">
+      <h2 id="model-h">A verifier asks. A wallet answers.</h2>
+      <div class="anchor-grid" aria-label="Request / response example">
+        <article class="anchor-card req">
+          <h3>Verifier request <span class="role-tag">clinic &middot; kiosk &middot; portal</span></h3>
+<pre><span class="com">// SmartHealthCheckinRequest (excerpt)</span>
+{
+  <span class="key">"type"</span>:    <span class="str">"smart-health-checkin-request"</span>,
+  <span class="key">"purpose"</span>: <span class="str">"Clinic check-in"</span>,
+  <span class="key">"fhirVersions"</span>: [<span class="str">"4.0.1"</span>],
+  <span class="key">"items"</span>: [
+    { <span class="key">"id"</span>: <span class="str">"insurance"</span>,
+      <span class="key">"required"</span>: <span class="num">true</span>,
+      <span class="key">"content"</span>: { <span class="key">"profile"</span>:
+        <span class="str">"…/C4DIC-Coverage"</span> } },
+    { <span class="key">"id"</span>: <span class="str">"intake"</span>,
+      <span class="key">"content"</span>: { <span class="key">"questionnaire"</span>: { … } } },
+    { <span class="key">"id"</span>: <span class="str">"summary"</span>,
+      <span class="key">"content"</span>: { <span class="key">"profileFamily"</span>:
+        <span class="str">"us-core"</span> } }
+  ]
+}</pre>
+        </article>
+        <article class="anchor-card res">
+          <h3>Wallet response <span class="role-tag">patient app</span></h3>
+<pre><span class="com">// SmartHealthCheckinResponse (excerpt)</span>
+{
+  <span class="key">"type"</span>: <span class="str">"smart-health-checkin-response"</span>,
+  <span class="key">"artifacts"</span>: [
+    { <span class="key">"id"</span>: <span class="str">"a1"</span>,
+      <span class="key">"type"</span>: <span class="str">"fhir_resource"</span>,
+      <span class="key">"fulfills"</span>: [<span class="str">"insurance"</span>],
+      <span class="key">"data"</span>: { <span class="key">"resourceType"</span>:
+        <span class="str">"Coverage"</span>, … } },
+    { <span class="key">"id"</span>: <span class="str">"a2"</span>,
+      <span class="key">"type"</span>: <span class="str">"questionnaire_response"</span>,
+      <span class="key">"fulfills"</span>: [<span class="str">"intake"</span>], … }
+  ],
+  <span class="key">"requestStatus"</span>: [
+    { <span class="key">"id"</span>: <span class="str">"insurance"</span>, <span class="key">"status"</span>: <span class="str">"shared"</span>   },
+    { <span class="key">"id"</span>: <span class="str">"intake"</span>,    <span class="key">"status"</span>: <span class="str">"shared"</span>   },
+    { <span class="key">"id"</span>: <span class="str">"summary"</span>,   <span class="key">"status"</span>: <span class="str">"declined"</span> }
+  ]
+}</pre>
+        </article>
+      </div>
+      <p class="invariant">
+        <strong>Core invariant:</strong> each <code>request.items[].id</code> appears exactly once in
+        <code>response.requestStatus[]</code>. Artifacts cite item ids in <code>fulfills[]</code>,
+        so a single artifact (a Bundle, a Health Card) can fulfill multiple items.
       </p>
-      <p>
-        The demo carries that request/response model through the browser's W3C
-        Digital Credentials API, so the verifier can ask a wallet and receive an
-        encrypted response without a server round trip.
+      <p class="deeper-line">
+        Want the full payload definition? See the
+        <a href="./smart-model-explainer.html">SMART model explainer</a> or read the
+        <a href="./SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md">draft payload spec</a>.
       </p>
     </section>
 
-    <section>
-      <h2>Flows and layers</h2>
-      <p>
-        Both entry points start from the same SMART request/response model, then
-        carry it through the browser Digital Credentials API. The kiosk path
-        adds one handoff layer above the shared stack.
+    <section id="layers" aria-labelledby="layers-h">
+      <h2 id="layers-h">How it's wired</h2>
+      <p class="section-lead">
+        Three layers; both flows share the bottom two. The clinical content layer is transport-neutral.
+        The browser transport is the W3C Digital Credentials API. The kiosk handoff is an extra wrapper
+        for in-person check-in.
       </p>
-      <div class="architecture-grid" aria-label="Flow and layer architecture map">
-        <article class="demo-card portal">
-          <div class="demo-card-header">
-            <div class="demo-icon" aria-hidden="true">
-              <svg viewBox="0 0 48 48">
-                <rect x="14" y="6" width="20" height="36" rx="4"></rect>
-                <path d="M20 34h8"></path>
-                <path d="M24 15v10"></path>
-                <path d="M19 20h10"></path>
-              </svg>
-            </div>
-            <span class="badge">Same-device flow</span>
-          </div>
-          <div class="demo-copy">
-            <h3>Patient portal</h3>
-            <p>
-              The patient is already on their own device. They tap a button,
-              choose their health app, approve sharing, and the page opens the
-              wallet response in place.
-            </p>
-          </div>
-          <div class="card-links">
-            <a href="./verifier/" aria-label="Try the patient portal verifier demo">Try it</a>
-          </div>
-        </article>
-
-        <article class="demo-card kiosk">
-          <div class="demo-card-header">
-            <div class="demo-icon kiosk" aria-hidden="true">
-              <svg viewBox="0 0 48 48">
-                <rect x="7" y="8" width="34" height="23" rx="3"></rect>
-                <path d="M18 39h12"></path>
-                <path d="M24 31v8"></path>
-                <path d="M14 15h5v5h-5z"></path>
-                <path d="M28 15h5v5h-5z"></path>
-                <path d="M14 24h5v1h-5z"></path>
-                <path d="M28 24h2"></path>
-                <path d="M33 24h1"></path>
-              </svg>
-            </div>
-            <span class="badge kiosk">Cross-device flow</span>
-          </div>
-          <div class="demo-copy">
-            <h3>Front desk kiosk</h3>
-            <p>
-              Staff starts check-in at a workstation. A QR code appears. The
-              patient scans it on their phone, runs the same presentation flow,
-              and the kiosk receives the encrypted SMART response.
-            </p>
-          </div>
-          <div class="card-links">
-            <a href="./verifier/creator.html" aria-label="Try the front desk kiosk creator">Try it</a>
-          </div>
-        </article>
-
-        <article class="layer kiosk-wrapper">
-          <h3>Kiosk handoff wrapper</h3>
-          <p>
-            Right-hand flow only: a desktop QR points the phone to an encrypted,
-            signed request and returns an encrypted SMART response to the kiosk.
-          </p>
-          <a href="./kiosk-flow-explainer.html">Kiosk flow explainer</a>
-        </article>
+      <div class="layers-grid">
         <article class="layer smart">
-          <h3>SMART request/response</h3>
+          <h3>SMART request &amp; response</h3>
           <p>
-            Shared clinical layer: request items, responder artifacts, FHIR
-            resources, questionnaires, SMART Health Cards, and per-item status.
+            Clinical content layer: items, artifacts, FHIR resources, questionnaires, SMART Health
+            Cards, and per-item status. JSON, transport-neutral.
           </p>
-          <a href="./smart-model-explainer.html">SMART model explainer</a>
+          <div class="layer-links">
+            <a href="./smart-model-explainer.html">Model explainer →</a>
+            <a href="./SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md">Draft spec →</a>
+          </div>
         </article>
         <article class="layer transport">
           <h3>Digital Credentials API</h3>
           <p>
-            Shared browser layer for both flows: the wallet presentation uses
-            the current direct mdoc profile, with fixture-backed byte-level
-            detail.
+            Browser transport for both flows. Wallet presentation uses direct
+            <code>org-iso-mdoc</code>: <abbr title="Hybrid Public Key Encryption (RFC 9180)">HPKE</abbr>
+            encryption, COSE-signed mdoc, with the SMART payload carried inside.
           </p>
-          <a href="./wire-protocol-explainer.html">Wire protocol explainer</a>
+          <div class="layer-links">
+            <a href="./wire-protocol-explainer.html">Wire-protocol explainer →</a>
+            <a href="https://github.com/jmandel/smart-health-checkin-mdoc/tree/main/fixtures" target="_blank" rel="noopener">Byte fixtures →</a>
+          </div>
+        </article>
+        <article class="layer kiosk">
+          <h3>Kiosk handoff wrapper</h3>
+          <p>
+            Cross-device only. A desktop QR points the phone to a signed, encrypted request and
+            returns an encrypted SMART response back to the kiosk.
+          </p>
+          <div class="layer-links">
+            <a href="./kiosk-flow-explainer.html">Kiosk flow explainer →</a>
+          </div>
         </article>
       </div>
     </section>
+
+    <section id="reference" aria-labelledby="reference-h">
+      <h2 id="reference-h">Read deeper, build with it</h2>
+      <p class="section-lead">
+        Open-source, MIT-licensed. Spec, libraries, and fixtures live in one repo so the wallet,
+        verifier, and tests reference the same byte captures.
+      </p>
+      <div class="ref-grid">
+        <div class="ref-col">
+          <h3>Read the spec</h3>
+          <ul>
+            <li><a href="./smart-model-explainer.html">SMART model explainer</a><small>Application-level model: items, artifacts, statuses</small></li>
+            <li><a href="./SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md">Draft payload spec</a><small>Transport-neutral request/response shape</small></li>
+            <li><a href="https://github.com/jmandel/smart-health-checkin-mdoc/blob/main/docs/PROTOCOL-EXPLAINER.md" target="_blank" rel="noopener">Protocol explainer</a><small>Roles, trust boundaries, components</small></li>
+            <li><a href="https://github.com/jmandel/smart-health-checkin-mdoc/blob/main/docs/profiles/org-iso-mdoc.md" target="_blank" rel="noopener">org-iso-mdoc profile</a><small>Exact wire profile and mdoc/COSE invariants</small></li>
+            <li><a href="https://github.com/jmandel/smart-health-checkin-mdoc/blob/main/docs/OPEN-QUESTIONS.md" target="_blank" rel="noopener">Open questions</a><small>Active design decisions</small></li>
+          </ul>
+        </div>
+        <div class="ref-col">
+          <h3>Build a verifier</h3>
+          <ul>
+            <li><a href="https://github.com/jmandel/smart-health-checkin-mdoc/blob/main/rp-web/src/sdk/README.md" target="_blank" rel="noopener">TypeScript SDK</a><small>Framework-neutral request/response &amp; DC-API verifier flow</small></li>
+            <li><a href="https://github.com/jmandel/smart-health-checkin-mdoc/blob/main/rp-web/src/sdk/react.README.md" target="_blank" rel="noopener">React bindings</a><small>Hooks and components over the SDK</small></li>
+            <li><a href="https://github.com/jmandel/smart-health-checkin-mdoc/tree/main/rp-web" target="_blank" rel="noopener">rp-web app</a><small>Reference verifier, kiosk creator, and submit pages</small></li>
+            <li><a href="https://github.com/jmandel/smart-health-checkin-mdoc/blob/main/rp-web/src/protocol/README.md" target="_blank" rel="noopener">Protocol helpers</a><small>CBOR builders, vectors, types</small></li>
+          </ul>
+        </div>
+        <div class="ref-col">
+          <h3>Build a wallet</h3>
+          <ul>
+            <li><a href="https://github.com/jmandel/smart-health-checkin-mdoc/tree/main/wallet-android" target="_blank" rel="noopener">Android wallet libraries</a><small>Gradle modules: core, mdoc, credential-manager, ui-compose</small></li>
+            <li><a href="https://github.com/jmandel/smart-health-checkin-mdoc/tree/main/wallet-android/smart-checkin-core" target="_blank" rel="noopener">smart-checkin-core</a><small>Domain model, request classification, response building</small></li>
+            <li><a href="https://github.com/jmandel/smart-health-checkin-mdoc/tree/main/wallet-android/smart-checkin-mdoc" target="_blank" rel="noopener">smart-checkin-mdoc</a><small>Direct org-iso-mdoc parsing, CBOR/COSE, HPKE</small></li>
+            <li><a href="https://github.com/jmandel/smart-health-checkin-mdoc/tree/main/wallet-android/app/matcher-rs" target="_blank" rel="noopener">Matcher (Rust → WASM)</a><small>Credential Manager matcher used by the demo wallet</small></li>
+          </ul>
+        </div>
+        <div class="ref-col">
+          <h3>Inspect the bytes</h3>
+          <ul>
+            <li><a href="./wire-protocol-explainer.html">Wire-protocol explainer</a><small>Byte-by-byte CBOR / mdoc / HPKE walkthrough</small></li>
+            <li><a href="https://github.com/jmandel/smart-health-checkin-mdoc/tree/main/fixtures" target="_blank" rel="noopener">Fixtures directory</a><small>Real and synthetic captures used by the tests</small></li>
+            <li><a href="./llms.txt" target="_blank" rel="noopener">llms.txt</a><small>Concatenated docs bundle for LLM sessions (use the <em>Copy llms.txt</em> button above)</small></li>
+            <li><a href="https://github.com/jmandel/smart-health-checkin-mdoc" target="_blank" rel="noopener">Source on GitHub</a><small>Apps, libraries, captures, tests</small></li>
+          </ul>
+        </div>
+      </div>
+      <div class="site-foot">
+        <span>SMART Health Check-in is an open prototype. Not a CMS or ONC product.</span>
+        <span class="spacer"></span>
+        <a href="https://github.com/jmandel/smart-health-checkin-mdoc" target="_blank" rel="noopener">github.com/jmandel/smart-health-checkin-mdoc</a>
+      </div>
+    </section>
   </main>
+
+  <script>
+    (function () {
+      var btn = document.getElementById('copy-llms');
+      var label = document.getElementById('copy-llms-label');
+      if (!btn || !label) return;
+      var defaultText = label.textContent;
+      var resetTimer = 0;
+
+      btn.addEventListener('click', async function () {
+        try {
+          var res = await fetch('./llms.txt', { cache: 'no-store' });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          var text = await res.text();
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+          } else {
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+          }
+          var kb = (new Blob([text]).size / 1024).toFixed(0);
+          label.textContent = 'Copied ✓ (' + kb + ' KB)';
+          btn.style.color = '#08795b';
+          window.clearTimeout(resetTimer);
+          resetTimer = window.setTimeout(function () {
+            label.textContent = defaultText;
+            btn.style.color = '';
+          }, 2400);
+        } catch (e) {
+          label.textContent = 'Copy failed';
+          window.clearTimeout(resetTimer);
+          resetTimer = window.setTimeout(function () {
+            label.textContent = defaultText;
+          }, 2400);
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
