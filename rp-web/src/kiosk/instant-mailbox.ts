@@ -10,6 +10,9 @@ import {
   type EncryptedPayload,
 } from "./protocol.ts";
 
+const KIOSK_SYNC_TIMEOUT_MS = 15_000;
+const KIOSK_SYNC_POLL_MS = 500;
+
 export async function writeEncryptedKioskRequest(
   input: Parameters<KioskTransportProvider["writeRequest"]>[0],
 ): Promise<KioskRequestRow> {
@@ -30,7 +33,7 @@ export async function writeEncryptedKioskRequest(
       .ruleParams({ requestId: row.requestId })
       .update(row),
   );
-  return row;
+  return waitForRequestRow(row.requestId);
 }
 
 export async function readEncryptedKioskRequest(requestId: string): Promise<KioskRequestRow> {
@@ -94,7 +97,7 @@ export async function writeEncryptedSubmission(input: {
       .ruleParams({ requestId })
       .update(row),
   );
-  return row;
+  return waitForSubmissionRow(requestId, submissionId);
 }
 
 export async function downloadEncryptedSubmissionBlob(row: KioskSubmissionRow): Promise<Uint8Array<ArrayBuffer>> {
@@ -122,8 +125,61 @@ export async function downloadEncryptedSubmissionBlob(row: KioskSubmissionRow): 
   return bytes;
 }
 
+export async function readSubmissionRows(requestId: string): Promise<KioskSubmissionRow[]> {
+  const result = await db.queryOnce(
+    {
+      submissions: {
+        $: {
+          where: { requestId },
+          order: { createdAt: "asc" as const },
+        },
+      },
+    },
+    { ruleParams: { requestId } },
+  );
+  return result.data?.submissions ? (result.data.submissions as KioskSubmissionRow[]) : [];
+}
+
+async function waitForRequestRow(requestId: string): Promise<KioskRequestRow> {
+  return waitForVisibleRow(
+    async () => readEncryptedKioskRequest(requestId),
+    `Timed out waiting for kiosk request ${requestId} to sync.`,
+  );
+}
+
+async function waitForSubmissionRow(requestId: string, submissionId: string): Promise<KioskSubmissionRow> {
+  return waitForVisibleRow(async () => {
+    const rows = await readSubmissionRows(requestId);
+    const row = rows.find((item) => item.submissionId === submissionId);
+    if (!row) throw new Error("Submission row is not visible yet.");
+    return row;
+  }, `Timed out waiting for phone response ${submissionId} to sync.`);
+}
+
+async function waitForVisibleRow<T>(
+  read: () => Promise<T>,
+  timeoutMessage: string,
+): Promise<T> {
+  const deadline = Date.now() + KIOSK_SYNC_TIMEOUT_MS;
+  let lastError: unknown;
+  while (Date.now() <= deadline) {
+    try {
+      return await read();
+    } catch (e) {
+      lastError = e;
+      await sleep(KIOSK_SYNC_POLL_MS);
+    }
+  }
+  const reason = lastError instanceof Error ? ` Last error: ${lastError.message}` : "";
+  throw new Error(`${timeoutMessage}${reason}`);
+}
+
 export function storagePathForSubmission(requestId: string, submissionId: string): string {
   return `${storagePrefixForRequestId(requestId)}${submissionId}.bin`;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => globalThis.setTimeout(resolve, ms));
 }
 
 function arrayBufferCopy(bytes: Uint8Array): ArrayBuffer {

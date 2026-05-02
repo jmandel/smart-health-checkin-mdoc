@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useState } from "react";
+import { StrictMode, useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import QRCode from "qrcode";
 import { SmartResponseReview, asRecord } from "../app/SmartResponseReview.tsx";
@@ -12,7 +12,7 @@ import {
   type KioskSubmissionRow,
   type SubmissionPlaintext,
 } from "./kiosk-provider.ts";
-import { instantKioskProvider } from "./instant-mailbox.ts";
+import { instantKioskProvider, readSubmissionRows } from "./instant-mailbox.ts";
 import "../app/styles.css";
 
 const KIOSK_REQUEST_PRESET = PRESETS.find((preset) => preset.id === "all-of-the-above") ?? PRESETS[0]!;
@@ -31,10 +31,17 @@ function CreatorApp() {
   const [session, setSession] = useState<KioskSession>();
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string>();
+  const [pollError, setPollError] = useState<string>();
+  const [polledRows, setPolledRows] = useState<KioskSubmissionRow[]>([]);
+  const [responseRefreshCounter, setResponseRefreshCounter] = useState(0);
   const [received, setReceived] = useState<ReceivedSubmission[]>([]);
   const requestId = session?.verified.payload.requestId;
 
   const inbox = instantKioskProvider.useSubmissionRows(requestId);
+  const submissionRows = useMemo(() => mergeSubmissionRows(inbox.rows, polledRows), [inbox.rows, polledRows]);
+  const submissionRowsKey = submissionRows.map((row) => `${row.id}:${row.storagePath}:${row.totalCiphertextBytes}`).join("|");
+  const receivedOk = received.some((item) => item.plaintext && !item.error);
+  const pendingRows = submissionRows.length > 0 && !receivedOk;
 
   useEffect(() => {
     let cancelled = false;
@@ -63,7 +70,7 @@ function CreatorApp() {
     }
     let cancelled = false;
     const rows = filterRowsForRequest({
-      rows: inbox.rows,
+      rows: submissionRows,
       requestId: session.verified.payload.requestId,
     });
     Promise.all(rows.map((row) => openRow(session, row))).then((opened) => {
@@ -72,7 +79,38 @@ function CreatorApp() {
     return () => {
       cancelled = true;
     };
-  }, [session, inbox.rows]);
+  }, [session, submissionRowsKey, responseRefreshCounter]);
+
+  useEffect(() => {
+    if (!requestId) {
+      setPolledRows([]);
+      setPollError(undefined);
+      return;
+    }
+    const currentRequestId = requestId;
+    if (receivedOk) return;
+    let cancelled = false;
+    async function poll() {
+      try {
+        const rows = await readSubmissionRows(currentRequestId);
+        if (!cancelled) {
+          setPolledRows(rows);
+          if (rows.length > 0) setResponseRefreshCounter((value) => value + 1);
+          setPollError(undefined);
+        }
+      } catch (e) {
+        if (!cancelled) setPollError(e instanceof Error ? e.message : String(e));
+      }
+    }
+    void poll();
+    const timer = window.setInterval(() => {
+      void poll();
+    }, 2_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [requestId, receivedOk]);
 
   return (
     <>
@@ -105,7 +143,7 @@ function CreatorApp() {
               <h2>Scan this QR code</h2>
             </div>
             <span className={session ? "status-pill status-pill--done" : "status-pill"}>
-              {session ? "Ready" : busy ? "Preparing" : "Unavailable"}
+              {session ? "QR displayed" : busy ? "Preparing QR" : "QR unavailable"}
             </span>
           </div>
 
@@ -164,26 +202,27 @@ function CreatorApp() {
           <div className="section-heading">
             <div>
               <div className="eyebrow">Step 2</div>
-              <h2>{received.length > 0 ? "Check-in received" : "Waiting for your phone"}</h2>
+              <h2>{receivedOk ? "Check-in received" : pendingRows ? "Receiving your response" : "Waiting for your phone"}</h2>
             </div>
-            <span className={received.length > 0 ? "status-pill status-pill--done" : "status-pill"}>
-              {received.length > 0 ? "Complete" : inbox.isLoading ? "Waiting" : "Ready"}
+            <span className={receivedOk ? "status-pill status-pill--done" : "status-pill"}>
+              {receivedOk ? "Received" : pendingRows ? "Opening response" : "Waiting for phone"}
             </span>
           </div>
           {inbox.error ? <div className="notice notice--error">{inbox.error.message}</div> : null}
+          {pollError ? <div className="notice notice--error">Could not refresh phone responses: {pollError}</div> : null}
           {received.length === 0 ? (
             <p className="muted">After you approve sharing on your phone, this screen will update automatically.</p>
           ) : (
             <div className="task-list">
               {received.map((item) => (
                 <article className={item.error ? "task-item kiosk-submission" : "task-item task-item--done kiosk-submission"} key={item.row.id}>
-                  <div className="task-status">{item.error ? "Rejected" : "Received"}</div>
+                  <div className="task-status">{submissionStatus(item)}</div>
                   <div className="kiosk-submission__body">
                     <div className="task-title">{submissionTitle(item)}</div>
-                    <div className="task-description">{item.error ?? submissionDescription(item)}</div>
+                    <div className="task-description">{submissionDescription(item)}</div>
                     {!item.error ? <SubmissionDetails item={item} /> : null}
                   </div>
-                  <div className="task-kind">{item.error ? "Review" : "Done"}</div>
+                  <div className="task-kind">{submissionKind(item)}</div>
                 </article>
               ))}
             </div>
@@ -192,6 +231,14 @@ function CreatorApp() {
       </main>
     </>
   );
+}
+
+function mergeSubmissionRows(...rowSets: KioskSubmissionRow[][]): KioskSubmissionRow[] {
+  const rowsById = new Map<string, KioskSubmissionRow>();
+  for (const row of rowSets.flat()) {
+    rowsById.set(row.id, row);
+  }
+  return Array.from(rowsById.values()).sort((a, b) => a.createdAt - b.createdAt);
 }
 
 function initialKioskSession(): Promise<KioskSession> {
@@ -260,7 +307,22 @@ function submissionTitle(item: ReceivedSubmission): string {
   return item.row.submissionId;
 }
 
+function submissionStatus(item: ReceivedSubmission): string {
+  if (!item.error) return "Received";
+  return isTransientOpenError(item.error) ? "Opening" : "Review";
+}
+
+function submissionKind(item: ReceivedSubmission): string {
+  if (!item.error) return "Done";
+  return isTransientOpenError(item.error) ? "Retrying" : "Review";
+}
+
 function submissionDescription(item: ReceivedSubmission): string {
+  if (item.error) {
+    return isTransientOpenError(item.error)
+      ? "The phone response has arrived. The kiosk is waiting for the encrypted file to become available."
+      : item.error;
+  }
   const payload = asRecord(item.plaintext?.payload);
   if (payload?.kind === "smart-health-checkin-response") {
     const smart = asRecord(payload.smartResponse);
@@ -269,6 +331,12 @@ function submissionDescription(item: ReceivedSubmission): string {
     return `Received ${artifactCount} artifact(s) and ${statusCount} item status row(s).`;
   }
   return "Encrypted submission opened.";
+}
+
+function isTransientOpenError(error: string): boolean {
+  return error.includes("not available") ||
+    error.includes("download failed: 404") ||
+    error.includes("Query timed out");
 }
 
 function SubmissionDetails({ item }: { item: ReceivedSubmission }) {
