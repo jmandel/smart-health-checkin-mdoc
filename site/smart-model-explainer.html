@@ -311,126 +311,124 @@
   <main class="page">
     <header>
       <p class="eyebrow">SMART Health Check-in over W3C Digital Credentials API</p>
-      <h1>A request asks for check-in work. A response returns what the patient shared.</h1>
+      <h1>A clinic asks for check-in information. The patient chooses what to share.</h1>
       <p class="lede">
-        This page explains the application-level model: requester, responder,
-        request items, profile-family selectors, response artifacts, and
-        per-item status.
+        This page explains the JSON model: who asks, what can be requested,
+        how the wallet replies, and how every requested item gets an outcome.
       </p>
       <div class="actions">
         <a href="./index.html">Overview</a>
-        <a href="./verifier/">Open verifier demo</a>
+        <a href="./verifier/">Open sharing demo</a>
         <a href="./wire-protocol-explainer.html">Wire protocol explainer</a>
         <a href="./spec.html">Draft spec</a>
       </div>
     </header>
 
     <nav class="toc" aria-label="Explainer sections">
-      <a href="#roles">Roles</a>
-      <a href="#conversation">Conversation</a>
+      <a href="#roles">Who asks, who answers</a>
+      <a href="#conversation">Patient choice</a>
       <a href="#request">Request</a>
       <a href="#items">Items</a>
-      <a href="#profile-families">Profile families</a>
+      <a href="#profile-families">FHIR records</a>
       <a href="#response">Response</a>
-      <a href="#artifacts">Artifacts</a>
-      <a href="#statuses">Statuses</a>
+      <a href="#artifacts">Shared records</a>
+      <a href="#statuses">Outcomes</a>
       <a href="#complete-example">Complete example</a>
     </nav>
 
     <section id="roles">
-      <h2>Requester and responder roles</h2>
+      <h2>Who asks, who answers</h2>
       <p>
-        The requester says what it wants for a check-in workflow. The responder
-        decides what it can provide, asks the user, and returns the approved
-        content.
+        During check-in, a clinic system, front-desk kiosk, or patient portal
+        asks for information such as demographics, insurance, medications, or an
+        intake form. The patient's wallet shows that request and returns what
+        the patient approves.
       </p>
 
       <div class="role-pair">
         <div class="role">
-          <h3>Requester</h3>
+          <h3>Clinic, kiosk, or portal</h3>
           <p>
-            A clinic, registration kiosk, patient portal, or relying-party web
-            app. It owns the reason for the exchange, the requested item list,
-            and the formats it can accept.
+            The app asking for information. It explains the reason for the
+            request, lists the information it needs, and names the formats it can
+            read.
           </p>
           <ul>
-            <li>Creates a SMART Health Check-in request.</li>
-            <li>Invokes <code>navigator.credentials.get()</code>.</li>
-            <li>Validates the response against the original request.</li>
+            <li>Prepares the check-in request.</li>
+            <li>Starts wallet review of the request.</li>
+            <li>Checks the response against the original request.</li>
           </ul>
         </div>
 
         <div class="role responder">
-          <h3>Responder</h3>
+          <h3>Patient wallet or health app</h3>
           <p>
-            A patient wallet or health app. It owns available data, renders
-            holder review, and creates a SMART Health Check-in response.
+            A patient wallet or health app. It knows what data is available,
+            shows the request to the patient, and creates the response.
           </p>
           <ul>
-            <li>Matches request items it understands.</li>
-            <li>Shows the user what will be shared.</li>
-            <li>Returns artifacts plus a status for every item.</li>
+            <li>Finds matching information it can offer.</li>
+            <li>Shows the patient what will be shared.</li>
+            <li>Returns shared information plus an outcome for every item.</li>
           </ul>
         </div>
       </div>
     </section>
 
     <section id="conversation">
-      <h2>The conversation is a request, not a limit</h2>
+      <h2>The patient stays in control</h2>
       <p>
-        This is not "give me one credential." It is "here is a checklist of
-         holder-reviewable check-in tasks; tell me what the patient shared for each."
-        Selectors describe what the requester is looking for; they do not bound
-        what the wallet and holder may choose to disclose, subject to policy,
-        accepted media types, validation, and per-item status.
+        The request describes what would help with check-in. The wallet shows it
+        to the patient, and the patient chooses what to share. The response can
+        include all requested items, only some items, no items, or other helpful
+        records the patient approves.
       </p>
 
       <ol class="steps">
         <li>
           <span>
-            <strong>Requester chooses a purpose.</strong>
+            <strong>The app explains why it is asking.</strong>
             Example: clinic check-in, billing, visit intake, or prior authorization.
           </span>
         </li>
         <li>
           <span>
-            <strong>Requester lists named items.</strong>
+            <strong>The app lists the information it wants.</strong>
             Examples: patient demographics, insurance card, health summary, intake form.
           </span>
         </li>
         <li>
           <span>
-            <strong>Responder matches the list.</strong>
+            <strong>The wallet checks what it can provide.</strong>
             The wallet decides what it can offer and how each item should be shown.
           </span>
         </li>
         <li>
           <span>
-            <strong>User accepts, edits, or declines.</strong>
-            The user may share all, some, or none of the requested items.
+            <strong>The patient chooses what to share.</strong>
+            The patient may approve, decline, or fill out a form when asked.
           </span>
         </li>
         <li>
           <span>
-            <strong>Responder maps everything back.</strong>
-            Artifacts cite item ids in <code>fulfills[]</code>. Status rows cite item ids in <code>requestStatus[]</code>.
+            <strong>The wallet reports what happened.</strong>
+            Shared records cite item ids in <code>fulfills[]</code>. Outcome rows cite item ids in <code>requestStatus[]</code>.
           </span>
         </li>
       </ol>
 
       <p class="note">
-        <strong>Core invariant:</strong> each <code>request.items[].id</code>
-        must appear exactly once in <code>response.requestStatus[]</code>.
-        Artifacts point back to one or more item ids using <code>fulfills[]</code>.
+        <strong>Core rule:</strong> every requested item gets exactly one
+        <code>response.requestStatus[]</code> row. Shared records point back to
+        one or more item ids using <code>fulfills[]</code>.
       </p>
     </section>
 
     <section id="request">
-      <h2>What makes a SMART request?</h2>
+      <h2>What the app sends to the wallet</h2>
       <p>
-        A request is a typed envelope plus an ordered list of items. The
-        envelope identifies the conversation. The items are the work the user
-        sees in the wallet.
+        A request has an id, a reason for asking, the FHIR versions the app
+        can read, and the list of items to present for patient review.
       </p>
 
 <pre>{
@@ -446,31 +444,31 @@
 
       <dl>
         <dt>type</dt>
-        <dd>Fixed discriminator: <code>smart-health-checkin-request</code>.</dd>
+        <dd>Fixed label: <code>smart-health-checkin-request</code>.</dd>
         <dt>version</dt>
-        <dd>Payload schema version. Current value is <code>"1"</code>.</dd>
+        <dd>Model version. Current value is <code>"1"</code>.</dd>
         <dt>id</dt>
-        <dd>Requester-chosen id echoed by <code>response.requestId</code>.</dd>
+        <dd>Request id echoed by <code>response.requestId</code>.</dd>
         <dt>purpose</dt>
-        <dd>Human-readable reason to show in holder review UI; not authenticated requester identity or trust evidence.</dd>
+        <dd>Reason shown to the patient, such as <code>Clinic check-in</code>.</dd>
         <dt>fhirVersions</dt>
-        <dd>FHIR versions the requester can consume.</dd>
+        <dd>FHIR versions the app can read.</dd>
         <dt>items</dt>
-        <dd>The named checklist of clinical requests.</dd>
+        <dd>The named pieces of information being requested.</dd>
       </dl>
       <p class="note warning">
-        <strong>Identity boundary:</strong> SMART request JSON does not carry
-        requester identity, organization identity, origin, reader credentials,
-        callbacks, handoff metadata, or trust claims. Those signals come from the
-        presentation flow, trust processing, and deployment policy.
+        <strong>Implementer trust note:</strong> request text helps the patient
+        understand why sharing is being requested. Identity and trust decisions
+        come from the browser, wallet, reader authentication, and local policy.
       </p>
     </section>
 
     <section id="items">
-      <h2>What makes a request item?</h2>
+      <h2>Each item asks for one kind of information</h2>
       <p>
-        A request item is one holder-review task. It has a stable id, display
-        text, a content selector, and a list of accepted response formats.
+        Each item is one thing to show the patient. It has a stable id, display
+        text, a description of the requested content, and the response formats
+        the app can accept.
       </p>
 
 <pre>{
@@ -484,15 +482,15 @@
 
       <dl>
         <dt>id</dt>
-        <dd>Short stable name. Responses refer to this id.</dd>
+        <dd>Short stable name. The response uses this id when reporting results.</dd>
         <dt>title / summary</dt>
-        <dd>User-facing display text for the wallet holder review screen; not authenticated requester identity.</dd>
+        <dd>Text shown to the patient.</dd>
         <dt>required</dt>
-        <dd>Requester preference. The user still controls sharing.</dd>
+        <dd>Marks an item as important to the app asking. The patient still chooses what to share.</dd>
         <dt>content</dt>
-        <dd>The clinical thing requested.</dd>
+        <dd>The information being requested.</dd>
         <dt>accept</dt>
-        <dd>Media types the requester accepts for the returned artifact.</dd>
+        <dd>Response formats the app can read.</dd>
       </dl>
 
       <div class="example">
@@ -544,13 +542,13 @@
     </section>
 
     <section id="profile-families">
-      <h2>Profile families: asking for "any US Core profiles"</h2>
+      <h2>Asking for FHIR records</h2>
       <p>
-        Exact profile requests use <code>profiles</code>. Broad implementation
-        guide or profile-family requests use <code>profilesFrom</code>. Both
-        are arrays, and when both are present they are additive: exact profiles
-        highlight specific records of interest, but do not limit the broader
-        profile-family request.
+        The app can ask for a specific FHIR profile, such as US Core Patient, or
+        for a broader family of records, such as anything the wallet can share
+        from US Core. It can also name FHIR resource types like
+        <code>Condition</code>, <code>MedicationRequest</code>, or
+        <code>Observation</code>.
       </p>
 
       <span class="label">Any US Core resource the wallet can share</span>
@@ -584,7 +582,7 @@
         <dd>Publication, implementation guide, or profile-collection canonical URLs, such as US Core as a family.</dd>
         <dt>resourceTypes</dt>
         <dd>Optional official FHIR resourceType narrowing within the profile family.</dd>
-        <dt>no selectors</dt>
+        <dt>no FHIR filters</dt>
         <dd>Ask for any patient-specific FHIR resources the wallet can offer and the user chooses to share.</dd>
       </dl>
 
@@ -597,10 +595,11 @@
     </section>
 
     <section id="response">
-      <h2>What makes a SMART response?</h2>
+      <h2>What the wallet sends back</h2>
       <p>
-        A response is a typed envelope that links shared artifacts back to the
-        original request and says what happened for every requested item.
+        The response tells the app what was shared and what happened for every
+        requested item. It also links each shared record back to the item or
+        items it answers.
       </p>
 
 <pre>{
@@ -619,17 +618,18 @@
         <dt>requestId</dt>
         <dd>Must equal the original request <code>id</code>.</dd>
         <dt>artifacts</dt>
-        <dd>Clinical payloads the user chose to share.</dd>
+        <dd>Shared records or forms the patient approved.</dd>
         <dt>requestStatus</dt>
         <dd>One outcome for every requested item.</dd>
       </dl>
     </section>
 
     <section id="artifacts">
-      <h2>Artifacts are the shared clinical content</h2>
+      <h2>Shared records are what the patient approved</h2>
       <p>
-        An artifact has its own id, a media type, and a <code>fulfills[]</code>
-        array that maps it back to one or more request items.
+        In the JSON, each shared record is called an <code>artifact</code>. It
+        has its own id, a media type, and a <code>fulfills[]</code> list that
+        maps it back to one or more request items.
       </p>
 
       <div class="example">
@@ -657,15 +657,15 @@
   }
 }</pre>
         <p>
-          SMART Health Cards do not use outer <code>fhirVersion</code>; the
-          verifier inspects the signed JWS payload.
+          SMART Health Cards do not use outer <code>fhirVersion</code>; the app
+          inspects the signed SMART Health Card data.
         </p>
       </div>
 
       <table>
         <thead>
           <tr>
-            <th>Artifact field</th>
+            <th>JSON field</th>
             <th>Meaning</th>
             <th>Important rule</th>
           </tr>
@@ -673,21 +673,21 @@
         <tbody>
           <tr>
             <td><code>id</code></td>
-            <td>Responder-chosen artifact identifier.</td>
+            <td>Wallet-chosen record identifier.</td>
             <td>Unique inside the response.</td>
           </tr>
           <tr>
             <td><code>mediaType</code></td>
-            <td>How the verifier should parse the artifact.</td>
+            <td>How the receiving app should read the record.</td>
             <td>Must be accepted by every item in <code>fulfills[]</code>.</td>
           </tr>
           <tr>
             <td><code>fulfills</code></td>
-            <td>Request item ids this artifact satisfies.</td>
+            <td>Request item ids this record answers.</td>
             <td>Must be non-empty and reference real request item ids.</td>
           </tr>
           <tr>
-            <td>Payload fields</td>
+            <td>Content fields</td>
             <td>Defined by <code>mediaType</code>.</td>
             <td>Raw FHIR uses <code>value</code> plus <code>fhirVersion</code>; SMART Health Cards use <code>value.verifiableCredential[]</code>; extensions define typed fields explicitly.</td>
           </tr>
@@ -696,10 +696,10 @@
     </section>
 
     <section id="statuses">
-      <h2>Status says what happened for each item</h2>
+      <h2>Every requested item gets an outcome</h2>
       <p>
-        A verifier should not infer success from artifacts alone. It should
-        check the status list for every requested item.
+        The status list tells the app what happened even when no record is
+        returned for an item.
       </p>
 
 <pre>{
@@ -716,11 +716,11 @@
           </tr>
         </thead>
         <tbody>
-          <tr><td><code>fulfilled</code></td><td>The item was satisfied.</td></tr>
+          <tr><td><code>fulfilled</code></td><td>Information for this item was shared.</td></tr>
           <tr><td><code>partial</code></td><td>Some, but not all, useful content was shared.</td></tr>
           <tr><td><code>unavailable</code></td><td>The wallet has no matching data.</td></tr>
           <tr><td><code>declined</code></td><td>The user chose not to share it.</td></tr>
-          <tr><td><code>unsupported</code></td><td>The wallet cannot handle that item shape.</td></tr>
+          <tr><td><code>unsupported</code></td><td>The wallet does not understand that kind of request.</td></tr>
           <tr><td><code>error</code></td><td>The wallet tried but failed.</td></tr>
         </tbody>
       </table>
@@ -789,11 +789,11 @@
     </section>
 
     <section>
-      <h2>Where the wire details live</h2>
+      <h2>For implementers: message details</h2>
       <p>
-        This page is the product and payload model. CBOR, direct mdoc
+        This page explains what the app and wallet exchange. CBOR, direct mdoc
         namespaces, HPKE encryption, SessionTranscript binding, MSO digests,
-        COSE signatures, and checked-in fixture annotations live in
+        COSE signatures, and fixture annotations live in
         <a href="./wire-protocol-explainer.html">the wire protocol explainer</a>.
       </p>
     </section>
