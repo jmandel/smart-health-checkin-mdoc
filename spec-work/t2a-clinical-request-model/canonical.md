@@ -579,7 +579,7 @@ Extension media types MAY be used when defined by a registered extension or depl
 
 Example of ordered preference:
 
-```json
+```text
 "accept": [
   "application/smart-health-card",
   "application/fhir+json"
