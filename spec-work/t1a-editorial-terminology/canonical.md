@@ -159,7 +159,7 @@ This section defines terms used throughout the specification. A component can pl
 
 **Profile family**: A canonical URL identifying a published implementation guide, publication, collection, or other family of FHIR profiles. Values in `profilesFrom[]` are canonical profile-family URLs.
 
-**Profile-selector additivity**: The rule that `profiles[]` and `profilesFrom[]` broaden the set of acceptable profile matches when both appear in a `fhir.resources` selector. Content can satisfy the selector by matching an exact profile listed in `profiles[]` or by matching a profile from a family listed in `profilesFrom[]`, subject to the rest of the item definition. The presence of one field does not narrow the other. Later §5 rules define how `resourceTypes[]` and other selector fields interact with profile selectors.
+**Profile-selector additivity**: The rule that `profiles[]` and `profilesFrom[]` broaden the set of acceptable profile matches when both appear in a `selection.fhir` selector. Content can satisfy the selector by matching an exact profile listed in `profiles[]` or by matching a profile from a family listed in `profilesFrom[]`, subject to the rest of the item definition. The presence of one field does not narrow the other. Later §5 rules define how `resourceTypes[]` and other selector fields interact with profile selectors.
 
 **Requester**: The relying party that asks the Holder, through a Wallet, to share clinical content. The Requester is responsible for constructing the SMART request and consuming the SMART response. In the base presentation flow, the Requester acts through the Verifier role.
 

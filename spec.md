@@ -218,7 +218,7 @@ This section defines terms used throughout the specification. A component can pl
 
 **Profile family**: A canonical URL identifying a published implementation guide, publication, collection, or other family of FHIR profiles. Values in `profilesFrom[]` are canonical profile-family URLs.
 
-**Profile-selector additivity**: The rule that `profiles[]` and `profilesFrom[]` broaden the set of acceptable profile matches when both appear in a `fhir.resources` selector. Content can satisfy the selector by matching an exact profile listed in `profiles[]` or by matching a profile from a family listed in `profilesFrom[]`, subject to the rest of the item definition. The presence of one field does not narrow the other. Later §5 rules define how `resourceTypes[]` and other selector fields interact with profile selectors.
+**Profile-selector additivity**: The rule that `profiles[]` and `profilesFrom[]` broaden the set of acceptable profile matches when both appear in a `selection.fhir` selector. Content can satisfy the selector by matching an exact profile listed in `profiles[]` or by matching a profile from a family listed in `profilesFrom[]`, subject to the rest of the item definition. The presence of one field does not narrow the other. Later §5 rules define how `resourceTypes[]` and other selector fields interact with profile selectors.
 
 **Requester**: The relying party that asks the Holder, through a Wallet, to share clinical content. The Requester is responsible for constructing the SMART request and consuming the SMART response. In the base presentation flow, the Requester acts through the Verifier role.
 
@@ -569,7 +569,7 @@ The SMART request body describes requested clinical content and Holder-facing pu
 
 #### 3.6.3 FHIR canonicals where they fit
 
-Clinical content selection should use FHIR canonicals when the requested content maps to FHIR conformance resources. Exact profiles belong in `profiles[]`; profile families belong in `profilesFrom[]`; official resource type names belong in `resourceTypes[]`; Questionnaire canonicals and inline Questionnaires belong in questionnaire selectors. Later §5 defines canonical handling, including `|version` behavior, the array shape of `profilesFrom[]`, and the interaction between `resourceTypes[]` and profile selectors.
+Clinical content selection should use FHIR canonicals when the requested content maps to FHIR conformance resources. Existing-resource selection uses `selection.fhir`, with exact profiles in `profiles[]`, profile families in `profilesFrom[]`, and official resource type names in `resourceTypes[]`. Questionnaire-driven form completion uses `form.fhir`, with Questionnaire identities in `questionnaireCanonical` and inline Questionnaires in `questionnaire`. Later §5 defines canonical handling, including `|version` behavior, the array shape of `profilesFrom[]`, and the interaction between `resourceTypes[]` and profile selectors.
 
 #### 3.6.4 No local topic vocabularies when FHIR terms exist
 
@@ -646,7 +646,7 @@ An implementation claiming a clinical **Holder Wallet / Responder** target SHALL
 
 An implementation claiming a clinical **Verifier** or receiver validation target SHALL validate SMART responses under §6 and apply §6.6 against the original SMART request before treating a response as protocol-valid for Requester or workflow use. Shape validation alone is not sufficient.
 
-Core clinical support includes `fhir.resources` and `questionnaire` selector shapes where an implementation claims to request or process those selectors; the flattened `questionnaire` selector with `canonical` and/or `resource` directly on the selector; `profilesFrom[]` as an array of canonical profile-family URLs; additive `profiles[]` plus `profilesFrom[]` semantics; canonical `|version` resolution and verification as defined by §5.5; request `accept[]` and Artifact `mediaType` rules; the removal of a generic catch-all Artifact carrier in favor of core or registered branded Artifact variants; `application/fhir+json` Artifacts with `fhirVersion`; `application/smart-health-card` Artifacts with `value.verifiableCredential[]` and no outer Artifact-level `fhirVersion`; `requestStatus[]` coverage exactly once for every request item; and §6.6 cross-validation.
+Core clinical support includes `selection.fhir` and `form.fhir` selector shapes where an implementation claims to request or process those selectors; `form.fhir` selectors with `questionnaireCanonical` and/or `questionnaire` directly on the selector; `profilesFrom[]` as an array of canonical profile-family URLs; additive `profiles[]` plus `profilesFrom[]` semantics; canonical `|version` resolution and verification as defined by §5.5; request `accept[]` and Artifact `mediaType` rules; the removal of a generic catch-all Artifact carrier in favor of core or registered branded Artifact variants; `application/fhir+json` Artifacts with `fhirVersion`; `application/smart-health-card` Artifacts with `value.verifiableCredential[]` and no outer Artifact-level `fhirVersion`; `requestStatus[]` coverage exactly once for every request item; and §6.6 cross-validation.
 
 All conformance targets SHALL preserve the trust-layer separation defined in §7 for the features they implement. In particular, an implementation SHALL NOT infer clinical-source provenance for unsigned raw FHIR JSON from successful transport presentation, mdoc issuer/device evidence, reader authentication, Holder action, SMART response shape validation, deployment handoff metadata, or demo fixture keys.
 
@@ -697,7 +697,7 @@ Version 1.0 uses the following stable wire identifiers in normative artifacts:
 | SMART request discriminator | `smart-health-checkin-request` | §5 `type` field. |
 | SMART response discriminator | `smart-health-checkin-response` | §6 `type` field. |
 | SMART request/response model version | `1` | §5 and §6 `version` fields. |
-| Core selector kinds | `fhir.resources`, `questionnaire` | §5 `content.kind` values. |
+| Core selector kinds | `selection.fhir`, `form.fhir` | §5 `content.kind` values. |
 | Core Artifact media types | `application/fhir+json`, `application/smart-health-card` | §5 `accept[]` and §6 Artifact `mediaType`. |
 | Core status codes | `fulfilled`, `partial`, `unavailable`, `declined`, `unsupported`, `error` | §6 `requestStatus[].status`. |
 | Direct DC API protocol id | `org-iso-mdoc` | §8 Digital Credentials API protocol. |
@@ -895,7 +895,7 @@ Example: single FHIR-resource request.
       "summary": "Demographics for check-in.",
       "required": true,
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "profiles": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"]
       },
       "accept": ["application/fhir+json"]
@@ -920,7 +920,7 @@ Example: mixed FHIR-resource and inline Questionnaire request.
       "summary": "Coverage information for billing.",
       "required": true,
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "profiles": ["http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage"],
         "resourceTypes": ["Coverage"]
       },
@@ -931,7 +931,7 @@ Example: mixed FHIR-resource and inline Questionnaire request.
       "title": "US Core clinical resources",
       "summary": "Problems, medications, allergies, and other available US Core records.",
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "profilesFrom": ["http://hl7.org/fhir/us/core"],
         "profiles": [
           "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
@@ -945,8 +945,8 @@ Example: mixed FHIR-resource and inline Questionnaire request.
       "id": "intake",
       "title": "Migraine check-in",
       "content": {
-        "kind": "questionnaire",
-        "resource": {
+        "kind": "form.fhir",
+        "questionnaire": {
           "resourceType": "Questionnaire",
           "url": "https://clinic.example.org/fhir/Questionnaire/migraine-intake",
           "version": "1.2.3",
@@ -973,7 +973,7 @@ A `SmartHealthCheckinRequestItem` has this shape:
   "title": "<holder-facing title>",
   "summary": "<holder-facing explanation>",
   "required": false,
-  "content": { "kind": "fhir.resources" },
+  "content": { "kind": "selection.fhir" },
   "accept": ["application/fhir+json"]
 }
 ```
@@ -1024,7 +1024,7 @@ A Wallet/Responder SHALL NOT return an Artifact as fulfilling an item unless the
 
 A Requester SHALL include `content` as a selector object on every request item. A Requester SHALL include `content.kind` as a string identifying the selector kind. The `kind` value determines the remaining selector shape and semantics.
 
-Version 1.0 defines the selector kinds `fhir.resources` and `questionnaire`. Registered extensions can define additional selector kinds as described in §5.4.3.
+Version 1.0 defines the selector kinds `selection.fhir` and `form.fhir`. Registered extensions can define additional selector kinds as described in §5.4.3.
 
 A Wallet/Responder that does not understand `content.kind` SHALL NOT infer the selector's semantics from display text or unrelated fields. It SHALL treat the item as unsupported or reject the request according to the selected flow and §6 status rules.
 
@@ -1034,20 +1034,22 @@ A content selector describes what clinical content or action would satisfy a req
 
 A Requester SHALL use a selector shape defined by this section or by a registered extension selector. A Wallet/Responder SHALL evaluate selector semantics independently for each request item, while allowing one response Artifact to fulfill multiple items where §6 permits.
 
-#### 5.4.1 `fhir.resources`
+#### 5.4.1 `selection.fhir`
 
-A `fhir.resources` selector requests patient-specific FHIR resources. It has this shape:
+A `selection.fhir` selector requests existing patient-specific FHIR resources. It has this shape:
 
 ```json
 {
-  "kind": "fhir.resources",
+  "kind": "selection.fhir",
   "profiles": ["<StructureDefinition canonical>"],
   "profilesFrom": ["<profile-family canonical>"],
   "resourceTypes": ["<FHIR resourceType>"]
 }
 ```
 
-A Requester SHALL set `kind` to `"fhir.resources"` for this selector. A Requester MAY include `profiles[]`, `profilesFrom[]`, `resourceTypes[]`, any combination of those fields, or none of them. If `profiles`, `profilesFrom`, or `resourceTypes` is present, a Requester SHALL encode that member as an array of strings.
+A Requester SHALL set `kind` to `"selection.fhir"` for this selector. A Requester MAY include `profiles[]`, `profilesFrom[]`, `resourceTypes[]`, any combination of those fields, or none of them. If `profiles`, `profilesFrom`, or `resourceTypes` is present, a Requester SHALL encode that member as an array of strings.
+
+A `selection.fhir` selector SHALL NOT include `questionnaireCanonical` or `questionnaire`. Questionnaire-driven form completion uses the `form.fhir` selector in §5.4.2. If a workflow needs both existing-resource selection and form completion, the Requester SHALL use separate request items.
 
 ##### 5.4.1.1 `profiles[]`
 
@@ -1063,13 +1065,13 @@ A Wallet/Responder MAY treat a resource as matching `profiles[]` when the resour
 
 A Requester MAY include `profilesFrom` as a non-empty array of canonical profile-family URL strings. A Requester SHALL encode `profilesFrom` as an array. A Requester SHALL NOT encode `profilesFrom` as a string, object, package descriptor, implementation-guide object, package id, package version, npm package name, registry alias, local topic vocabulary, or URN unless a future version or registered extension explicitly defines such a value space.
 
-A Wallet/Responder SHALL reject a `fhir.resources` selector whose `profilesFrom` member is present but is not a non-empty array of strings. A Wallet/Responder MAY additionally reject `profilesFrom[]` values that are not canonical URLs under its validation policy.
+A Wallet/Responder SHALL reject a `selection.fhir` selector whose `profilesFrom` member is present but is not a non-empty array of strings. A Wallet/Responder MAY additionally reject `profilesFrom[]` values that are not canonical URLs under its validation policy.
 
 A `profilesFrom[]` value identifies a family from which acceptable resource profiles can be drawn. It does not require the SMART request to enumerate every profile in that family. A Wallet/Responder MAY use local knowledge, FHIR package metadata available outside the request, implementation-guide definitions, configured profile-family mappings, or other deployment knowledge to determine which exact profiles are members of a `profilesFrom[]` family.
 
 ##### 5.4.1.3 `resourceTypes[]`
 
-`resourceTypes[]` narrows a `fhir.resources` selector by official FHIR `resourceType` names, such as `"Patient"`, `"Coverage"`, `"Condition"`, `"MedicationRequest"`, `"Observation"`, or `"AllergyIntolerance"`.
+`resourceTypes[]` narrows a `selection.fhir` selector by official FHIR `resourceType` names, such as `"Patient"`, `"Coverage"`, `"Condition"`, `"MedicationRequest"`, `"Observation"`, or `"AllergyIntolerance"`.
 
 A Requester MAY include `resourceTypes` as an array of one or more strings. A Requester SHALL use official FHIR resource type names appropriate to the FHIR versions it can consume. A Requester SHALL NOT use local topic labels, display strings, or implementation-specific category names such as `"care-plans"`, `"insurance"`, or `"clinical-history"` in `resourceTypes[]` unless those strings are official FHIR resource type names.
 
@@ -1079,7 +1081,7 @@ When `resourceTypes[]` is present without `profiles[]` and without `profilesFrom
 
 ##### 5.4.1.4 Additivity rule when both `profiles[]` and `profilesFrom[]` are present
 
-`profiles[]` and `profilesFrom[]` are additive profile selectors. When both fields are present in the same `fhir.resources` selector, a Wallet/Responder SHALL treat a resource as satisfying the profile-selector portion of the item if the resource matches any exact profile in `profiles[]` or any profile belonging to any profile family identified by `profilesFrom[]`, subject to `resourceTypes[]` when present and the rest of the item definition.
+`profiles[]` and `profilesFrom[]` are additive profile selectors. When both fields are present in the same `selection.fhir` selector, a Wallet/Responder SHALL treat a resource as satisfying the profile-selector portion of the item if the resource matches any exact profile in `profiles[]` or any profile belonging to any profile family identified by `profilesFrom[]`, subject to `resourceTypes[]` when present and the rest of the item definition.
 
 A Requester SHALL NOT rely on `profiles[]` to narrow a broader `profilesFrom[]` request. A Wallet/Responder SHALL NOT interpret `profiles[]` as limiting, filtering, enumerating, or narrowing the profiles available through `profilesFrom[]`.
 
@@ -1087,7 +1089,7 @@ This additivity rule applies only to `profiles[]` and `profilesFrom[]`. `resourc
 
 ##### 5.4.1.5 No-selector default
 
-If `content.kind` is `"fhir.resources"` and `profiles[]`, `profilesFrom[]`, and `resourceTypes[]` are all omitted, the item requests any patient-specific FHIR resources the Wallet/Responder can offer and the Holder chooses to share, constrained by `accept[]`, `fhirVersions[]` where applicable, Wallet capability, local policy, and Holder decision.
+If `content.kind` is `"selection.fhir"` and `profiles[]`, `profilesFrom[]`, and `resourceTypes[]` are all omitted, the item requests any patient-specific FHIR resources the Wallet/Responder can offer and the Holder chooses to share, constrained by `accept[]`, `fhirVersions[]` where applicable, Wallet capability, local policy, and Holder decision.
 
 A Requester SHOULD avoid the no-selector default unless the workflow can safely consume broad patient-specific FHIR content and the item display text clearly explains the breadth of the request. A Wallet/Responder MAY satisfy a no-selector item with any patient-specific FHIR resources compatible with the item's `accept[]` media types. A Wallet/Responder is not required to disclose all available resources and MAY fulfill a no-selector item partially according to §6.
 
@@ -1099,7 +1101,7 @@ Example: exact CARIN-style Coverage profile.
 
 ```json
 {
-  "kind": "fhir.resources",
+  "kind": "selection.fhir",
   "profiles": ["http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage"],
   "resourceTypes": ["Coverage"]
 }
@@ -1109,7 +1111,7 @@ Example: US Core profile family.
 
 ```json
 {
-  "kind": "fhir.resources",
+  "kind": "selection.fhir",
   "profilesFrom": ["http://hl7.org/fhir/us/core"]
 }
 ```
@@ -1118,7 +1120,7 @@ Example: additive exact profiles plus a profile family, with resource-type filte
 
 ```json
 {
-  "kind": "fhir.resources",
+  "kind": "selection.fhir",
   "profilesFrom": ["http://hl7.org/fhir/us/core"],
   "profiles": [
     "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
@@ -1130,38 +1132,40 @@ Example: additive exact profiles plus a profile family, with resource-type filte
 
 In the last example, `profiles[]` and `profilesFrom[]` are additive profile selectors. The `resourceTypes[]` values filter the resulting profile-selected set to the listed FHIR resource types.
 
-#### 5.4.2 `questionnaire`
+#### 5.4.2 `form.fhir`
 
-A `questionnaire` selector requests completion of a FHIR Questionnaire and return of an appropriate response Artifact. For `application/fhir+json`, the expected clinical response content is a FHIR `QuestionnaireResponse`; §6 defines response Artifact shapes and response validation.
+A `form.fhir` selector requests completion of a FHIR Questionnaire form and return of an appropriate response Artifact. For `application/fhir+json`, the expected clinical response content is a FHIR `QuestionnaireResponse`; §6 defines response Artifact shapes and response validation.
 
-A `questionnaire` selector has this shape:
+A `form.fhir` selector has this shape:
 
 ```json
 {
-  "kind": "questionnaire",
-  "canonical": "<Questionnaire canonical>",
-  "resource": { "resourceType": "Questionnaire" }
+  "kind": "form.fhir",
+  "questionnaireCanonical": "<Questionnaire canonical>",
+  "questionnaire": { "resourceType": "Questionnaire" }
 }
 ```
 
-A Requester SHALL set `content.kind` to `"questionnaire"` for this selector. A Requester SHALL include `canonical`, `resource`, or both as direct members of the selector. A Requester SHALL NOT include a nested `questionnaire` member in the selector.
+A Requester SHALL set `content.kind` to `"form.fhir"` for this selector. A Requester SHALL include `questionnaireCanonical`, `questionnaire`, or both as direct members of the selector.
 
-If `canonical` is present, the Requester SHALL encode it as a non-empty FHIR canonical string. The canonical MAY include a `|version` suffix as defined in §5.5.
+If `questionnaireCanonical` is present, the Requester SHALL encode it as a non-empty FHIR canonical string. The canonical MAY include a `|version` suffix as defined in §5.5.
 
-If `resource` is present, the Requester SHALL encode it as an inline FHIR `Questionnaire` resource object whose `resourceType` is `"Questionnaire"`.
+If `questionnaire` is present, the Requester SHALL encode it as an inline FHIR `Questionnaire` resource object whose `resourceType` is `"Questionnaire"`.
 
-A Wallet/Responder SHALL reject or report unsupported for a `questionnaire` selector that has neither `canonical` nor `resource`, that has a `canonical` value that is not a non-empty string, that has a `resource` value that is not a Questionnaire resource object, or that uses a legacy nested `questionnaire` member. The legacy forms of a bare canonical string under `questionnaire`, a bare inline Questionnaire under `questionnaire`, and a wrapper object `questionnaire: { canonical, resource }` are not valid SMART Health Check-in 1.0 selector shapes.
+A `form.fhir` selector SHALL NOT include `profiles[]`, `profilesFrom[]`, or `resourceTypes[]`. Existing-resource selection uses the `selection.fhir` selector in §5.4.1. If a workflow needs both form completion and existing-resource selection, the Requester SHALL use separate request items.
+
+A Wallet/Responder SHALL reject or report unsupported for a `form.fhir` selector that has neither `questionnaireCanonical` nor `questionnaire`, that has a `questionnaireCanonical` value that is not a non-empty string, that has a `questionnaire` value that is not a Questionnaire resource object, or that mixes `form.fhir` fields with `selection.fhir` fields.
 
 ##### 5.4.2.1 By canonical
 
-A Requester MAY provide `canonical` as the Questionnaire identity to be resolved. The canonical MAY include a `|version` suffix as defined in §5.5.
+A Requester MAY provide `questionnaireCanonical` as the Questionnaire identity to be resolved. The canonical MAY include a `|version` suffix as defined in §5.5.
 
 Example:
 
 ```json
 {
-  "kind": "questionnaire",
-  "canonical": "https://clinic.example.org/fhir/Questionnaire/migraine-intake|1.2.3"
+  "kind": "form.fhir",
+  "questionnaireCanonical": "https://clinic.example.org/fhir/Questionnaire/migraine-intake|1.2.3"
 }
 ```
 
@@ -1171,7 +1175,7 @@ If the Wallet/Responder cannot resolve, render, or otherwise use the referenced 
 
 ##### 5.4.2.2 Inline `Questionnaire`
 
-A Requester MAY provide `resource` as an inline FHIR `Questionnaire` resource object. A Requester SHALL ensure that an inline resource used in this form has `resourceType` equal to `"Questionnaire"`.
+A Requester MAY provide `questionnaire` as an inline FHIR `Questionnaire` resource object. A Requester SHALL ensure that an inline resource used in this form has `resourceType` equal to `"Questionnaire"`.
 
 A Wallet/Responder SHALL reject or report unsupported for an inline questionnaire resource whose `resourceType` is absent or is not `"Questionnaire"`. A Wallet/Responder MAY render or process an inline Questionnaire without fetching it from a remote endpoint, subject to Wallet policy, safety checks, language support, and Questionnaire feature support.
 
@@ -1179,8 +1183,8 @@ Example:
 
 ```json
 {
-  "kind": "questionnaire",
-  "resource": {
+  "kind": "form.fhir",
+  "questionnaire": {
     "resourceType": "Questionnaire",
     "url": "https://clinic.example.org/fhir/Questionnaire/migraine-intake",
     "version": "1.2.3",
@@ -1191,17 +1195,17 @@ Example:
 }
 ```
 
-##### 5.4.2.3 Combined canonical and resource
+##### 5.4.2.3 Combined canonical and Questionnaire
 
-A Requester MAY provide both `canonical` and `resource` as direct members of the `questionnaire` selector. The combined form lets a Wallet/Responder render the inline resource without network retrieval while preserving a stable canonical identity for response construction and receiver interpretation.
+A Requester MAY provide both `questionnaireCanonical` and `questionnaire` as direct members of the `form.fhir` selector. The combined form lets a Wallet/Responder render the inline resource without network retrieval while preserving a stable canonical identity for response construction and receiver interpretation.
 
 Example:
 
 ```json
 {
-  "kind": "questionnaire",
-  "canonical": "https://clinic.example.org/fhir/Questionnaire/migraine-intake|1.2.3",
-  "resource": {
+  "kind": "form.fhir",
+  "questionnaireCanonical": "https://clinic.example.org/fhir/Questionnaire/migraine-intake|1.2.3",
+  "questionnaire": {
     "resourceType": "Questionnaire",
     "url": "https://clinic.example.org/fhir/Questionnaire/migraine-intake",
     "version": "1.2.3",
@@ -1212,11 +1216,11 @@ Example:
 }
 ```
 
-##### 5.4.2.4 Wallet behavior when both forms supplied disagree
+##### 5.4.2.4 Wallet behavior when both form fields disagree
 
-When both `canonical` and `resource` are supplied, the canonical is the Requester's explicit identifier for the Questionnaire, and the inline resource is the Questionnaire body the Requester is asking the Wallet/Responder to render or use.
+When both `questionnaireCanonical` and `questionnaire` are supplied, the canonical is the Requester's explicit identifier for the Questionnaire, and the inline resource is the Questionnaire body the Requester is asking the Wallet/Responder to render or use.
 
-A Requester SHOULD ensure that `canonical`, `resource.url`, and `resource.version` are consistent when these fields are present. At minimum, when `resource.url` is present, its canonical URL should match the `url` parsed from `canonical` under §5.5; when both a canonical `|version` suffix and `resource.version` are present, those values should describe the same intended Questionnaire version.
+A Requester SHOULD ensure that `questionnaireCanonical`, `questionnaire.url`, and `questionnaire.version` are consistent when these fields are present. At minimum, when `questionnaire.url` is present, its canonical URL should match the `url` parsed from `questionnaireCanonical` under §5.5; when both a canonical `|version` suffix and `questionnaire.version` are present, those values should describe the same intended Questionnaire version.
 
 A Wallet/Responder SHALL NOT silently merge conflicting Questionnaire definitions from the inline resource and a fetched canonical resource. A Wallet/Responder SHALL NOT silently rewrite the Requester's canonical to match a conflicting inline resource.
 
@@ -1232,8 +1236,8 @@ The following inline migraine-intake request item is illustrative and does not d
   "title": "Migraine check-in",
   "summary": "Brief intake questions before today's visit.",
   "content": {
-    "kind": "questionnaire",
-    "resource": {
+    "kind": "form.fhir",
+    "questionnaire": {
       "resourceType": "Questionnaire",
       "url": "https://clinic.example.org/fhir/Questionnaire/migraine-intake",
       "version": "1.2.3",
@@ -1255,7 +1259,7 @@ An extension selector is a selector whose `content.kind` is not one of the core 
 
 An extension registrant SHALL define all of the following for each extension selector kind: the exact `content.kind` string; JSON shape and required and optional members; clinical meaning; content-satisfaction rules; interaction with `accept[]`, `fhirVersions[]`, FHIR canonicals, item status, and Artifact fulfillment; unsupported, unavailable, partial, and error behavior under §6; unknown-member handling; privacy and security considerations; and at least one example request item.
 
-An extension registrant SHALL NOT define an extension selector that redefines the semantics of `type`, `version`, `id`, `purpose`, `fhirVersions[]`, `items[]`, item `id`, item `required`, item `accept[]`, `fhir.resources`, `questionnaire`, or any other core field or selector kind.
+An extension registrant SHALL NOT define an extension selector that redefines the semantics of `type`, `version`, `id`, `purpose`, `fhirVersions[]`, `items[]`, item `id`, item `required`, item `accept[]`, `selection.fhir`, `form.fhir`, or any other core field or selector kind.
 
 An extension registrant SHALL NOT define an extension selector that permits requester identity metadata in the SMART request body unless a future version of this specification defines an explicit trust model for doing so.
 
@@ -1645,12 +1649,12 @@ A Wallet/Responder SHALL set `requestStatus[].status` to one of the following ve
 | `partial` | The Wallet/Responder returned some relevant Artifact content for the item but does not claim complete fulfillment. |
 | `unavailable` | The Wallet/Responder understood the item and supported the requested selector and media type, but found no matching content available or shareable under Wallet policy, without a Holder refusal being the relevant cause. |
 | `declined` | The Holder declined to share content for the item, or Wallet policy treated the Holder decision as a refusal for this item. |
-| `unsupported` | The Wallet/Responder could not understand or support the item, selector kind, selector shape, requested media type, required Questionnaire features, canonical/resource combination, FHIR version, or extension semantics well enough to attempt fulfillment. |
+| `unsupported` | The Wallet/Responder could not understand or support the item, selector kind, selector shape, requested media type, required Questionnaire features, `questionnaireCanonical`/`questionnaire` combination, FHIR version, or extension semantics well enough to attempt fulfillment. |
 | `error` | The Wallet/Responder encountered an operational or processing error while attempting to satisfy the item after it was understood and not simply declined, unavailable, or unsupported. |
 
 A Wallet/Responder SHALL use `unsupported`, not `unavailable`, when it cannot process the request item because the selector kind, selector shape, requested media type, FHIR version, or Questionnaire definition is not supported. A Wallet/Responder SHALL use `unavailable`, not `unsupported`, when it understands the item but lacks matching shareable content.
 
-A Wallet/Responder SHOULD use `unsupported` for a material Questionnaire canonical/resource disagreement detected before answers are collected or response construction begins. A Wallet/Responder SHOULD use `error` for an operational failure that occurs while rendering, collecting, converting, or constructing a response for a Questionnaire that the Wallet/Responder otherwise understood.
+A Wallet/Responder SHOULD use `unsupported` for a material `questionnaireCanonical`/`questionnaire` disagreement detected before answers are collected or response construction begins. A Wallet/Responder SHOULD use `error` for an operational failure that occurs while rendering, collecting, converting, or constructing a response for a Questionnaire that the Wallet/Responder otherwise understood.
 
 A Wallet/Responder SHALL use `declined` when the relevant reason for non-fulfillment is the Holder's decision not to share or complete the item. A Wallet/Responder MAY also use `declined` when local Wallet policy implements Holder preferences that prohibit disclosure for the item.
 
@@ -2363,7 +2367,7 @@ Appendix E should annotate, where fixtures provide the bytes, the ladder from SM
 
 ## 9. Reserved
 
-Section 9 is intentionally reserved. Earlier drafts explored a cross-device kiosk wrapper, but SMART Health Check-in 1.0 does not define a QR-code, NFC, deep-link, pointer, relay, submission, or completion-display protocol. In-person handoff mechanisms are deployment-defined UX that can land the Holder on a same-device Verifier page running the §8 flow.
+Section 9 is intentionally reserved. SMART Health Check-in 1.0 does not define a QR-code, NFC, deep-link, pointer, relay, submission, or completion-display protocol. In-person handoff mechanisms are deployment-defined UX that can land the Holder on a same-device Verifier page running the §8 flow.
 
 ---
 
@@ -2431,7 +2435,7 @@ Self-attested, local, fixture, test, demo, or deployment-specific issuer evidenc
 
 Version 1.0 fixes active algorithm choices in named profile rules rather than negotiating arbitrary algorithms in band. The §8 direct `org-iso-mdoc` flow uses `DeviceRequest.version` `"1.0"`, ES256 / COSE `alg` `-7` where this profile signs reader, issuer, or device structures, and HPKE DHKEM(P-256, HKDF-SHA256), HKDF-SHA256, AES-128-GCM for response encryption.
 
-Implementations SHALL reject unsupported or unexpected algorithm labels for the version 1.0 profile they implement rather than silently downgrading, ignoring algorithm labels, substituting library defaults, accepting deployment-supplied alternatives, or treating locally available WebCrypto, COSE, HPKE, or platform algorithms as implicitly valid. Implementations should fail closed on unknown versions, malformed base64url, unexpected mdoc structures, unexpected request carriers, legacy dynamic element-name encodings, or inline same-device request encodings unless a future version or deployment profile explicitly defines compatible processing.
+Implementations SHALL reject unsupported or unexpected algorithm labels for the version 1.0 profile they implement rather than silently downgrading, ignoring algorithm labels, substituting library defaults, accepting deployment-supplied alternatives, or treating locally available WebCrypto, COSE, HPKE, or platform algorithms as implicitly valid. Implementations should fail closed on unknown versions, malformed base64url, unexpected mdoc structures, unexpected request carriers, dynamic element-name encodings, or inline same-device request encodings unless a future version or deployment profile explicitly defines compatible processing.
 
 Future cryptographic agility should be introduced through explicit versioned profiles, registry entries, deployment profiles, and conformance vectors. Such work should define wire identifiers, key formats, transcript construction, downgrade prevention, mixed-version behavior, deprecation timelines, key-use separation, fixture coverage, and how Wallets and Verifiers report unsupported profiles. Production deployments also need key lifecycle policy for reader keys, §8 HPKE recipient keys, issuer anchors, rotation, revocation/status checks, compromise response, and test-vs-production separation.
 
@@ -2601,14 +2605,14 @@ SMART Health Check-in maintains a specification-controlled registry for `SmartHe
 
 | Selector kind | Selector shape summary | Semantics |
 | --- | --- | --- |
-| `fhir.resources` | `content` may include `profiles[]`, `profilesFrom[]`, and `resourceTypes[]` as arrays of strings. | Requests patient-specific FHIR resources. `profiles[]` and `profilesFrom[]` are additive profile selectors; `resourceTypes[]` is an additional official FHIR resource-type constraint when present. |
-| `questionnaire` | `content` may include `canonical` as a FHIR canonical string, `resource` as an inline FHIR `Questionnaire`, or both. | Requests completion of, or response to, a FHIR Questionnaire, with returned content represented by an accepted Artifact media type. |
+| `selection.fhir` | `content` may include `profiles[]`, `profilesFrom[]`, and `resourceTypes[]` as arrays of strings. It does not include `questionnaireCanonical` or `questionnaire`. | Requests existing patient-specific FHIR resources. `profiles[]` and `profilesFrom[]` are additive profile selectors; `resourceTypes[]` is an additional official FHIR resource-type constraint when present. |
+| `form.fhir` | `content` may include `questionnaireCanonical` as a FHIR canonical string, `questionnaire` as an inline FHIR `Questionnaire`, or both. It does not include `profiles[]`, `profilesFrom[]`, or `resourceTypes[]`. | Requests completion of, or response to, a FHIR Questionnaire, with returned content represented by an accepted Artifact media type, normally a FHIR `QuestionnaireResponse` for `application/fhir+json`. |
 
 A Requester SHALL use one of these selector kinds or a registered extension selector when interoperable processing by unrelated Wallets/Responders is expected. A Wallet/Responder that does not support a selector kind SHALL NOT infer its semantics from display text, profile labels, local topic names, deployment metadata, or requester identity metadata. It SHALL reject the request or report the affected item as `unsupported` according to the selected flow and §6.
 
 A future selector-kind registration SHALL define the exact `content.kind` string; JSON shape; required and optional members; unknown-member handling; clinical meaning; content-satisfaction rules; interactions with `accept[]`, `fhirVersions[]`, FHIR canonicals and `|version`, item status, Artifact fulfillment, and §6.6 validation; unsupported, unavailable, partial, declined, and error behavior; examples; security considerations; and privacy considerations. Registrants SHOULD choose collision-resistant names, such as reverse-DNS or URI-like names, unless the registry later defines a stricter syntax.
 
-A selector-kind registration SHALL NOT redefine SMART request top-level fields, SMART response fields, `fhir.resources`, `questionnaire`, `profiles[]`, `profilesFrom[]`, `resourceTypes[]`, `accept[]`, Holder control, requester identity handling, canonical-version handling, or trust-layer boundaries.
+A selector-kind registration SHALL NOT redefine SMART request top-level fields, SMART response fields, `selection.fhir`, `form.fhir`, `profiles[]`, `profilesFrom[]`, `resourceTypes[]`, `questionnaireCanonical`, `questionnaire`, `accept[]`, Holder control, requester identity handling, canonical-version handling, or trust-layer boundaries.
 
 ### 13.5 Profile-id registry
 
@@ -2652,7 +2656,7 @@ The designated expert SHOULD approve a registration only when the request:
 2. identifies the exact target, feature, version, and protocol section affected;
 3. preserves the transport-neutral §5/§6 SMART request and SMART response semantics unless the entry is explicitly for a future incompatible version;
 4. preserves request/response validation behavior, including `requestId`, `fulfills[]`, `requestStatus[]`, media-type checks, status-code handling, and §6.6 cross-validation;
-5. preserves core selector semantics, including `fhir.resources`, `questionnaire`, additive `profiles[]` plus `profilesFrom[]`, `resourceTypes[]`, per-item `accept[]` rules, and canonical `|version` handling;
+5. preserves core selector semantics, including `selection.fhir`, `form.fhir`, additive `profiles[]` plus `profilesFrom[]`, `resourceTypes[]`, questionnaire-form fields, per-item `accept[]` rules, and canonical `|version` handling;
 6. preserves the §7 trust-layer separation among origin evidence, optional reader authentication, mdoc issuer/device evidence, Holder action, and clinical-source provenance;
 7. preserves the version-1 same-device identifiers `org-iso-mdoc`, `org.smarthealthit.checkin.1`, `org.smarthealthit.checkin`, `smart_health_checkin_response`, and `org.smarthealthit.checkin.request` unless the registration is explicitly for a future mdoc profile;
 8. preserves §8 HPKE transcript binding and same-device validation boundaries;
@@ -2742,19 +2746,19 @@ A Verifier app packages a SMART request for same-device presentation, opens the 
 
 Request authoring should begin with what the downstream receiver can parse, validate, route, and ingest. For each request item, a builder should collect or generate a session-scoped item `id`, Holder-facing `title` and optional `summary`, advisory `required` value, one `content` selector, and an ordered `accept[]` list containing only supported Artifact media types.
 
-For `fhir.resources` selectors, use FHIR-native identifiers rather than local topic labels. `profiles[]` identifies exact `StructureDefinition` canonicals. `profilesFrom[]` is an array of canonical profile-family URLs, not a singleton string, package descriptor, registry alias, or local topic. `resourceTypes[]` contains official FHIR resource type names. When `profiles[]` and `profilesFrom[]` are both present, describe them as additive profile selectors; `resourceTypes[]` is a separate resource-type constraint.
+For `selection.fhir` selectors, use FHIR-native identifiers rather than local topic labels. `profiles[]` identifies exact `StructureDefinition` canonicals. `profilesFrom[]` is an array of canonical profile-family URLs, not a singleton string, package descriptor, registry alias, or local topic. `resourceTypes[]` contains official FHIR resource type names. When `profiles[]` and `profilesFrom[]` are both present, describe them as additive profile selectors; `resourceTypes[]` is a separate resource-type constraint.
 
-For Questionnaire requests, generate only the flattened selector shape:
+For FHIR form requests, generate only the `form.fhir` selector shape:
 
 ```json
 {
-  "kind": "questionnaire",
-  "canonical": "https://clinic.example.org/fhir/Questionnaire/intake|1.2.3",
-  "resource": { "resourceType": "Questionnaire" }
+  "kind": "form.fhir",
+  "questionnaireCanonical": "https://clinic.example.org/fhir/Questionnaire/intake|1.2.3",
+  "questionnaire": { "resourceType": "Questionnaire" }
 }
 ```
 
-At least one of `canonical` or `resource` is present, and both are direct selector members. Legacy nested forms such as `questionnaire: "..."`, `questionnaire: { "resourceType": "Questionnaire" }`, or `questionnaire: { "canonical": ..., "resource": ... }` should not be emitted, silently coerced, or used in new fixtures.
+At least one of `questionnaireCanonical` or `questionnaire` is present, and both are direct selector members. Do not mix `form.fhir` fields with `selection.fhir` fields in one item.
 
 Canonical handling should use a shared utility. Parse `canonical|version` into `(url, version?)` while preserving the original string exactly where the protocol carries, emits, records, or compares it. Versioned canonicals are resolved through a configured resolver, package cache, implementation-guide resolver, terminology service, or FHIR canonical search using both `url` and `version`; do not satisfy a versioned canonical by stripping `|version` and directly fetching the bare URL.
 
@@ -2820,15 +2824,15 @@ The Holder-store boundary is where implementations decide which SMART Health Car
 
 #### 15.2.4 Profile-family resource matching
 
-`fhir.resources` matching should treat selectors as FHIR-native constraints, not free-text topics. Exact `profiles[]` matching can use `meta.profile[]`, signed SMART Health Card payload evidence, source metadata, or trusted local conformance evidence. Versioned `profiles[]` values need exact-version evidence before claiming full fulfillment. `profilesFrom[]` identifies profile families and usually requires package metadata, `ImplementationGuide` knowledge, configured family maps, issuer knowledge, or local policy because FHIR resources do not normally declare family membership directly. `resourceTypes[]` uses official FHIR resource type names.
+`selection.fhir` matching should treat selectors as FHIR-native constraints, not free-text topics. Exact `profiles[]` matching can use `meta.profile[]`, signed SMART Health Card payload evidence, source metadata, or trusted local conformance evidence. Versioned `profiles[]` values need exact-version evidence before claiming full fulfillment. `profilesFrom[]` identifies profile families and usually requires package metadata, `ImplementationGuide` knowledge, configured family maps, issuer knowledge, or local policy because FHIR resources do not normally declare family membership directly. `resourceTypes[]` uses official FHIR resource type names.
 
 Matching code can use base canonicals for local routing, broad grouping, or profile-family lookup where §5.5 permits, but it should preserve exact strings for resolution, exact-version matching, `meta.profile`, generated `QuestionnaireResponse.questionnaire`, diagnostics, fixtures, and returned content.
 
 #### 15.2.5 QuestionnaireResponse construction
 
-A Questionnaire selector is flat: `content.kind` is `"questionnaire"` with direct optional `canonical` and `resource` members. Wallet parsers should reject or report `unsupported` for legacy nested `questionnaire` forms so stale integrations fail visibly.
+A FHIR form selector is flat: `content.kind` is `"form.fhir"` with direct optional `questionnaireCanonical` and `questionnaire` members. Wallet parsers should reject or report `unsupported` for mixed form/resource-selection fields.
 
-When only `canonical` is supplied, the Wallet can resolve the Questionnaire through a configured resolver, package cache, FHIR canonical search, Holder data source, or other mechanism that respects §5.5. When only `resource` is supplied, the Wallet can render the inline Questionnaire without network retrieval if it supports the required features and local policy permits. When both are supplied, the canonical is the Requester's explicit identity and the resource is the body to render. Material disagreement in URL, explicit version, or answer-changing item structure is usually better reported as `unsupported` before answers are collected; operational failure after the Questionnaire was otherwise understood is usually `error`.
+When only `questionnaireCanonical` is supplied, the Wallet can resolve the Questionnaire through a configured resolver, package cache, FHIR canonical search, Holder data source, or other mechanism that respects §5.5. When only `questionnaire` is supplied, the Wallet can render the inline Questionnaire without network retrieval if it supports the required features and local policy permits. When both are supplied, the canonical is the Requester's explicit identity and the inline Questionnaire is the body to render. Material disagreement in URL, explicit version, or answer-changing item structure is usually better reported as `unsupported` before answers are collected; operational failure after the Questionnaire was otherwise understood is usually `error`.
 
 When returning `application/fhir+json`, the Wallet should construct a FHIR `QuestionnaireResponse` as a single resource or inside a Bundle and include the Artifact `fhirVersion`. If the requested canonical is the Questionnaire identity being answered, preserve it exactly in `QuestionnaireResponse.questionnaire`, including `|version`. If only an inline Questionnaire was supplied, use `Questionnaire.url` and `Questionnaire.version` when they provide a clear canonical identity; do not invent a misleading canonical solely to satisfy a receiver preference.
 
@@ -2888,7 +2892,7 @@ SDK APIs should make unsafe shortcuts hard. Avoid a `GenericArtifact` class for 
 
 Expose structured validation reports rather than only throwing strings. Reports can distinguish request-shape errors, selector errors, canonical-resolution errors, presentation-wrapper errors, HPKE errors, mdoc validation errors, SMART response shape errors, cross-validation errors, FHIR payload errors, SMART Health Card errors, provenance status, and deployment-policy failures. Applications can map those reports to safe recovery text without logging sensitive payloads.
 
-SDK examples and tests should stay current with the normative model. Include positive and negative coverage for flattened Questionnaire selectors, `profilesFrom[]` arrays, additive `profiles[]` plus `profilesFrom[]`, exact preservation of versioned canonicals, no `GenericArtifact` fallback, `application/fhir+json` with `fhirVersion`, `application/smart-health-card` with `value.verifiableCredential[]` and no outer `fhirVersion`, exact §8 identifiers, `DeviceRequest.version` `"1.0"`, optional per-`DocRequest.readerAuth`, exact `encryptionInfo` transcript binding, HPKE `info = SessionTranscript` with empty AAD, and §6.6 request-aware validation. Archived kiosk, pointer, relay, OID4VP, or dynamic-element experiments should be labeled historical or future work rather than exported as SMART Health Check-in 1.0 protocol APIs.
+SDK examples and tests should stay current with the normative model. Include positive and negative coverage for `selection.fhir` and `form.fhir` selectors, `profilesFrom[]` arrays, additive `profiles[]` plus `profilesFrom[]`, exact preservation of versioned canonicals, no `GenericArtifact` fallback, `application/fhir+json` with `fhirVersion`, `application/smart-health-card` with `value.verifiableCredential[]` and no outer `fhirVersion`, exact §8 identifiers, `DeviceRequest.version` `"1.0"`, optional per-`DocRequest.readerAuth`, exact `encryptionInfo` transcript binding, HPKE `info = SessionTranscript` with empty AAD, and §6.6 request-aware validation. Archived kiosk, pointer, relay, OID4VP, or dynamic-element experiments should be labeled historical or future work rather than exported as SMART Health Check-in 1.0 protocol APIs.
 
 Finally, SDK documentation should state conformance scope precisely. A package can support the core clinical model without implementing live same-device presentation. A DC API verifier package can implement §8 without defining EHR ingestion. A fixture package can provide diagnostic captures without claiming production issuer trust. Clear package boundaries help implementers compose the profile without accidentally standardizing deployment-local behavior.
 
@@ -2924,7 +2928,7 @@ Request:
       "summary": "Share current coverage information conforming to the CARIN digital insurance card profile.",
       "required": true,
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "profiles": [
           "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage"
         ],
@@ -2995,7 +2999,7 @@ Request:
       "title": "US Core summary",
       "summary": "Share available patient, problem, and medication summary resources for review before the visit.",
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "profilesFrom": [
           "http://hl7.org/fhir/us/core"
         ],
@@ -3119,7 +3123,7 @@ Validation notes: the raw FHIR Artifact includes `mediaType: application/fhir+js
 
 ### 16.3 Inline questionnaire pre-visit intake
 
-This example uses the flattened Questionnaire selector. Both the versioned canonical and the inline `Questionnaire` are direct members of `content`; there is no nested `questionnaire` wrapper.
+This example uses the `form.fhir` selector. Both the versioned `questionnaireCanonical` and the inline `questionnaire` resource are direct members of `content`. The expected returned FHIR resource is a `QuestionnaireResponse`.
 
 Request:
 
@@ -3138,9 +3142,9 @@ Request:
       "title": "Pre-visit intake questionnaire",
       "summary": "Answer two synthetic intake questions before the visit.",
       "content": {
-        "kind": "questionnaire",
-        "canonical": "https://example.org/fhir/Questionnaire/previsit-intake|2.0.0",
-        "resource": {
+        "kind": "form.fhir",
+        "questionnaireCanonical": "https://example.org/fhir/Questionnaire/previsit-intake|2.0.0",
+        "questionnaire": {
           "resourceType": "Questionnaire",
           "id": "previsit-intake",
           "url": "https://example.org/fhir/Questionnaire/previsit-intake",
@@ -3224,7 +3228,7 @@ Response:
 }
 ```
 
-Validation notes: the returned `QuestionnaireResponse.questionnaire` preserves `https://example.org/fhir/Questionnaire/previsit-intake|2.0.0` exactly. A Wallet that detects material disagreement between the canonical and inline resource would report `unsupported` or `error` rather than silently merging definitions. Legacy nested selector shapes are invalid and are not shown as request examples.
+Validation notes: the returned `QuestionnaireResponse.questionnaire` preserves `https://example.org/fhir/Questionnaire/previsit-intake|2.0.0` exactly. A Wallet that detects material disagreement between `questionnaireCanonical` and the inline `questionnaire` resource would report `unsupported` or `error` rather than silently merging definitions.
 
 ### 16.4 Mixed bundle: insurance + history + intake
 
@@ -3246,7 +3250,7 @@ Request:
       "id": "insurance-card",
       "title": "Insurance card",
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "profiles": [
           "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage"
         ],
@@ -3264,7 +3268,7 @@ Request:
       "title": "Clinical history",
       "summary": "Share active problems and medications.",
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "profilesFrom": [
           "http://hl7.org/fhir/us/core"
         ],
@@ -3281,9 +3285,9 @@ Request:
       "id": "intake",
       "title": "Intake answers",
       "content": {
-        "kind": "questionnaire",
-        "canonical": "https://example.org/fhir/Questionnaire/previsit-intake|2.0.0",
-        "resource": {
+        "kind": "form.fhir",
+        "questionnaireCanonical": "https://example.org/fhir/Questionnaire/previsit-intake|2.0.0",
+        "questionnaire": {
           "resourceType": "Questionnaire",
           "id": "previsit-intake",
           "url": "https://example.org/fhir/Questionnaire/previsit-intake",
@@ -3433,7 +3437,7 @@ Request:
       "title": "Current medications",
       "required": true,
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "profiles": [
           "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest|6.1.0"
         ],
@@ -3450,7 +3454,7 @@ Request:
       "title": "Sensitive history",
       "summary": "Optional sensitive-category history.",
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "resourceTypes": [
           "Condition"
         ]
@@ -3463,7 +3467,7 @@ Request:
       "id": "recent-vitals",
       "title": "Recent vitals",
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "resourceTypes": [
           "Observation"
         ]
@@ -3542,7 +3546,7 @@ Validation notes: `requestStatus[]` covers `current-medications`, `sensitive-his
 
 ### 16.6 "No selectors" — full open-ended share
 
-This example uses `content.kind = "fhir.resources"` with no `profiles[]`, `profilesFrom[]`, or `resourceTypes[]`. It is intentionally broad and should be used only when the Requester can safely consume broad patient-specific FHIR content and the Holder-facing text explains the breadth.
+This example uses `content.kind = "selection.fhir"` with no `profiles[]`, `profilesFrom[]`, or `resourceTypes[]`. It is intentionally broad and should be used only when the Requester can safely consume broad patient-specific FHIR content and the Holder-facing text explains the breadth.
 
 Request:
 
@@ -3561,7 +3565,7 @@ Request:
       "title": "Share available health records",
       "summary": "This broad request has no profile, profile-family, or resource-type selector. The Wallet may offer any patient-specific FHIR resources it can safely share.",
       "content": {
-        "kind": "fhir.resources"
+        "kind": "selection.fhir"
       },
       "accept": [
         "application/fhir+json"
@@ -3726,17 +3730,17 @@ This checklist indexes testable obligations defined elsewhere in SMART Health Ch
 | A-030 | Holder Wallet / Responder | SHALL | §5.3.6 | Do not infer unsupported selector semantics from display text or unrelated fields. | Unknown `content.kind` yields rejection or `unsupported`, not guessed fulfillment. |
 | A-031 | Requester / Verifier | SHALL | §5.4 | Use a selector shape defined by §5 or a registered extension selector for interoperable processing. | Generated requests use core or registered selector kinds only. |
 | A-032 | Holder Wallet / Responder | SHALL | §5.4 | Evaluate selector semantics independently per request item while allowing §6 many-to-many Artifact fulfillment. | Tests show per-item status plus valid shared Artifacts where allowed. |
-| A-033 | Requester / Verifier | SHALL | §5.4.1 | For `fhir.resources`, set `kind` exactly and encode `profiles[]`, `profilesFrom[]`, and `resourceTypes[]`, when present, as arrays of strings. | Shape tests reject scalar/object selector fields. |
+| A-033 | Requester / Verifier | SHALL | §5.4.1 | For `selection.fhir`, set `kind` exactly and encode `profiles[]`, `profilesFrom[]`, and `resourceTypes[]`, when present, as arrays of strings. Do not include `form.fhir` fields in the same selector. | Shape tests reject scalar/object selector fields and mixed form/resource-selection fields. |
 | A-034 | Requester / Verifier | SHALL | §5.4.1.2 | Encode `profilesFrom` as a non-empty array of canonical profile-family URL strings, not a string, package descriptor, alias, local topic, or URN. | Negative tests include stale scalar/package/local-topic encodings. |
 | A-035 | Holder Wallet / Responder | SHALL | §5.4.1.2 | Reject a present `profilesFrom` member that is not a non-empty array of strings. | Selector validation fails invalid `profilesFrom` shapes. |
 | A-036 | Holder Wallet / Responder | SHALL | §5.4.1.3 | Treat `resourceTypes[]` as official FHIR resource-type constraints, not local topic labels. | Matching tests require listed FHIR `resourceType` values. |
 | A-037 | Holder Wallet / Responder | SHALL | §5.4.1.4 | Treat `profiles[]` and `profilesFrom[]` as additive profile selectors, not narrowing selectors. | Matching accepts resources matching either exact profile or profile-family membership. |
 | A-038 | Requester / Verifier | SHALL NOT | §5.4.1.4 | Do not rely on `profiles[]` to narrow a broader `profilesFrom[]` request. | Request review flags examples/tests assuming intersection semantics. |
-| A-039 | Requester / Verifier | SHOULD | §5.4.1.5 | Avoid no-selector `fhir.resources` requests unless broad patient-specific FHIR content is safe and clearly explained. | Broad selector review checks workflow justification and Holder-facing text. |
-| A-040 | Holder Wallet / Responder | MAY | §5.4.1.5 | Satisfy no-selector `fhir.resources` items with patient-specific FHIR resources compatible with `accept[]`, policy, and Holder choice. | Broad-selector tests show allowed partial fulfillment and no full-export requirement. |
-| A-041 | Requester / Verifier | SHALL | §5.4.2 | For `questionnaire`, set `content.kind` to `questionnaire` and include at least one of `canonical` or `resource` directly on the selector. | Validation accepts the flattened selector shape and rejects legacy nested `questionnaire` string/object forms. |
-| A-042 | Holder Wallet / Responder | SHALL | §5.4.2 | Reject or report unsupported for Questionnaire selectors with neither `canonical` nor `resource`, non-string/blank `canonical`, non-Questionnaire `resource`, or legacy nested shapes. | Negative questionnaire fixtures produce rejection or `unsupported`. |
-| A-043 | Holder Wallet / Responder | SHALL NOT | §5.4.2.4 | Do not silently merge conflicting Questionnaire `canonical` and inline `resource` definitions or rewrite canonical identity. | Conflict tests yield `unsupported` or `error`, not silent merge. |
+| A-039 | Requester / Verifier | SHOULD | §5.4.1.5 | Avoid no-selector `selection.fhir` requests unless broad patient-specific FHIR content is safe and clearly explained. | Broad selector review checks workflow justification and Holder-facing text. |
+| A-040 | Holder Wallet / Responder | MAY | §5.4.1.5 | Satisfy no-selector `selection.fhir` items with patient-specific FHIR resources compatible with `accept[]`, policy, and Holder choice. | Broad-selector tests show allowed partial fulfillment and no full-export requirement. |
+| A-041 | Requester / Verifier | SHALL | §5.4.2 | For `form.fhir`, set `content.kind` to `form.fhir` and include at least one of `questionnaireCanonical` or `questionnaire` directly on the selector. Do not include `selection.fhir` fields in the same selector. | Validation accepts the form selector shape and rejects mixed form/resource-selection shapes. |
+| A-042 | Holder Wallet / Responder | SHALL | §5.4.2 | Reject or report unsupported for `form.fhir` selectors with neither `questionnaireCanonical` nor `questionnaire`, non-string/blank `questionnaireCanonical`, non-Questionnaire `questionnaire`, or mixed `selection.fhir` fields. | Negative form fixtures produce rejection or `unsupported`. |
+| A-043 | Holder Wallet / Responder | SHALL NOT | §5.4.2.4 | Do not silently merge conflicting Questionnaire `questionnaireCanonical` and inline `questionnaire` definitions or rewrite canonical identity. | Conflict tests yield `unsupported` or `error`, not silent merge. |
 | A-044 | Deployment/profile author | SHALL | §5.4.3 | Define extension selector kind string, JSON shape, clinical meaning, fulfillment, validation, unsupported behavior, security, privacy, and examples. | Extension registration checklist covers all required fields. |
 | A-045 | Requester / Verifier | SHALL | §5.5 | Apply canonical version-suffix handling rules for each operation it performs, preserving exact wire strings where required. | Tests preserve exact strings for transport/fixtures and compare at defined normalization levels. |
 | A-046 | Holder Wallet / Responder | SHALL | §5.5 | Resolve canonicals with a configured resolver or FHIR canonical search when versioned, verify returned `(resourceType, url, version)`, and use direct HTTP dereference only for unversioned canonicals. | Resolver tests reject version-mismatched resources and do not direct-fetch versioned canonicals by stripping a version suffix. |
@@ -3912,16 +3916,16 @@ The request schema fixes the top-level `type` and `version`, requires the top-le
     },
     "contentSelector": {
       "oneOf": [
-        { "$ref": "#/$defs/fhirResourcesSelector" },
-        { "$ref": "#/$defs/questionnaireSelector" },
+        { "$ref": "#/$defs/selectionFhirSelector" },
+        { "$ref": "#/$defs/formFhirSelector" },
         { "$ref": "#/$defs/extensionSelector" }
       ]
     },
-    "fhirResourcesSelector": {
+    "selectionFhirSelector": {
       "type": "object",
       "required": ["kind"],
       "properties": {
-        "kind": { "const": "fhir.resources" },
+        "kind": { "const": "selection.fhir" },
         "profiles": {
           "type": "array",
           "minItems": 1,
@@ -3938,20 +3942,32 @@ The request schema fixes the top-level `type` and `version`, requires the top-le
           "items": { "$ref": "#/$defs/nonEmptyString" }
         }
       },
+      "not": {
+        "anyOf": [
+          { "required": ["questionnaireCanonical"] },
+          { "required": ["questionnaire"] }
+        ]
+      },
       "additionalProperties": true
     },
-    "questionnaireSelector": {
+    "formFhirSelector": {
       "type": "object",
       "required": ["kind"],
       "anyOf": [
-        { "required": ["canonical"] },
-        { "required": ["resource"] }
+        { "required": ["questionnaireCanonical"] },
+        { "required": ["questionnaire"] }
       ],
-      "not": { "required": ["questionnaire"] },
+      "not": {
+        "anyOf": [
+          { "required": ["profiles"] },
+          { "required": ["profilesFrom"] },
+          { "required": ["resourceTypes"] }
+        ]
+      },
       "properties": {
-        "kind": { "const": "questionnaire" },
-        "canonical": { "$ref": "#/$defs/canonicalString" },
-        "resource": { "$ref": "#/$defs/inlineQuestionnaire" }
+        "kind": { "const": "form.fhir" },
+        "questionnaireCanonical": { "$ref": "#/$defs/canonicalString" },
+        "questionnaire": { "$ref": "#/$defs/inlineQuestionnaire" }
       },
       "additionalProperties": true
     },
@@ -3970,7 +3986,7 @@ The request schema fixes the top-level `type` and `version`, requires the top-le
         "kind": {
           "type": "string",
           "minLength": 1,
-          "not": { "enum": ["fhir.resources", "questionnaire"] }
+          "not": { "enum": ["selection.fhir", "form.fhir"] }
         }
       },
       "additionalProperties": true
@@ -3982,10 +3998,10 @@ The request schema fixes the top-level `type` and `version`, requires the top-le
 Notes on this request schema:
 
 - `profilesFrom[]` is a non-empty array of canonical URL strings. It is not a singleton string, object, package descriptor, implementation-guide object, package id, package version, registry alias, local topic label, or URN form in version 1.0.
-- `profiles[]` and `profilesFrom[]` are independently allowed in the same `fhir.resources` selector. Their combined presence is additive under §5.4.1.4; the schema does not make either array narrow the other.
+- `profiles[]` and `profilesFrom[]` are independently allowed in the same `selection.fhir` selector. Their combined presence is additive under §5.4.1.4; the schema does not make either array narrow the other.
 - `profiles[]` and `resourceTypes[]`, when present, are arrays with at least one string. Whether a `resourceTypes[]` value is an official FHIR `resourceType` for a particular FHIR release is a FHIR-aware procedural check.
-- A `fhir.resources` selector may omit all of `profiles[]`, `profilesFrom[]`, and `resourceTypes[]` to express the no-selector default from §5.4.1.5.
-- A questionnaire selector is a single object shape with `kind: "questionnaire"` and one or both of the sibling members `canonical` and `resource`. The legacy nested `questionnaire` string/object/wrapper forms are not accepted by this schema.
+- A `selection.fhir` selector may omit all of `profiles[]`, `profilesFrom[]`, and `resourceTypes[]` to express the no-selector default from §5.4.1.5.
+- A `form.fhir` selector is a single object shape with one or both of the sibling members `questionnaireCanonical` and `questionnaire`. It does not allow `profiles[]`, `profilesFrom[]`, or `resourceTypes[]`; use a separate `selection.fhir` request item when existing FHIR resource selection is also needed.
 - Canonical strings MAY include a `|version` suffix. Consumers parse the suffix as structured FHIR canonical-reference version metadata and do not treat it as part of a direct HTTP URL.
 - The extension-selector branch permits syntactic validation of registered extension selector kinds without embedding a future registry in Appendix B. A core-only deployment profile can replace this branch when it intentionally rejects all extension selectors.
 - The SMART request body SHALL NOT carry requester identity metadata under §5.2.7. This schema cannot reliably reject arbitrary identity-like unknown or extension members while keeping extension points open, so processors must enforce that prohibition procedurally and through extension review.
@@ -4127,7 +4143,7 @@ A conforming implementation MUST NOT treat successful validation against the sni
 | Bundle traversal and selector responsiveness | Raw FHIR Bundle validation requires inspecting `Bundle.entry[].resource`, resource types, profiles, and sometimes supporting resources; the outer Bundle alone is not enough. |
 | Profile-family membership for `profilesFrom[]` | Membership depends on implementation-guide knowledge, package metadata, configured family mappings, registry information, or local policy outside the JSON instance. |
 | Additive profile-selector semantics | The schema can allow `profiles[]` and `profilesFrom[]` together, but it cannot determine whether returned content satisfies either additive profile selector subject to `resourceTypes[]`. |
-| QuestionnaireResponse comparison | A Verifier may need to compare `QuestionnaireResponse.questionnaire` with a requested questionnaire selector's `canonical`, inline Questionnaire `url`/`version`, and §5.5 structured `|version` handling. |
+| QuestionnaireResponse comparison | A Verifier may need to compare `QuestionnaireResponse.questionnaire` with a requested `form.fhir` selector's `questionnaireCanonical`, inline `questionnaire.url`/`questionnaire.version`, and §5.5 structured `|version` handling. |
 | Raw FHIR release consistency | The schema can require an outer `fhirVersion`, but detecting mixed-release Bundles and deciding whether a raw FHIR Artifact's release is acceptable requires FHIR-aware and request-aware checks. |
 | SMART Health Card payload validation | The schema can check the wrapper's `verifiableCredential[]` shape, but JWS verification, payload inspection, issuer trust, FHIR version, and selector responsiveness are SMART Health Cards and policy checks. |
 | Full FHIR profile validation | FHIR profile, terminology, invariant, Questionnaire, and implementation-guide validation require FHIR validators and deployment policy outside the core JSON Schema. |
@@ -4464,7 +4480,7 @@ A complete same-device fixture set can expose the following boundaries. A vector
 
 | Boundary | Common files or fields | Validation purpose |
 | --- | --- | --- |
-| SMART request JSON | `smart-request.json`, `smart-request.raw.json`, `smart-request.expected.json` | Validate §5 request shape, flattened `questionnaire` selectors, array `profilesFrom[]`, accepted media types, exact canonical-version preservation, and absence of requester identity metadata. |
+| SMART request JSON | `smart-request.json`, `smart-request.raw.json`, `smart-request.expected.json` | Validate §5 request shape, `selection.fhir` and `form.fhir` selectors, array `profilesFrom[]`, accepted media types, exact canonical-version preservation, and absence of requester identity metadata. |
 | Navigator credentials request | `navigator-credentials-get.arg.json`, `request.json`, `credential-manager-request.json` | Confirms direct `org-iso-mdoc` invocation and base64url-no-pad `deviceRequest` and `encryptionInfo` fields. |
 | `DeviceRequest` | `device-request.b64u`, `device-request.cbor`, `device-request.cbor.hex`, `device-request.diag` | Confirms `DeviceRequest.version` `"1.0"`, `docRequests[]`, tag-24 `ItemsRequest`, and optional per-`DocRequest.readerAuth`. |
 | `ItemsRequest` | `items-request.cbor`, `items-request.cbor.hex`, `items-request.diag`, `items-request.decoded.json`, `items-request-tag24.cbor`, `items-request-tag24.cbor.hex` | Confirms `docType`, namespace, stable element, `intentToRetain`, exact tag-24 boundary, and request carrier key. |
@@ -4488,16 +4504,16 @@ Byte-exact comparison should be limited to files or fields whose fixture profile
 
 | Fixture/vector name | Source or example section | Layer exercised | Exactness level | Expected validator checks | Current status | Follow-up |
 | --- | --- | --- | --- | --- | --- | --- |
-| `fixtures/dcapi-requests/ts-smart-checkin-basic/` | TypeScript generator; §8 request construction | Same-device request without `readerAuth`: navigator request wrapper, `DeviceRequest`, tag-24 `ItemsRequest`, `requestInfo`, `encryptionInfo`, transcript inputs, extracted SMART request | Byte-exact for named `.cbor.hex`, `.b64u`, and transcript-bound fields; structural for `inspection.json`; semantic for `smart-request.expected.json` | Protocol `org-iso-mdoc`; `DeviceRequest.version` `"1.0"`; active docType, namespace, stable element, request-info key; tag-24 `ItemsRequest`; direct `dcapi` `encryptionInfo`; unpadded base64url spelling; SMART request validation | Synthetic structural fixture and implementation-regression material; conformance candidate after refresh | Regenerate to use flattened Questionnaire selectors and final §16 examples; freeze deterministic CBOR, nonce/key policy, exact comparison targets, and expected report before promotion. |
-| `fixtures/dcapi-requests/ts-smart-checkin-readerauth/` | TypeScript generator; optional readerAuth | Same-device request with per-`DocRequest.readerAuth` | Byte-exact for tag-24 `ItemsRequest`, `session-transcript.cbor`, `reader-auth.cbor`, and detached payload where named; structural for inspection | All basic request checks plus detached ES256 `COSE_Sign1`, payload `null`, x5chain label `33`, binding to exact `SessionTranscript` and tag-24 `ItemsRequest` | Synthetic structural fixture and implementation-regression material; conformance candidate after refresh | Regenerate to use flattened Questionnaire selectors and final §16 examples. Keep demo certificate and reader material labeled non-production. Do not imply readerAuth is mandatory or that demo reader trust is accepted by all deployments. |
-| `fixtures/dcapi-requests/real-chrome-android-smart-checkin/` | Real Chrome/Android Credential Manager request capture | Real-platform same-device request, request extraction, readerAuth, origin-bound `SessionTranscript` | Byte-exact for named CBOR/hex/base64url files; structural for diagnostics; historical for platform context | Same §8 request validation; preservation of exact `encryptionInfo` base64url; recorded origin source; readerAuth classification; pairing with response fixture via test-only HPKE key | Diagnostic real-platform capture and historical archive; selected subfiles are conformance candidates | Treat localhost origin, Chrome package metadata, timestamps, nonce, demo certificate, and included private JWK as fixture context. Refresh or regenerate before public v1.0 promotion because the captured SMART request still uses a legacy nested Questionnaire shape and is not a final §16 vector. |
+| `fixtures/dcapi-requests/ts-smart-checkin-basic/` | TypeScript generator; §8 request construction | Same-device request without `readerAuth`: navigator request wrapper, `DeviceRequest`, tag-24 `ItemsRequest`, `requestInfo`, `encryptionInfo`, transcript inputs, extracted SMART request | Byte-exact for named `.cbor.hex`, `.b64u`, and transcript-bound fields; structural for `inspection.json`; semantic for `smart-request.expected.json` | Protocol `org-iso-mdoc`; `DeviceRequest.version` `"1.0"`; active docType, namespace, stable element, request-info key; tag-24 `ItemsRequest`; direct `dcapi` `encryptionInfo`; unpadded base64url spelling; SMART request validation | Synthetic structural fixture and implementation-regression material; conformance candidate after refresh | Regenerate to use `selection.fhir` / `form.fhir` selectors and final §16 examples; freeze deterministic CBOR, nonce/key policy, exact comparison targets, and expected report before promotion. |
+| `fixtures/dcapi-requests/ts-smart-checkin-readerauth/` | TypeScript generator; optional readerAuth | Same-device request with per-`DocRequest.readerAuth` | Byte-exact for tag-24 `ItemsRequest`, `session-transcript.cbor`, `reader-auth.cbor`, and detached payload where named; structural for inspection | All basic request checks plus detached ES256 `COSE_Sign1`, payload `null`, x5chain label `33`, binding to exact `SessionTranscript` and tag-24 `ItemsRequest` | Synthetic structural fixture and implementation-regression material; conformance candidate after refresh | Regenerate to use `selection.fhir` / `form.fhir` selectors and final §16 examples. Keep demo certificate and reader material labeled non-production. Do not imply readerAuth is mandatory or that demo reader trust is accepted by all deployments. |
+| `fixtures/dcapi-requests/real-chrome-android-smart-checkin/` | Real Chrome/Android Credential Manager request capture | Real-platform same-device request, request extraction, readerAuth, origin-bound `SessionTranscript` | Byte-exact for named CBOR/hex/base64url files; structural for diagnostics; historical for platform context | Same §8 request validation; preservation of exact `encryptionInfo` base64url; recorded origin source; readerAuth classification; pairing with response fixture via test-only HPKE key | Diagnostic real-platform capture and historical archive; selected subfiles are conformance candidates | Treat localhost origin, Chrome package metadata, timestamps, nonce, demo certificate, and included private JWK as fixture context. Refresh or regenerate before public v1.0 promotion so the captured SMART request uses final §5 selectors and final §16 vector content. |
 | `fixtures/responses/pymdoc-minimal/` | pyMDOC-CBOR fixture tooling; §8 response substructure | Response-side mdoc document, issuer-signed item, tag-24 digest input, MSO, `issuerAuth`, independent parser walk | Byte-exact for declared digest inputs, tag-24 issuer-signed item, hashes, and named CBOR files; structural for `expected-walk.json`; diagnostic for full document bytes when signatures are nondeterministic | Active docType, namespace, stable element; SMART response element parses under §6; digest input equals complete tag-24 issuer-signed item; recomputed digest matches MSO; issuerAuth structure is inspectable | Diagnostic response byte-walk vector and conformance candidate for stable response substructure | Add or pair with a final request when §6.6 end-to-end cross-validation is needed. Compare stable intermediates rather than nondeterministic full-document signatures unless deterministic signing is frozen. |
 | `fixtures/responses/real-chrome-android-smart-checkin/` | Real Android Wallet response paired with the real request capture | Complete same-device response: Digital Credentials result, `dcapiResponse`, HPKE fields, opened `DeviceResponse`, issuer-signed item, MSO digest, `DeviceAuthentication`, extracted SMART response | Byte-exact for named CBOR/bin/hex/base64url files; structural for inspections and byte checks; historical for live platform context | Returned protocol `org-iso-mdoc`; `dcapiResponse` shape; HPKE open using paired test private JWK and `info = SessionTranscript`; `DeviceResponse.version` `"1.0"`; docType/namespace/stable element; digest and device-authentication checks; extracted SMART response validates and cross-validates against the paired request where the paired request is accepted | Diagnostic real-platform response capture and historical archive; selected subfiles are conformance candidates | Pair only with `fixtures/dcapi-requests/real-chrome-android-smart-checkin/`. Mark HPKE private JWK and demo issuer/reader material test-only. Regenerate clinical content to align with §16 and flattened selectors before public conformance promotion. |
-| `wallet-android/app/src/test/resources/test-vectors.json` | Android unit-test resource generated from protocol code | Cross-language identifiers, request parsing, rejection vectors, and `SessionTranscript` derivation | Structural and byte-exact for fields explicitly represented as hex/base64url; implementation regression otherwise | Active identifiers; request vector extraction; negative non-SMART mdoc rejection; transcript derivation from origin, `encryptionInfoHex`, and exact `encryptionInfoBase64Url` | Implementation regression and candidate source for selected request/transcript checks | Regenerate after schema/example changes; current generated request JSON still includes legacy nested Questionnaire material. Do not treat this file as the complete public fixture suite. |
+| `wallet-android/app/src/test/resources/test-vectors.json` | Android unit-test resource generated from protocol code | Cross-language identifiers, request parsing, rejection vectors, and `SessionTranscript` derivation | Structural and byte-exact for fields explicitly represented as hex/base64url; implementation regression otherwise | Active identifiers; request vector extraction; negative non-SMART mdoc rejection; transcript derivation from origin, `encryptionInfoHex`, and exact `encryptionInfoBase64Url` | Implementation regression and candidate source for selected request/transcript checks | Regenerate after schema/example changes. Do not treat this file as the complete public fixture suite. |
 | `fixtures/captures/2026-04-30-mattr-safari-org-iso-mdoc/` and `fixtures/dcapi-requests/negative-mattr-mdl/` | External Mattr/Safari-shape mdoc material | Historical `org-iso-mdoc` envelope research and negative/non-SMART mdoc rejection context | Byte-exact for external capture files where named; structural for diagnostics | Useful only for generic DC API/`org-iso-mdoc` envelope comparison or negative rejection; not checked as SMART docType, namespace, request carrier, or stable element | Historical archive / diagnostic or negative reference | Do not promote as a SMART Health Check-in positive fixture. The captured values are mDL-oriented external values, not `org.smarthealthit.checkin.1` / `org.smarthealthit.checkin`. |
 | `fixtures/sample-shc/` | SMART Health Card sample generator and verifier | Artifact payload examples for the `application/smart-health-card` branch | Semantic for SHC payload handling; byte-exact only for named JWS files if a future profile freezes them | Verify JWSs under SMART Health Cards; if wrapped by SMART Health Check-in, use `mediaType: "application/smart-health-card"`, `value.verifiableCredential[]`, and no outer `fhirVersion` | Illustrative semantic source and implementation regression material | Existing samples are synthetic SHC specification examples, not CARIN insurance-card vectors and not embedded in SMART Health Check-in responses. Use only with explicit test issuer/trust labels. |
 | `fixtures/headache-summary-svgs/` | Demo migraine summary rendering assets | Presentation/demo content outside core v1.0 Artifact media types | Illustrative only | No core SMART Health Check-in v1.0 Artifact validation | Illustrative demo archive | Do not treat SVG, HTML, or Markdown summaries as core Artifacts. A future extension would need a registered/branded media type and typed payload rules; do not revive `GenericArtifact`. |
-| Future §16 semantic vectors | §16.1-§16.6 worked examples | Transport-neutral clinical request/response JSON model | Semantic; byte-exact JSON only if a vector profile chooses canonical serialization | §5 request validation; §6 response validation; §6.6 cross-validation; media-type acceptance; status coverage; flattened Questionnaire; exact canonical-version preservation; no `GenericArtifact` | Gap / follow-up | Create checked-in JSON vectors from §16 after example text is stable. Keep synthetic, PHI-free, and independent of kiosk/relay behavior. |
+| Future §16 semantic vectors | §16.1-§16.6 worked examples | Transport-neutral clinical request/response JSON model | Semantic; byte-exact JSON only if a vector profile chooses canonical serialization | §5 request validation; §6 response validation; §6.6 cross-validation; media-type acceptance; status coverage; `selection.fhir` / `form.fhir` selectors; exact canonical-version preservation; no `GenericArtifact` | Gap / follow-up | Create checked-in JSON vectors from §16 after example text is stable. Keep synthetic, PHI-free, and independent of kiosk/relay behavior. |
 | Future same-device wrapping vectors for §16 examples | §8 plus selected §16 request/response pairs | Complete direct `org-iso-mdoc` request/response byte ladder | Byte-exact for explicitly named CBOR, tag-24, digest, HPKE, and base64url fields; structural for inspections; semantic for clinical JSON | Full §8.7/§8.8 validation plus §6.6 cross-validation against the selected §16 request | Gap / conformance-candidate work | Generate after deciding deterministic CBOR/signature/nonce/key policy, trust-material labels, and expected validator reports. These vectors wrap the same-device flow only, not QR/kiosk/relay handoff behavior. |
 
 ### D.5 Alignment with §16 worked examples
@@ -4508,7 +4524,7 @@ Section 16 supplies synthetic semantic examples for the clinical JSON model. App
 | --- | --- | --- | --- |
 | §16.1 Insurance-card-only check-in | Semantic request/response JSON using CARIN Coverage selector and an SHC Artifact | Optional request-only or full request/response wrapping through §8 | Replace the placeholder SHC JWS string with a fixture-grade synthetic SMART Health Card containing appropriate coverage-like payload or a clearly scoped SHC test payload; label issuer keys as test material; keep no outer `fhirVersion`. |
 | §16.2 US Core summary check-in | Semantic raw-FHIR Bundle vector | Request and response structural vector | Use synthetic FHIR resources that are sufficiently complete for the selected validation level; preserve versioned `meta.profile` strings exactly; show additive `profiles[]` plus `profilesFrom[]`. |
-| §16.3 Inline questionnaire pre-visit intake | Semantic request/response vector for flattened Questionnaire selector | Request byte vector after regeneration; optional response byte vector | Keep `content.kind: "questionnaire"` with sibling `canonical` and/or `resource`; preserve exact versioned `QuestionnaireResponse.questionnaire`; exclude legacy nested `questionnaire` from positive vectors. |
+| §16.3 Inline questionnaire pre-visit intake | Semantic request/response vector for `form.fhir` selector | Request byte vector after regeneration; optional response byte vector | Keep `content.kind: "form.fhir"` with sibling `questionnaireCanonical` and/or `questionnaire`; preserve exact versioned `QuestionnaireResponse.questionnaire`; keep positive vectors limited to §5 selector shapes. |
 | §16.4 Mixed bundle | Semantic many-to-many fulfillment vector | Good candidate for full same-device wrapping once deterministic policy is chosen | Validate every `fulfills[]` edge against the corresponding item `accept[]`, selector, and FHIR version; keep raw FHIR provenance caveats visible. |
 | §16.5 Per-item declined / partial / error | Semantic edge-case response vector | Structural response vector; no live capture required | Include exact `requestStatus[]` coverage, safe `message` text, and expected validation outcomes for `partial`, `declined`, and `error`. |
 | §16.6 No selectors | Semantic broad FHIR request/response vector | Request-only byte vector if broad-request handling needs platform regression coverage | Make clear that the example does not require full-record export; still validate `fhirVersion`, media-type acceptance, and Holder-approved scope. |
@@ -4532,12 +4548,12 @@ A fixture should be promoted from diagnostic, historical, illustrative, or imple
 - exact files and comparison modes: byte-exact, structural, semantic, diagnostic-only, historical, illustrative, or implementation-regression;
 - synthetic-data status, PHI status, and confirmation that no production secrets or bearer credentials are present;
 - intentionally public private keys, demo certificates, self-signed issuer material, local origins, sample issuer material, and non-production trust anchors;
-- current request/response schema alignment, including flattened Questionnaire selectors, array `profilesFrom[]`, additive profile semantics, no `GenericArtifact`, exact canonical-version preservation, core Artifact media types, raw-FHIR `fhirVersion`, SHC `value.verifiableCredential[]`, and no SHC outer `fhirVersion`;
+- current request/response schema alignment, including `selection.fhir` / `form.fhir` selectors, array `profilesFrom[]`, additive profile semantics, no `GenericArtifact`, exact canonical-version preservation, core Artifact media types, raw-FHIR `fhirVersion`, SHC `value.verifiableCredential[]`, and no SHC outer `fhirVersion`;
 - byte-boundary policy for CBOR map ordering, duplicate keys, nonce/key handling, digestID conventions, deterministic or nondeterministic signatures, timestamps, and exact base64url spelling;
 - validation report coverage for §5 parsing, §6 response validation, §6.6 cross-validation, §8 wrapper validation, HPKE opening, mdoc digest/device checks, optional readerAuth, Artifact-specific checks, and policy-dependent trust outcomes; and
 - owner or process for regeneration when schema, CDDL, example text, tooling, browser behavior, or native-wallet behavior changes.
 
-Current follow-up work includes creating checked-in semantic vectors for §16, adding fixture-grade synthetic SHC and FHIR payloads, refreshing real Android capture material after clinical-schema/example changes, updating Android-generated test vectors, separating conformance candidates from diagnostics in manifests, and deciding deterministic-byte policy. A future Android capture or fixture regeneration would be useful after implementation/schema changes, especially to demonstrate the flattened Questionnaire selector and final §16 payloads in a real platform path; it is not required to define the informative appendix itself.
+Current follow-up work includes creating checked-in semantic vectors for §16, adding fixture-grade synthetic SHC and FHIR payloads, refreshing real Android capture material after clinical-schema/example changes, updating Android-generated test vectors, separating conformance candidates from diagnostics in manifests, and deciding deterministic-byte policy. A future Android capture or fixture regeneration would be useful after implementation/schema changes, especially to demonstrate the `selection.fhir` / `form.fhir` selector model and final §16 payloads in a real platform path; it is not required to define the informative appendix itself.
 
 ---
 
@@ -4991,7 +5007,7 @@ The SMART request `version` and SMART response `version` are SMART Health Check-
 
 ### H.2 Canonical URL and `canonical|version` handling
 
-FHIR canonicals appear in `profiles[]`, `profilesFrom[]`, questionnaire selectors, returned `QuestionnaireResponse.questionnaire`, and returned `Resource.meta.profile` values. Section 5.5 defines the controlling decision matrix. The FHIR-facing summary is:
+FHIR canonicals appear in `profiles[]`, `profilesFrom[]`, `form.fhir` selectors, returned `QuestionnaireResponse.questionnaire`, and returned `Resource.meta.profile` values. Section 5.5 defines the controlling decision matrix. The FHIR-facing summary is:
 
 - preserve the exact wire string when carrying, signing, encrypting, comparing protocol bytes, logging, including values in fixtures, returning `QuestionnaireResponse.questionnaire`, or returning `Resource.meta.profile` values;
 - parse canonicals into `(url, version?)` before resolution or conformance-resource lookup, and preserve the original canonical string separately for response construction and diagnostics;
@@ -5004,7 +5020,7 @@ FHIR canonicals appear in `profiles[]`, `profilesFrom[]`, questionnaire selector
 | --- | --- |
 | `profiles[]` | Exact `StructureDefinition` profile canonicals. If the request includes `|version`, exact-version evidence must preserve and compare the suffix or provide equivalent local evidence for that exact profile version. A Wallet/Responder should not report `fulfilled` for a versioned `profiles[]` request value unless the returned resource's `meta.profile[]` includes the same versioned canonical or the Wallet/Responder has trusted evidence that the resource conforms to that exact profile version. If the request omits `|version`, evidence for a supported version of the same base canonical can be responsive, subject to §5.4.1.1 and local policy. |
 | `profilesFrom[]` | Canonical profile-family URLs. Family lookup normally uses the base canonical; strip `|version` unless the family definition explicitly defines version-sensitive membership. This is a classification rule, not a resolution rule for `StructureDefinition` resources. |
-| Questionnaire canonical selector | The selector's `canonical` field is the Questionnaire identity requested by the Requester. Resolve it as a parsed `(url, version?)` using a canonical resolver, package cache, or FHIR search. Direct bare HTTP dereference is permitted only for unversioned Questionnaire canonicals and requires post-resolution `Questionnaire.url` verification. A versioned Questionnaire canonical is not resolved by stripping the suffix and dereferencing the bare URL. |
+| `form.fhir` `questionnaireCanonical` | The selector's `questionnaireCanonical` field is the Questionnaire identity requested by the Requester. Resolve it as a parsed `(url, version?)` using a canonical resolver, package cache, or FHIR search. Direct bare HTTP dereference is permitted only for unversioned Questionnaire canonicals and requires post-resolution `Questionnaire.url` verification. A versioned Questionnaire canonical is not resolved by stripping the suffix and dereferencing the bare URL. |
 | Inline `Questionnaire.url` and `Questionnaire.version` | FHIR resource fields that can support consistency checks and can provide a canonical identity when no explicit request canonical was supplied. They do not replace an explicit request canonical when both are present. |
 | `QuestionnaireResponse.questionnaire` | When known and when the requested canonical is the identity being answered, preserve the requested canonical including `|version`. |
 | Returned `Resource.meta.profile[]` | FHIR conformance evidence inside returned resources. Preserve known values, including `|version` suffixes; do not remove suffixes merely because request routing or grouping used an unversioned form. |
@@ -5013,9 +5029,9 @@ A Wallet/Responder that cannot evaluate an exact version claim can report the it
 
 Resolution failure, post-resolution mismatch, or absence of exact-version evidence for a versioned request value is not a license to substitute a different FHIR artifact. The Wallet/Responder should report `unsupported`, `unavailable`, or `error` according to §6.4, depending on whether the problem is capability, data availability, or operational failure.
 
-### H.3 Mapping `fhir.resources` selectors
+### H.3 Mapping `selection.fhir` selectors
 
-A `content.kind: "fhir.resources"` selector requests patient-specific FHIR resources. It is not a general FHIR search expression, FHIRPath expression, GraphDefinition, `$everything` operation, SMART App Launch scope, authorization policy, or instruction to contact a FHIR server.
+A `content.kind: "selection.fhir"` selector requests existing patient-specific FHIR resources. It is not a general FHIR search expression, FHIRPath expression, GraphDefinition, `$everything` operation, SMART App Launch scope, authorization policy, form-completion instruction, or instruction to contact a FHIR server.
 
 #### H.3.1 `profiles[]`: exact profile matching
 
@@ -5045,7 +5061,7 @@ Example:
 
 ```json
 {
-  "kind": "fhir.resources",
+  "kind": "selection.fhir",
   "profilesFrom": ["http://hl7.org/fhir/us/core"],
   "profiles": [
     "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
@@ -5058,7 +5074,7 @@ The exact US Core Patient profile and the US Core profile family remain additive
 
 #### H.3.4 No-selector default
 
-When a `fhir.resources` selector omits `profiles[]`, `profilesFrom[]`, and `resourceTypes[]`, §5.4.1.5 defines the no-selector default: the item requests any patient-specific FHIR resources the Wallet/Responder can offer and the Holder chooses to share, constrained by `accept[]`, `fhirVersions[]` where applicable, Wallet capability, local policy, and Holder decision.
+When a `selection.fhir` selector omits `profiles[]`, `profilesFrom[]`, and `resourceTypes[]`, §5.4.1.5 defines the no-selector default: the item requests any patient-specific FHIR resources the Wallet/Responder can offer and the Holder chooses to share, constrained by `accept[]`, `fhirVersions[]` where applicable, Wallet capability, local policy, and Holder decision.
 
 For FHIR mapping, a Verifier should not expect a specific `meta.profile` value or resource type solely from this selector. The default is intentionally broad; it is not a command to export a complete patient record and not a guarantee that returned content is comprehensive.
 
@@ -5115,26 +5131,26 @@ The same selector concepts apply at the FHIR layer:
 
 The SMART Health Check-in Artifact wrapper should not include an Artifact-level profile summary to substitute for inspecting signed content. A SMART Health Card can be validly signed yet still fail to satisfy a requested profile, resource type, Questionnaire, or local ingestion policy.
 
-### H.6 Questionnaire selector mapping
+### H.6 FHIR form selector mapping
 
-A `content.kind: "questionnaire"` selector asks the Wallet/Responder to collect or provide answers to a FHIR Questionnaire. The selector is a flat object with `kind: "questionnaire"` and sibling optional fields `canonical` and `resource`, at least one of which is present. It does not contain a nested polymorphic `questionnaire` member. For `application/fhir+json`, the expected returned FHIR resource is a `QuestionnaireResponse`, either as a single Resource Artifact or inside a Bundle.
+A `content.kind: "form.fhir"` selector asks the Wallet/Responder to collect or provide answers to a FHIR Questionnaire. The selector is a flat object with `kind: "form.fhir"` and sibling optional fields `questionnaireCanonical` and `questionnaire`, at least one of which is present. It does not use `profiles[]`, `profilesFrom[]`, or `resourceTypes[]`; those fields belong to `selection.fhir` request items. For `application/fhir+json`, the expected returned FHIR resource is a `QuestionnaireResponse`, either as a single Resource Artifact or inside a Bundle.
 
 #### H.6.1 Questionnaire identity selection
 
 The requested Questionnaire can be expressed as:
 
-1. `canonical`: a non-empty FHIR canonical string, optionally with `|version`;
-2. `resource`: an inline FHIR `Questionnaire` resource object; or
-3. both `canonical` and `resource` on the selector object.
+1. `questionnaireCanonical`: a non-empty FHIR canonical string, optionally with `|version`;
+2. `questionnaire`: an inline FHIR `Questionnaire` resource object; or
+3. both `questionnaireCanonical` and `questionnaire` on the selector object.
 
-When selector `canonical` is supplied and is the Questionnaire identity being answered, a generated `QuestionnaireResponse.questionnaire` should preserve that canonical exactly, including any `|version` suffix. When only an inline Questionnaire `resource` is supplied, the Wallet/Responder should populate `QuestionnaireResponse.questionnaire` from the inline resource's canonical identity when known, usually `Questionnaire.url` plus `|Questionnaire.version` when both are present and the version is intended as the canonical version. If no canonical identity is known, the Wallet/Responder should not invent a misleading canonical merely to fill the field; downstream receivers may still require one by deployment policy.
+When selector `questionnaireCanonical` is supplied and is the Questionnaire identity being answered, a generated `QuestionnaireResponse.questionnaire` should preserve that canonical exactly, including any `|version` suffix. When only an inline Questionnaire `questionnaire` is supplied, the Wallet/Responder should populate `QuestionnaireResponse.questionnaire` from the inline resource's canonical identity when known, usually `Questionnaire.url` plus `|Questionnaire.version` when both are present and the version is intended as the canonical version. If no canonical identity is known, the Wallet/Responder should not invent a misleading canonical merely to fill the field; downstream receivers may still require one by deployment policy.
 
 Example canonical-only selector:
 
 ```json
 {
-  "kind": "questionnaire",
-  "canonical": "https://clinic.example.org/fhir/Questionnaire/migraine-intake|1.2.3"
+  "kind": "form.fhir",
+  "questionnaireCanonical": "https://clinic.example.org/fhir/Questionnaire/migraine-intake|1.2.3"
 }
 ```
 
@@ -5142,8 +5158,8 @@ Example inline selector:
 
 ```json
 {
-  "kind": "questionnaire",
-  "resource": {
+  "kind": "form.fhir",
+  "questionnaire": {
     "resourceType": "Questionnaire",
     "url": "https://clinic.example.org/fhir/Questionnaire/migraine-intake",
     "version": "1.2.3",
@@ -5155,7 +5171,7 @@ Example inline selector:
 
 #### H.6.2 Inline and canonical+inline cases
 
-When both sibling fields `canonical` and `resource` are supplied, the canonical is the Requester's explicit identity for response construction and receiver interpretation, while the inline resource is the body to render or use. The Wallet/Responder should check consistency between `canonical`, `resource.url`, `resource.version`, and material item structure. It should not silently merge conflicting definitions or rewrite the requested canonical to match a conflicting inline resource.
+When both sibling fields `questionnaireCanonical` and `questionnaire` are supplied, the canonical is the Requester's explicit identity for response construction and receiver interpretation, while the inline resource is the body to render or use. The Wallet/Responder should check consistency between `questionnaireCanonical`, `questionnaire.url`, `questionnaire.version`, and material item structure. It should not silently merge conflicting definitions or rewrite the requested canonical to match a conflicting inline resource.
 
 Material disagreement is described in §5.4.2.4 and includes different base canonical URLs after applying §5.5 comparison rules, different explicit versions, or conflicting item structure that would change Holder answers. If material disagreement is detected before answers are collected or response construction begins, §6.4 favors `unsupported`. An operational failure after a Questionnaire is otherwise understood is normally `error`. A Verifier should treat an `unsupported` status for such disagreement as a valid item outcome rather than a transport failure when the rest of the SMART response validates.
 
@@ -5166,7 +5182,7 @@ A Verifier evaluating a questionnaire item returned as `application/fhir+json` s
 - the Artifact media type is accepted by the item;
 - the raw FHIR Artifact includes `fhirVersion`;
 - the returned FHIR content is a `QuestionnaireResponse`, or a Bundle containing the relevant `QuestionnaireResponse` in `Bundle.entry[].resource`;
-- `QuestionnaireResponse.questionnaire`, when present, preserves the selector's requested `canonical` and `|version` under §5.5 when that canonical is the identity being answered;
+- `QuestionnaireResponse.questionnaire`, when present, preserves the selector's requested `questionnaireCanonical` and `|version` under §5.5 when that canonical is the identity being answered;
 - the response is linked to the correct request item through Artifact `fulfills[]` and item status; and
 - the response status is consistent with §6.4, including valid `unsupported`, `declined`, `partial`, and `error` outcomes.
 
@@ -5180,7 +5196,7 @@ Example exact CARIN-style Coverage selector:
 
 ```json
 {
-  "kind": "fhir.resources",
+  "kind": "selection.fhir",
   "profiles": ["http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage"],
   "resourceTypes": ["Coverage"]
 }
@@ -5190,7 +5206,7 @@ Example US Core profile-family selector:
 
 ```json
 {
-  "kind": "fhir.resources",
+  "kind": "selection.fhir",
   "profilesFrom": ["http://hl7.org/fhir/us/core"]
 }
 ```

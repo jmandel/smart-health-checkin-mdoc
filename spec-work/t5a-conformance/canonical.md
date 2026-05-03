@@ -47,7 +47,7 @@ An implementation claiming a clinical **Holder Wallet / Responder** target SHALL
 
 An implementation claiming a clinical **Verifier** or receiver validation target SHALL validate SMART responses under §6 and apply §6.6 against the original SMART request before treating a response as protocol-valid for Requester or workflow use. Shape validation alone is not sufficient.
 
-Core clinical support includes `fhir.resources` and `questionnaire` selector shapes where an implementation claims to request or process those selectors; the flattened `questionnaire` selector with `canonical` and/or `resource` directly on the selector; `profilesFrom[]` as an array of canonical profile-family URLs; additive `profiles[]` plus `profilesFrom[]` semantics; canonical `|version` resolution and verification as defined by §5.5; request `accept[]` and Artifact `mediaType` rules; the removal of a generic catch-all Artifact carrier in favor of core or registered branded Artifact variants; `application/fhir+json` Artifacts with `fhirVersion`; `application/smart-health-card` Artifacts with `value.verifiableCredential[]` and no outer Artifact-level `fhirVersion`; `requestStatus[]` coverage exactly once for every request item; and §6.6 cross-validation.
+Core clinical support includes `selection.fhir` and `form.fhir` selector shapes where an implementation claims to request or process those selectors; `form.fhir` selectors with `questionnaireCanonical` and/or `questionnaire` directly on the selector; `profilesFrom[]` as an array of canonical profile-family URLs; additive `profiles[]` plus `profilesFrom[]` semantics; canonical `|version` resolution and verification as defined by §5.5; request `accept[]` and Artifact `mediaType` rules; the removal of a generic catch-all Artifact carrier in favor of core or registered branded Artifact variants; `application/fhir+json` Artifacts with `fhirVersion`; `application/smart-health-card` Artifacts with `value.verifiableCredential[]` and no outer Artifact-level `fhirVersion`; `requestStatus[]` coverage exactly once for every request item; and §6.6 cross-validation.
 
 All conformance targets SHALL preserve the trust-layer separation defined in §7 for the features they implement. In particular, an implementation SHALL NOT infer clinical-source provenance for unsigned raw FHIR JSON from successful transport presentation, mdoc issuer/device evidence, reader authentication, Holder action, SMART response shape validation, deployment handoff metadata, or demo fixture keys.
 
@@ -98,7 +98,7 @@ Version 1.0 uses the following stable wire identifiers in normative artifacts:
 | SMART request discriminator | `smart-health-checkin-request` | §5 `type` field. |
 | SMART response discriminator | `smart-health-checkin-response` | §6 `type` field. |
 | SMART request/response model version | `1` | §5 and §6 `version` fields. |
-| Core selector kinds | `fhir.resources`, `questionnaire` | §5 `content.kind` values. |
+| Core selector kinds | `selection.fhir`, `form.fhir` | §5 `content.kind` values. |
 | Core Artifact media types | `application/fhir+json`, `application/smart-health-card` | §5 `accept[]` and §6 Artifact `mediaType`. |
 | Core status codes | `fulfilled`, `partial`, `unavailable`, `declined`, `unsupported`, `error` | §6 `requestStatus[].status`. |
 | Direct DC API protocol id | `org-iso-mdoc` | §8 Digital Credentials API protocol. |

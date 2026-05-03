@@ -289,12 +289,12 @@ A Wallet/Responder SHALL set `requestStatus[].status` to one of the following ve
 | `partial` | The Wallet/Responder returned some relevant Artifact content for the item but does not claim complete fulfillment. |
 | `unavailable` | The Wallet/Responder understood the item and supported the requested selector and media type, but found no matching content available or shareable under Wallet policy, without a Holder refusal being the relevant cause. |
 | `declined` | The Holder declined to share content for the item, or Wallet policy treated the Holder decision as a refusal for this item. |
-| `unsupported` | The Wallet/Responder could not understand or support the item, selector kind, selector shape, requested media type, required Questionnaire features, canonical/resource combination, FHIR version, or extension semantics well enough to attempt fulfillment. |
+| `unsupported` | The Wallet/Responder could not understand or support the item, selector kind, selector shape, requested media type, required Questionnaire features, `questionnaireCanonical`/`questionnaire` combination, FHIR version, or extension semantics well enough to attempt fulfillment. |
 | `error` | The Wallet/Responder encountered an operational or processing error while attempting to satisfy the item after it was understood and not simply declined, unavailable, or unsupported. |
 
 A Wallet/Responder SHALL use `unsupported`, not `unavailable`, when it cannot process the request item because the selector kind, selector shape, requested media type, FHIR version, or Questionnaire definition is not supported. A Wallet/Responder SHALL use `unavailable`, not `unsupported`, when it understands the item but lacks matching shareable content.
 
-A Wallet/Responder SHOULD use `unsupported` for a material Questionnaire canonical/resource disagreement detected before answers are collected or response construction begins. A Wallet/Responder SHOULD use `error` for an operational failure that occurs while rendering, collecting, converting, or constructing a response for a Questionnaire that the Wallet/Responder otherwise understood.
+A Wallet/Responder SHOULD use `unsupported` for a material `questionnaireCanonical`/`questionnaire` disagreement detected before answers are collected or response construction begins. A Wallet/Responder SHOULD use `error` for an operational failure that occurs while rendering, collecting, converting, or constructing a response for a Questionnaire that the Wallet/Responder otherwise understood.
 
 A Wallet/Responder SHALL use `declined` when the relevant reason for non-fulfillment is the Holder's decision not to share or complete the item. A Wallet/Responder MAY also use `declined` when local Wallet policy implements Holder preferences that prohibit disclosure for the item.
 

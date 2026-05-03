@@ -28,7 +28,7 @@ Request:
       "summary": "Share current coverage information conforming to the CARIN digital insurance card profile.",
       "required": true,
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "profiles": [
           "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage"
         ],
@@ -99,7 +99,7 @@ Request:
       "title": "US Core summary",
       "summary": "Share available patient, problem, and medication summary resources for review before the visit.",
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "profilesFrom": [
           "http://hl7.org/fhir/us/core"
         ],
@@ -223,7 +223,7 @@ Validation notes: the raw FHIR Artifact includes `mediaType: application/fhir+js
 
 ### 16.3 Inline questionnaire pre-visit intake
 
-This example uses the flattened Questionnaire selector. Both the versioned canonical and the inline `Questionnaire` are direct members of `content`; there is no nested `questionnaire` wrapper.
+This example uses the `form.fhir` selector. Both the versioned `questionnaireCanonical` and the inline `questionnaire` resource are direct members of `content`. The expected returned FHIR resource is a `QuestionnaireResponse`.
 
 Request:
 
@@ -242,9 +242,9 @@ Request:
       "title": "Pre-visit intake questionnaire",
       "summary": "Answer two synthetic intake questions before the visit.",
       "content": {
-        "kind": "questionnaire",
-        "canonical": "https://example.org/fhir/Questionnaire/previsit-intake|2.0.0",
-        "resource": {
+        "kind": "form.fhir",
+        "questionnaireCanonical": "https://example.org/fhir/Questionnaire/previsit-intake|2.0.0",
+        "questionnaire": {
           "resourceType": "Questionnaire",
           "id": "previsit-intake",
           "url": "https://example.org/fhir/Questionnaire/previsit-intake",
@@ -328,7 +328,7 @@ Response:
 }
 ```
 
-Validation notes: the returned `QuestionnaireResponse.questionnaire` preserves `https://example.org/fhir/Questionnaire/previsit-intake|2.0.0` exactly. A Wallet that detects material disagreement between the canonical and inline resource would report `unsupported` or `error` rather than silently merging definitions. Legacy nested selector shapes are invalid and are not shown as request examples.
+Validation notes: the returned `QuestionnaireResponse.questionnaire` preserves `https://example.org/fhir/Questionnaire/previsit-intake|2.0.0` exactly. A Wallet that detects material disagreement between `questionnaireCanonical` and the inline `questionnaire` resource would report `unsupported` or `error` rather than silently merging definitions.
 
 ### 16.4 Mixed bundle: insurance + history + intake
 
@@ -350,7 +350,7 @@ Request:
       "id": "insurance-card",
       "title": "Insurance card",
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "profiles": [
           "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage"
         ],
@@ -368,7 +368,7 @@ Request:
       "title": "Clinical history",
       "summary": "Share active problems and medications.",
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "profilesFrom": [
           "http://hl7.org/fhir/us/core"
         ],
@@ -385,9 +385,9 @@ Request:
       "id": "intake",
       "title": "Intake answers",
       "content": {
-        "kind": "questionnaire",
-        "canonical": "https://example.org/fhir/Questionnaire/previsit-intake|2.0.0",
-        "resource": {
+        "kind": "form.fhir",
+        "questionnaireCanonical": "https://example.org/fhir/Questionnaire/previsit-intake|2.0.0",
+        "questionnaire": {
           "resourceType": "Questionnaire",
           "id": "previsit-intake",
           "url": "https://example.org/fhir/Questionnaire/previsit-intake",
@@ -537,7 +537,7 @@ Request:
       "title": "Current medications",
       "required": true,
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "profiles": [
           "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest|6.1.0"
         ],
@@ -554,7 +554,7 @@ Request:
       "title": "Sensitive history",
       "summary": "Optional sensitive-category history.",
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "resourceTypes": [
           "Condition"
         ]
@@ -567,7 +567,7 @@ Request:
       "id": "recent-vitals",
       "title": "Recent vitals",
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "resourceTypes": [
           "Observation"
         ]
@@ -646,7 +646,7 @@ Validation notes: `requestStatus[]` covers `current-medications`, `sensitive-his
 
 ### 16.6 "No selectors" — full open-ended share
 
-This example uses `content.kind = "fhir.resources"` with no `profiles[]`, `profilesFrom[]`, or `resourceTypes[]`. It is intentionally broad and should be used only when the Requester can safely consume broad patient-specific FHIR content and the Holder-facing text explains the breadth.
+This example uses `content.kind = "selection.fhir"` with no `profiles[]`, `profilesFrom[]`, or `resourceTypes[]`. It is intentionally broad and should be used only when the Requester can safely consume broad patient-specific FHIR content and the Holder-facing text explains the breadth.
 
 Request:
 
@@ -665,7 +665,7 @@ Request:
       "title": "Share available health records",
       "summary": "This broad request has no profile, profile-family, or resource-type selector. The Wallet may offer any patient-specific FHIR resources it can safely share.",
       "content": {
-        "kind": "fhir.resources"
+        "kind": "selection.fhir"
       },
       "accept": [
         "application/fhir+json"

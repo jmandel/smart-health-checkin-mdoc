@@ -136,19 +136,19 @@ Conventions used in this outline:
 5.3.5 `accept[]` (ordered preference)
 5.3.6 `content` (selector — see §5.4)
 5.4 Content selectors (`content.kind`)
-5.4.1 `fhir.resources`
+5.4.1 `selection.fhir` — existing patient-specific FHIR resource selection
 5.4.1.1 `profiles[]` — exact StructureDefinition canonicals
 5.4.1.2 `profilesFrom[]` — IG / publication / profile-collection canonical URLs
 5.4.1.3 `resourceTypes[]` — official FHIR resource type names
 5.4.1.4 Additivity rule when both `profiles` and `profilesFrom` present
 5.4.1.5 No-selector default ("any patient-specific FHIR")
 5.4.1.6 (EX) US Core family, exact CARIN coverage, mixed
-5.4.2 `questionnaire` selector (`content.kind = "questionnaire"`)
-5.4.2.1 Flattened selector shape with sibling `canonical?` and `resource?`
-5.4.2.2 `canonical` — FHIR canonical URL, with `|version` handled per §5.5
-5.4.2.3 `resource` — inline FHIR `Questionnaire` resource object
-5.4.2.4 Combined canonical+resource and wallet behavior when they disagree
-5.4.2.5 Rejection of legacy nested `questionnaire` key shapes
+5.4.2 `form.fhir` selector (`content.kind = "form.fhir"`)
+5.4.2.1 Flattened selector shape with sibling `questionnaireCanonical?` and `questionnaire?`
+5.4.2.2 `questionnaireCanonical` — FHIR Questionnaire canonical URL, with `|version` handled per §5.5
+5.4.2.3 `questionnaire` — inline FHIR `Questionnaire` resource object
+5.4.2.4 Combined canonical+questionnaire and wallet behavior when they disagree
+5.4.2.5 Rejection of mixed form/resource-selection shapes
 5.4.2.6 (EX) inline migraine intake
 5.4.3 Extension selectors — registration rules
 5.5 Canonical `|version` handling

@@ -145,14 +145,14 @@ conformance closure.
 - `5.2 SmartHealthCheckinRequest`
 - `5.3 SmartHealthCheckinRequestItem`
 - `5.4 Content selectors`
-- `5.4.1 fhir.resources`
+- `5.4.1 selection.fhir`
 - `5.4.1.1 profiles[]`
 - `5.4.1.2 profilesFrom[]`
 - `5.4.1.3 resourceTypes[]`
 - `5.4.1.4 Additivity rule when both profiles and profilesFrom present`
 - `5.4.1.5 No-selector default`
 - `5.4.1.6 Examples`
-- `5.4.2 questionnaire` (flattened `content.kind = "questionnaire"` with sibling `canonical?` / `resource?`)
+- `5.4.2 form.fhir` (flattened `content.kind = "form.fhir"` with sibling `questionnaireCanonical?` / `questionnaire?`)
 - `5.4.3 Extension selectors`
 - `5.5 Canonical |version handling` (structured parse, resolver/search, post-resolution verification)
 - `5.6 Accepted media types`
@@ -164,7 +164,7 @@ Organizer focus:
 - state additive selector semantics explicitly;
 - preserve `purpose` as display context, not requester identity;
 - keep requester identity metadata prohibited from the clinical request body;
-- ensure `questionnaire` has no nested polymorphic `questionnaire` key;
+- ensure `form.fhir` is distinct from `selection.fhir` and that one request item does not mix form completion with existing-resource selection;
 - forbid strip-and-hope canonical fetch for versioned canonicals.
 
 #### T2.B Response model
@@ -205,7 +205,7 @@ new requirements silently.
 Dependencies: T2.A, T2.B, T2.C.
 
 Organizer focus: schema must encode the normative array shape for
-`profilesFrom`, flattened questionnaire selector shape, additive-selector
+`profilesFrom`, `form.fhir` selector shape, additive-selector
 permissiveness, core artifact media-type rules, and status coverage constraints
 as far as JSON Schema can express them.
 

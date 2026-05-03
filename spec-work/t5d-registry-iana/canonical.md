@@ -62,14 +62,14 @@ SMART Health Check-in maintains a specification-controlled registry for `SmartHe
 
 | Selector kind | Selector shape summary | Semantics |
 | --- | --- | --- |
-| `fhir.resources` | `content` may include `profiles[]`, `profilesFrom[]`, and `resourceTypes[]` as arrays of strings. | Requests patient-specific FHIR resources. `profiles[]` and `profilesFrom[]` are additive profile selectors; `resourceTypes[]` is an additional official FHIR resource-type constraint when present. |
-| `questionnaire` | `content` may include `canonical` as a FHIR canonical string, `resource` as an inline FHIR `Questionnaire`, or both. | Requests completion of, or response to, a FHIR Questionnaire, with returned content represented by an accepted Artifact media type. |
+| `selection.fhir` | `content` may include `profiles[]`, `profilesFrom[]`, and `resourceTypes[]` as arrays of strings. It does not include `questionnaireCanonical` or `questionnaire`. | Requests existing patient-specific FHIR resources. `profiles[]` and `profilesFrom[]` are additive profile selectors; `resourceTypes[]` is an additional official FHIR resource-type constraint when present. |
+| `form.fhir` | `content` may include `questionnaireCanonical` as a FHIR canonical string, `questionnaire` as an inline FHIR `Questionnaire`, or both. It does not include `profiles[]`, `profilesFrom[]`, or `resourceTypes[]`. | Requests completion of, or response to, a FHIR Questionnaire, with returned content represented by an accepted Artifact media type, normally a FHIR `QuestionnaireResponse` for `application/fhir+json`. |
 
 A Requester SHALL use one of these selector kinds or a registered extension selector when interoperable processing by unrelated Wallets/Responders is expected. A Wallet/Responder that does not support a selector kind SHALL NOT infer its semantics from display text, profile labels, local topic names, deployment metadata, or requester identity metadata. It SHALL reject the request or report the affected item as `unsupported` according to the selected flow and §6.
 
 A future selector-kind registration SHALL define the exact `content.kind` string; JSON shape; required and optional members; unknown-member handling; clinical meaning; content-satisfaction rules; interactions with `accept[]`, `fhirVersions[]`, FHIR canonicals and `|version`, item status, Artifact fulfillment, and §6.6 validation; unsupported, unavailable, partial, declined, and error behavior; examples; security considerations; and privacy considerations. Registrants SHOULD choose collision-resistant names, such as reverse-DNS or URI-like names, unless the registry later defines a stricter syntax.
 
-A selector-kind registration SHALL NOT redefine SMART request top-level fields, SMART response fields, `fhir.resources`, `questionnaire`, `profiles[]`, `profilesFrom[]`, `resourceTypes[]`, `accept[]`, Holder control, requester identity handling, canonical-version handling, or trust-layer boundaries.
+A selector-kind registration SHALL NOT redefine SMART request top-level fields, SMART response fields, `selection.fhir`, `form.fhir`, `profiles[]`, `profilesFrom[]`, `resourceTypes[]`, `questionnaireCanonical`, `questionnaire`, `accept[]`, Holder control, requester identity handling, canonical-version handling, or trust-layer boundaries.
 
 ### 13.5 Profile-id registry
 
@@ -113,7 +113,7 @@ The designated expert SHOULD approve a registration only when the request:
 2. identifies the exact target, feature, version, and protocol section affected;
 3. preserves the transport-neutral §5/§6 SMART request and SMART response semantics unless the entry is explicitly for a future incompatible version;
 4. preserves request/response validation behavior, including `requestId`, `fulfills[]`, `requestStatus[]`, media-type checks, status-code handling, and §6.6 cross-validation;
-5. preserves core selector semantics, including `fhir.resources`, `questionnaire`, additive `profiles[]` plus `profilesFrom[]`, `resourceTypes[]`, per-item `accept[]` rules, and canonical `|version` handling;
+5. preserves core selector semantics, including `selection.fhir`, `form.fhir`, additive `profiles[]` plus `profilesFrom[]`, `resourceTypes[]`, questionnaire-form fields, per-item `accept[]` rules, and canonical `|version` handling;
 6. preserves the §7 trust-layer separation among origin evidence, optional reader authentication, mdoc issuer/device evidence, Holder action, and clinical-source provenance;
 7. preserves the version-1 same-device identifiers `org-iso-mdoc`, `org.smarthealthit.checkin.1`, `org.smarthealthit.checkin`, `smart_health_checkin_response`, and `org.smarthealthit.checkin.request` unless the registration is explicitly for a future mdoc profile;
 8. preserves §8 HPKE transcript binding and same-device validation boundaries;

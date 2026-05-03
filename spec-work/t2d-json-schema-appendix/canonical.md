@@ -72,16 +72,16 @@ The request schema fixes the top-level `type` and `version`, requires the top-le
     },
     "contentSelector": {
       "oneOf": [
-        { "$ref": "#/$defs/fhirResourcesSelector" },
-        { "$ref": "#/$defs/questionnaireSelector" },
+        { "$ref": "#/$defs/selectionFhirSelector" },
+        { "$ref": "#/$defs/formFhirSelector" },
         { "$ref": "#/$defs/extensionSelector" }
       ]
     },
-    "fhirResourcesSelector": {
+    "selectionFhirSelector": {
       "type": "object",
       "required": ["kind"],
       "properties": {
-        "kind": { "const": "fhir.resources" },
+        "kind": { "const": "selection.fhir" },
         "profiles": {
           "type": "array",
           "minItems": 1,
@@ -98,20 +98,32 @@ The request schema fixes the top-level `type` and `version`, requires the top-le
           "items": { "$ref": "#/$defs/nonEmptyString" }
         }
       },
+      "not": {
+        "anyOf": [
+          { "required": ["questionnaireCanonical"] },
+          { "required": ["questionnaire"] }
+        ]
+      },
       "additionalProperties": true
     },
-    "questionnaireSelector": {
+    "formFhirSelector": {
       "type": "object",
       "required": ["kind"],
       "anyOf": [
-        { "required": ["canonical"] },
-        { "required": ["resource"] }
+        { "required": ["questionnaireCanonical"] },
+        { "required": ["questionnaire"] }
       ],
-      "not": { "required": ["questionnaire"] },
+      "not": {
+        "anyOf": [
+          { "required": ["profiles"] },
+          { "required": ["profilesFrom"] },
+          { "required": ["resourceTypes"] }
+        ]
+      },
       "properties": {
-        "kind": { "const": "questionnaire" },
-        "canonical": { "$ref": "#/$defs/canonicalString" },
-        "resource": { "$ref": "#/$defs/inlineQuestionnaire" }
+        "kind": { "const": "form.fhir" },
+        "questionnaireCanonical": { "$ref": "#/$defs/canonicalString" },
+        "questionnaire": { "$ref": "#/$defs/inlineQuestionnaire" }
       },
       "additionalProperties": true
     },
@@ -130,7 +142,7 @@ The request schema fixes the top-level `type` and `version`, requires the top-le
         "kind": {
           "type": "string",
           "minLength": 1,
-          "not": { "enum": ["fhir.resources", "questionnaire"] }
+          "not": { "enum": ["selection.fhir", "form.fhir"] }
         }
       },
       "additionalProperties": true
@@ -142,10 +154,10 @@ The request schema fixes the top-level `type` and `version`, requires the top-le
 Notes on this request schema:
 
 - `profilesFrom[]` is a non-empty array of canonical URL strings. It is not a singleton string, object, package descriptor, implementation-guide object, package id, package version, registry alias, local topic label, or URN form in version 1.0.
-- `profiles[]` and `profilesFrom[]` are independently allowed in the same `fhir.resources` selector. Their combined presence is additive under §5.4.1.4; the schema does not make either array narrow the other.
+- `profiles[]` and `profilesFrom[]` are independently allowed in the same `selection.fhir` selector. Their combined presence is additive under §5.4.1.4; the schema does not make either array narrow the other.
 - `profiles[]` and `resourceTypes[]`, when present, are arrays with at least one string. Whether a `resourceTypes[]` value is an official FHIR `resourceType` for a particular FHIR release is a FHIR-aware procedural check.
-- A `fhir.resources` selector may omit all of `profiles[]`, `profilesFrom[]`, and `resourceTypes[]` to express the no-selector default from §5.4.1.5.
-- A questionnaire selector is a single object shape with `kind: "questionnaire"` and one or both of the sibling members `canonical` and `resource`. The legacy nested `questionnaire` string/object/wrapper forms are not accepted by this schema.
+- A `selection.fhir` selector may omit all of `profiles[]`, `profilesFrom[]`, and `resourceTypes[]` to express the no-selector default from §5.4.1.5.
+- A `form.fhir` selector is a single object shape with one or both of the sibling members `questionnaireCanonical` and `questionnaire`. It does not allow `profiles[]`, `profilesFrom[]`, or `resourceTypes[]`; use a separate `selection.fhir` request item when existing FHIR resource selection is also needed.
 - Canonical strings MAY include a `|version` suffix. Consumers parse the suffix as structured FHIR canonical-reference version metadata and do not treat it as part of a direct HTTP URL.
 - The extension-selector branch permits syntactic validation of registered extension selector kinds without embedding a future registry in Appendix B. A core-only deployment profile can replace this branch when it intentionally rejects all extension selectors.
 - The SMART request body SHALL NOT carry requester identity metadata under §5.2.7. This schema cannot reliably reject arbitrary identity-like unknown or extension members while keeping extension points open, so processors must enforce that prohibition procedurally and through extension review.
@@ -287,7 +299,7 @@ A conforming implementation MUST NOT treat successful validation against the sni
 | Bundle traversal and selector responsiveness | Raw FHIR Bundle validation requires inspecting `Bundle.entry[].resource`, resource types, profiles, and sometimes supporting resources; the outer Bundle alone is not enough. |
 | Profile-family membership for `profilesFrom[]` | Membership depends on implementation-guide knowledge, package metadata, configured family mappings, registry information, or local policy outside the JSON instance. |
 | Additive profile-selector semantics | The schema can allow `profiles[]` and `profilesFrom[]` together, but it cannot determine whether returned content satisfies either additive profile selector subject to `resourceTypes[]`. |
-| QuestionnaireResponse comparison | A Verifier may need to compare `QuestionnaireResponse.questionnaire` with a requested questionnaire selector's `canonical`, inline Questionnaire `url`/`version`, and §5.5 structured `|version` handling. |
+| QuestionnaireResponse comparison | A Verifier may need to compare `QuestionnaireResponse.questionnaire` with a requested `form.fhir` selector's `questionnaireCanonical`, inline `questionnaire.url`/`questionnaire.version`, and §5.5 structured `|version` handling. |
 | Raw FHIR release consistency | The schema can require an outer `fhirVersion`, but detecting mixed-release Bundles and deciding whether a raw FHIR Artifact's release is acceptable requires FHIR-aware and request-aware checks. |
 | SMART Health Card payload validation | The schema can check the wrapper's `verifiableCredential[]` shape, but JWS verification, payload inspection, issuer trust, FHIR version, and selector responsiveness are SMART Health Cards and policy checks. |
 | Full FHIR profile validation | FHIR profile, terminology, invariant, Questionnaire, and implementation-guide validation require FHIR validators and deployment policy outside the core JSON Schema. |

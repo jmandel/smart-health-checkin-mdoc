@@ -193,7 +193,7 @@ The SMART request body describes requested clinical content and Holder-facing pu
 
 #### 3.6.3 FHIR canonicals where they fit
 
-Clinical content selection should use FHIR canonicals when the requested content maps to FHIR conformance resources. Exact profiles belong in `profiles[]`; profile families belong in `profilesFrom[]`; official resource type names belong in `resourceTypes[]`; Questionnaire canonicals and inline Questionnaires belong in questionnaire selectors. Later §5 defines canonical handling, including `|version` behavior, the array shape of `profilesFrom[]`, and the interaction between `resourceTypes[]` and profile selectors.
+Clinical content selection should use FHIR canonicals when the requested content maps to FHIR conformance resources. Existing-resource selection uses `selection.fhir`, with exact profiles in `profiles[]`, profile families in `profilesFrom[]`, and official resource type names in `resourceTypes[]`. Questionnaire-driven form completion uses `form.fhir`, with Questionnaire identities in `questionnaireCanonical` and inline Questionnaires in `questionnaire`. Later §5 defines canonical handling, including `|version` behavior, the array shape of `profilesFrom[]`, and the interaction between `resourceTypes[]` and profile selectors.
 
 #### 3.6.4 No local topic vocabularies when FHIR terms exist
 
