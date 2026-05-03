@@ -100,7 +100,8 @@ pushes to `main` and on manual workflow dispatch.
 | `/smart-model-explainer.html` | SMART Health Check-in model explainer |
 | `/kiosk-flow-explainer.html` | Kiosk handoff demo explainer |
 | `/wire-protocol-explainer.html` | Byte-level wire-protocol explainer |
-| `/spec.md` | SMART Health Check-in 1.0 draft spec (assembled from `spec-work/`) |
+| `/spec.html` | SMART Health Check-in 1.0 draft spec — rendered HTML with TOC, syntax highlighting, and Mermaid diagrams |
+| `/spec.md` | SMART Health Check-in 1.0 draft spec — raw Markdown source (assembled from `spec-work/`) |
 | `/llms.txt` | Generated LLM-friendly docs bundle |
 | `/fixtures/` | Checked-in test fixtures |
 

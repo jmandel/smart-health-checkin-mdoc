@@ -29,6 +29,7 @@ do
   cp "$ROOT/site/$page" "$SITE_DIR/$page"
 done
 cp "$ROOT/spec.md" "$SITE_DIR/spec.md"
+(cd "$ROOT/rp-web" && bun scripts/render-spec.ts "$ROOT/spec.md" "$SITE_DIR/spec.html")
 bun "$ROOT/scripts/generate-llms-txt.mjs" "$SITE_DIR/llms.txt"
 cp -R "$ROOT/fixtures" "$SITE_DIR/fixtures"
 cp -R "$ROOT/rp-web/dist/." "$SITE_DIR/verifier/"
