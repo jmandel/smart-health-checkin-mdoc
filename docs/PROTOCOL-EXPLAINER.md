@@ -168,8 +168,11 @@ string:
       "title": "Intake form",
       "content": {
         "kind": "questionnaire",
-        "questionnaire": {
+        "canonical": "https://clinic.example.org/fhir/Questionnaire/intake|1.2.3",
+        "resource": {
           "resourceType": "Questionnaire",
+          "url": "https://clinic.example.org/fhir/Questionnaire/intake",
+          "version": "1.2.3",
           "status": "active",
           "item": []
         }
@@ -186,7 +189,9 @@ Rules:
 - `id` is the verifier's request id; the response echoes it as `requestId`.
 - `items[].id` is the stable item correlation key.
 - `items[].content.kind` identifies FHIR-resource selectors versus
-  questionnaire selectors.
+  questionnaire selectors. Questionnaire selectors use direct `canonical?` and
+  `resource?` members; the older nested `questionnaire` wrapper is not the
+  active shape.
 - `items[].accept` declares acceptable response media types.
 
 ## EncryptionInfo and SessionTranscript

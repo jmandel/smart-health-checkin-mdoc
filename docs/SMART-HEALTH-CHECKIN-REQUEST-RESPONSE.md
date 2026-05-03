@@ -1,17 +1,27 @@
 # SMART Health Check-in Request/Response
 
-Status: draft — intended active payload shape
-Scope: transport-neutral request/response objects for SMART Health Check-in, intended to be carried over direct `org-iso-mdoc` and OID4VP.
+Status: draft public explainer aligned with the design-note-rebased spec work.
+Scope: transport-neutral SMART Health Check-in request and response JSON objects.
 
-This repo is greenfield. When this payload shape is adopted, implementations can
-migrate directly to it rather than supporting the earlier prototype
-untyped `{ "version": "1", "items": [...] }` prototype in parallel.
+SMART Health Check-in 1.0 is layered:
+
+1. the clinical request and response objects described here; and
+2. the same-device direct `org-iso-mdoc` presentation flow described by the
+   active wire profile.
+
+In-person QR, NFC, deep-link, kiosk, staff-desktop, relay, and completion-screen
+behavior can be useful deployment UX, but those mechanisms are not standardized
+SMART Health Check-in 1.0 pointer, envelope, relay, submission, or completion
+protocols. A deployment that uses them should treat them as a way to land the
+Holder on a same-device Verifier page that runs the direct `org-iso-mdoc` flow.
 
 ## 1. Design summary
 
-SMART Health Check-in uses a small, transport-neutral clinical request object and a small, transport-neutral response object.
-
-The transport layer is responsible for request authentication, origin/session binding, encryption, and delivery. The request/response objects are responsible only for the clinical content contract.
+The SMART request says what clinical content or action the Requester can
+consume. The SMART response returns Artifacts and per-item status. The
+presentation transport is responsible for origin/session binding, encryption,
+delivery, and mdoc validation; the JSON objects are responsible for the clinical
+content contract.
 
 ### Direct mdoc carrier
 
@@ -37,38 +47,42 @@ elementIdentifier: "smart_health_checkin_response"
 elementValue:      JSON.stringify(SmartHealthCheckinResponse)
 ```
 
-### OID4VP carrier
-
-The same request object can be carried in a signed OID4VP Request Object, for example:
-
-```text
-smart_health_checkin.request = SmartHealthCheckinRequest
-```
-
-The same response object can be returned in the `vp_token`.
+OID4VP is future/reserved work in this repository's spec drafting. It is not the
+live SMART Health Check-in 1.0 presentation flow implemented by this demo.
 
 ## 2. Design principles
 
-1. **Keep mdoc simple.** Use one docType, one namespace, and one stable response element. Do not model each FHIR profile, questionnaire, or artifact as a separate mdoc element.
-
-2. **Keep request identity out of the clinical request body.** Do not place requester name, logo, or URL in this object. Those are easy to spoof. Identity and trust should come from the surrounding transport: origin binding, signed Request Object, verifier metadata, and wallet policy.
-
-3. **Use FHIR canonicals where they fit.** Exact FHIR profile requests should use canonical `StructureDefinition` URLs. Broad requests should point to FHIR publications, implementation guides, or profile collections by canonical URL.
-
-4. **Do not use local topic vocabularies when FHIR terms exist.** Optional narrowing should use official FHIR `resourceType` names, not custom labels such as `"care-plans"`.
-
-5. **Treat response forms as media types.** The `accept` list is ordered by verifier preference. For example, `application/smart-health-card` naturally includes its own signed health-card structure; `application/fhir+json` naturally means raw FHIR JSON.
-
-6. **Make the response artifact-centered.** A single artifact can fulfill multiple request items, and a single request item can be fulfilled by multiple artifacts.
-
-7. **Declare FHIR version for raw FHIR JSON.** SMART Health Cards already carry FHIR version inside the signed credential payload. Raw FHIR JSON artifacts must declare `fhirVersion` explicitly.
-
-8. **Report per-item outcomes.** `requestStatus[]` is required and has one entry for each request item, including declined, unavailable, unsupported, and error cases that produce no artifact.
-
-9. **Default to retention for SMART Check-in.** In the direct mdoc carrier,
-`intentToRetain` defaults to `true` for `smart_health_checkin_response`, because
-realistic clinical check-in workflows usually ingest returned artifacts into an
-EHR. Deployments can override this when the verifier truly intends ephemeral use.
+1. **Keep mdoc simple.** Use one docType, one namespace, and one stable response
+   element. Do not model each FHIR profile, questionnaire, or artifact as a
+   separate mdoc element.
+2. **Keep requester identity out of the clinical request body.** Do not place
+   requester name, logo, URL, callback endpoint, package id, certificate, or
+   deployment routing metadata in this object. Identity and trust come from the
+   surrounding transport, reader authentication when used, platform evidence,
+   and wallet policy.
+3. **Use FHIR canonicals where they fit.** Exact FHIR profile requests use
+   `StructureDefinition` canonical URLs. Broad profile-family requests use
+   canonical URLs for FHIR publications, implementation guides, or profile
+   collections.
+4. **Do not use local topic vocabularies when FHIR terms exist.** Optional
+   narrowing uses official FHIR `resourceType` names, not custom labels such as
+   `"care-plans"` or `"clinical-history"`.
+5. **Treat response forms as media types.** The `accept[]` list is ordered by
+   Requester preference. Core response Artifacts are
+   `application/smart-health-card` and `application/fhir+json`.
+6. **Make the response Artifact-centered.** A single Artifact can fulfill
+   multiple request items, and a single request item can be fulfilled by multiple
+   Artifacts.
+7. **Declare FHIR version for raw FHIR JSON.** SMART Health Cards carry FHIR
+   version inside signed credentials. Raw FHIR JSON Artifacts declare
+   `fhirVersion` explicitly.
+8. **Report per-item outcomes.** `requestStatus[]` has one entry for each
+   request item, including declined, unavailable, unsupported, and error cases
+   that produce no Artifact.
+9. **Do not overclaim raw FHIR provenance.** The mdoc transport proves
+   presentation-layer facts. Unsigned raw FHIR JSON remains patient-mediated
+   unless the payload, deployment profile, or accepted evidence supplies
+   separate clinical-source provenance.
 
 ## 3. Request format
 
@@ -99,379 +113,57 @@ accept[]
 ```ts
 import type * as fhir_r4 from "./fhir_r4";
 
-/**
- * SMART Health Check-in request.
- *
- * This is the transport-neutral clinical request object.
- *
- * It intentionally does not include requester display metadata such as clinic
- * name, logo, or URL. Identity and display trust should come from the
- * surrounding transport and wallet policy, not from self-asserted fields here.
- */
 export interface SmartHealthCheckinRequest {
-  /**
-   * Fixed discriminator.
-   */
   type: "smart-health-checkin-request";
-
-  /**
-   * Version of this request schema.
-   *
-   * This is not the FHIR version.
-   */
   version: "1";
-
-  /**
-   * Opaque verifier-generated request id.
-   *
-   * The response echoes this as response.requestId.
-   */
   id: string;
-
-  /**
-   * Optional short purpose label for patient-facing context.
-   *
-   * Examples:
-   *   "check-in"
-   *   "insurance verification"
-   *   "pre-visit intake"
-   *
-   * This is not requester identity.
-   */
   purpose?: string;
-
-  /**
-   * FHIR versions the verifier can consume.
-   *
-   * Ordered by verifier preference.
-   *
-   * This applies to FHIR content returned outside SMART Health Cards.
-   * For SMART Health Cards, the authoritative FHIR version is declared inside
-   * each signed health card credential.
-   *
-   * Examples:
-   *   ["4.0.1"]
-   *   ["4.0.1", "4.3.0"]
-   *   ["4.0.1", "5.0.0"]
-   */
   fhirVersions?: FhirVersion[];
-
-  /**
-   * Clinical content request items.
-   *
-   * Each request item can be fulfilled by zero, one, or many artifacts.
-   */
   items: SmartHealthCheckinRequestItem[];
 }
 
-/**
- * One requested piece or category of clinical content.
- */
 export interface SmartHealthCheckinRequestItem {
-  /**
-   * Stable id for this request item.
-   *
-   * Response artifacts refer to these ids in artifact.fulfills.
-   */
   id: string;
-
-  /**
-   * Short patient-facing title.
-   *
-   * Examples:
-   *   "Insurance card"
-   *   "US Core records"
-   *   "Migraine check-in"
-   */
   title: string;
-
-  /**
-   * Optional patient-facing explanation of the requested content.
-   *
-   * This should describe the content, not the requester's identity.
-   */
   summary?: string;
-
-  /**
-   * Whether this request item is required for the verifier's workflow.
-   *
-   * If omitted, default is false.
-   *
-   * The wallet may still allow the patient to decline. The verifier decides
-   * how to handle missing required content downstream.
-   */
   required?: boolean;
-
-  /**
-   * Clinical content selector.
-   */
   content: SmartHealthCheckinContentSelector;
-
-  /**
-   * Ordered list of response media types the verifier can consume.
-   *
-   * The order expresses verifier preference. There is no separate preference
-   * field.
-   *
-   * Example:
-   *
-   *   accept: [
-   *     "application/smart-health-card",
-   *     "application/fhir+json"
-   *   ]
-   *
-   * means:
-   *
-   *   Prefer a SMART Health Card if available; otherwise raw FHIR JSON is
-   *   acceptable.
-   */
   accept: SmartHealthCheckinAcceptedMediaType[];
 }
 
-/**
- * Supported clinical content selector kinds.
- */
 export type SmartHealthCheckinContentSelector =
   | FhirResourcesContentSelector
   | QuestionnaireContentSelector;
 
-/**
- * Request FHIR resources.
- *
- * This covers:
- *
- *   - exact profile requests
- *   - broad profile-publication requests
- *   - CARIN-style insurance card requests
- *   - US Core-style broad clinical content requests
- *
- * If profiles, profilesFrom, and resourceTypes are all omitted, this requests
- * any patient-specific FHIR resources the wallet can offer and the patient
- * chooses to share.
- */
 export interface FhirResourcesContentSelector {
   kind: "fhir.resources";
-
-  /**
-   * Exact FHIR profile canonical URLs.
-   *
-   * These are canonical StructureDefinition URLs.
-   *
-   * Examples:
-   *
-   *   "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
-   *
-   *   "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage"
-   *
-   * A version may be appended using canonical|version when the verifier needs
-   * an exact profile version.
-   *
-   * Example:
-   *
-   *   "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient|8.0.1"
-   *
-   * If no version is included, the request is intentionally looser:
-   *
-   *   Return resources conforming to a supported version of this profile.
-   */
   profiles?: FhirCanonical[];
-
-  /**
-   * Reference to a FHIR publication, implementation guide, or profile
-   * collection whose resource profiles are acceptable.
-   *
-   * This is the broad, FHIR-native hook for requests like:
-   *
-   *   "Give me any records conforming to US Core profiles."
-   *
-   * Example:
-   *
-   *   profilesFrom: ["http://hl7.org/fhir/us/core"]
-   *
-   * When profiles and profilesFrom are both present, they are additive: a
-   * resource can satisfy the item by matching an exact profile in profiles or
-   * by matching any profile from a collection in profilesFrom. Exact profiles
-   * can highlight specific records of interest, but they do not limit the
-   * broader profilesFrom request.
-   */
   profilesFrom?: FhirProfileCollectionRef[];
-
-  /**
-   * Optional narrowing by official FHIR resourceType names.
-   *
-   * This avoids inventing local topic vocabularies while still letting a
-   * verifier narrow a broad profile-collection request.
-   *
-   * Examples:
-   *
-   *   ["Condition", "MedicationRequest", "Observation"]
-   *
-   *   ["Coverage", "Patient", "Organization"]
-   *
-   * If omitted, the request is broad over the resource profiles identified by
-   * profiles and/or profilesFrom. If no profile selector is present either, the
-   * request is broad over all patient-specific FHIR resources available to share.
-   */
   resourceTypes?: FhirResourceType[];
 }
 
-/**
- * Request completion of a FHIR Questionnaire.
- *
- * The questionnaire can be:
- *
- *   - a canonical URL
- *   - an inline fhir_r4.Questionnaire
- *   - both a canonical URL and an inline Questionnaire body
- *
- * The expected raw FHIR response is a QuestionnaireResponse.
- */
 export interface QuestionnaireContentSelector {
   kind: "questionnaire";
-
-  questionnaire: QuestionnaireRef;
-}
-
-/**
- * Questionnaire reference.
- *
- * String form:
- *
- *   questionnaire:
- *     "https://clinic.example.org/fhir/Questionnaire/migraine-intake"
- *
- * Inline form:
- *
- *   questionnaire:
- *     { resourceType: "Questionnaire", ... }
- *
- * Combined form:
- *
- *   questionnaire:
- *     {
- *       canonical: "https://clinic.example.org/fhir/Questionnaire/migraine-intake",
- *       resource: { resourceType: "Questionnaire", ... }
- *     }
- */
-export type QuestionnaireRef =
-  | FhirCanonical
-  | fhir_r4.Questionnaire
-  | QuestionnaireCanonicalAndResource;
-
-export type QuestionnaireCanonicalAndResource =
-  | QuestionnaireCanonicalObject
-  | QuestionnaireResourceObject;
-
-export interface QuestionnaireCanonicalObject {
-  /**
-   * Canonical URL identifying the questionnaire.
-   *
-   * May include a version suffix using canonical|version.
-   */
-  canonical: FhirCanonical;
-
-  /**
-   * Inline FHIR R4 Questionnaire resource.
-   *
-   * Useful when the wallet should render the questionnaire without fetching it
-   * from a remote endpoint.
-   */
+  canonical?: FhirCanonical;
   resource?: fhir_r4.Questionnaire;
 }
 
-export interface QuestionnaireResourceObject {
-  /**
-   * Canonical URL identifying the questionnaire.
-   *
-   * May include a version suffix using canonical|version.
-   */
-  canonical?: FhirCanonical;
-
-  /**
-   * Inline FHIR R4 Questionnaire resource.
-   *
-   * Useful when the wallet should render the questionnaire without fetching it
-   * from a remote endpoint.
-   */
-  resource: fhir_r4.Questionnaire;
-}
-
-/**
- * Reference to a FHIR publication, implementation guide, or profile collection.
- *
- * Version 1 accepts canonical URLs only. Registered URNs would imply a registry
- * this profile does not define; deployments that need URNs can define an
- * extension.
- */
-export type FhirProfileCollectionRef = FhirCanonical;
-
-/**
- * Response media types this verifier can consume.
- *
- * The request's accept array is ordered by preference.
- *
- * Known core media types:
- *
- *   - application/smart-health-card
- *       JSON object with verifiableCredential[] containing one or more SMART
- *       Health Card JWS strings.
- *
- *   - application/fhir+json
- *       Raw FHIR JSON. The response artifact must declare fhirVersion.
- *
- * Other media types may be used by extension.
- */
 export type SmartHealthCheckinAcceptedMediaType =
   | "application/smart-health-card"
   | "application/fhir+json"
   | (string & {});
 
-/**
- * FHIR canonical URL string.
- *
- * A version may be appended as canonical|version.
- */
 export type FhirCanonical = string;
-
-/**
- * FHIR release version.
- *
- * Examples:
- *   "4.0.1"  // R4
- *   "4.3.0"  // R4B
- *   "5.0.0"  // R5
- */
-export type FhirVersion = string;
-
-/**
- * Official FHIR resourceType name.
- *
- * Kept as string so this protocol is not locked to one FHIR release.
- */
+export type FhirProfileCollectionRef = string;
 export type FhirResourceType = string;
-
+export type FhirVersion = string;
 ```
 
-### Canonical `|version` handling
-
-FHIR canonicals may append a version with `canonical|version`. Implementations
-need to be explicit about when the suffix is part of the semantic claim and
-when it is only a resolver or routing hint.
-
-| Operation | Action | Why |
-| --------- | ------ | --- |
-| HTTP fetch of a canonical | Strip `|version` | A versioned canonical is an identifier, not a literal URL. |
-| IG/profile-collection membership such as `profilesFrom` | Strip `|version` | Collection membership and wallet-side routing are version-agnostic unless a later profile says otherwise. |
-| Wallet kind classification | Strip `|version` | Routing to coverage, clinical, questionnaire, etc. should not depend on profile version. |
-| Profile de-duplication/grouping | Strip `|version` | Strings differing only by suffix are the same logical profile for grouping. |
-| `QuestionnaireResponse.questionnaire` | Preserve `|version` | The receiver needs to know which exact Questionnaire version was answered. |
-| Returned resource `meta.profile` | Preserve `|version` | Resource provenance can legitimately claim an exact profile version. |
-| Exact conformance checks | Preserve consistently | Compare both sides at the same level; do not strip one side only. |
-| Test fixtures, logs, and debug bundles | Preserve exactly | Captures should record what was sent on the wire. |
-
-Rule of thumb: strip when going to the network or answering "is this in this
-profile family/IG?"; preserve when writing a record, log, fixture, or response
-back to the verifier.
+For `content.kind = "questionnaire"`, at least one of `canonical` or `resource`
+is present. Both are direct selector members. Older nested forms such as
+`questionnaire: "..."`, `questionnaire: { resourceType: "Questionnaire" }`, and
+`questionnaire: { canonical, resource }` are not the SMART Health Check-in 1.0
+shape.
 
 ## 4. Request semantics
 
@@ -479,7 +171,7 @@ back to the verifier.
 
 `fhir.resources` requests patient-specific FHIR resources.
 
-The verifier can request exact profiles:
+Exact profile request:
 
 ```json
 {
@@ -490,7 +182,7 @@ The verifier can request exact profiles:
 }
 ```
 
-Or broad resource profiles from a FHIR publication / IG / profile collection:
+Broad profile-family request:
 
 ```json
 {
@@ -499,7 +191,7 @@ Or broad resource profiles from a FHIR publication / IG / profile collection:
 }
 ```
 
-Optional `resourceTypes` narrows a broad request using official FHIR resource type names:
+Optional resource type narrowing:
 
 ```json
 {
@@ -509,27 +201,44 @@ Optional `resourceTypes` narrows a broad request using official FHIR resource ty
 }
 ```
 
+`profiles[]` identifies exact profile canonicals. `profilesFrom[]` identifies
+profile families by canonical URL. `resourceTypes[]` uses official FHIR resource
+type names.
+
+When `profiles[]` and `profilesFrom[]` are both present, they are additive
+profile selectors: a resource can satisfy the item by matching an exact profile
+in `profiles[]` or any profile belonging to a family in `profilesFrom[]`, subject
+to `resourceTypes[]` if present. `profiles[]` does not narrow a broader
+`profilesFrom[]` request.
+
+If `profiles[]`, `profilesFrom[]`, and `resourceTypes[]` are all omitted, the
+item requests any patient-specific FHIR resources the Wallet can offer and the
+Holder chooses to share, constrained by `accept[]`, `fhirVersions[]`, Wallet
+capability, policy, and Holder decision.
+
 ### `questionnaire`
 
-`questionnaire` requests that the wallet/source app collect answers to a FHIR Questionnaire and return a FHIR `QuestionnaireResponse`.
+`questionnaire` requests that the Wallet or source app collect answers to a FHIR
+Questionnaire and return a FHIR `QuestionnaireResponse`.
 
-The questionnaire may be referenced by canonical:
+Canonical-only request:
 
 ```json
 {
   "kind": "questionnaire",
-  "questionnaire": "https://clinic.example.org/fhir/Questionnaire/migraine-intake"
+  "canonical": "https://clinic.example.org/fhir/Questionnaire/migraine-intake|1.2.3"
 }
 ```
 
-Or included inline:
+Inline request:
 
 ```json
 {
   "kind": "questionnaire",
-  "questionnaire": {
+  "resource": {
     "resourceType": "Questionnaire",
     "url": "https://clinic.example.org/fhir/Questionnaire/migraine-intake",
+    "version": "1.2.3",
     "status": "active",
     "title": "Migraine Check-in",
     "item": []
@@ -537,108 +246,94 @@ Or included inline:
 }
 ```
 
-Or both:
+Canonical plus inline body:
 
 ```json
 {
   "kind": "questionnaire",
-  "questionnaire": {
-    "canonical": "https://clinic.example.org/fhir/Questionnaire/migraine-intake",
-    "resource": {
-      "resourceType": "Questionnaire",
-      "url": "https://clinic.example.org/fhir/Questionnaire/migraine-intake",
-      "status": "active",
-      "title": "Migraine Check-in",
-      "item": []
-    }
+  "canonical": "https://clinic.example.org/fhir/Questionnaire/migraine-intake|1.2.3",
+  "resource": {
+    "resourceType": "Questionnaire",
+    "url": "https://clinic.example.org/fhir/Questionnaire/migraine-intake",
+    "version": "1.2.3",
+    "status": "active",
+    "title": "Migraine Check-in",
+    "item": []
   }
 }
 ```
 
-## 5. Response format
+When both `canonical` and `resource` are supplied, the canonical is the requested
+identity and the resource is the body to render. Material disagreement in URL,
+explicit version, or answer-changing item structure should be reported as
+`unsupported` before answers are collected.
 
-The response is artifact-centered.
+## 5. Canonical `|version` handling
 
-This is important because:
+FHIR canonicals can append a version with `canonical|version`. Implementations
+should parse them into `(url, version?)` while preserving the original string
+where the protocol carries, emits, compares, logs, or records it.
+
+Resolution guidance:
+
+| Operation | Guidance |
+| --- | --- |
+| Parse request canonical | Split into `url` and optional `version`; preserve the original string. |
+| Resolve versioned canonical | Use a configured resolver, FHIR package cache, implementation-guide resolver, terminology service, or FHIR canonical search with both `url` and `version`. |
+| Direct HTTP dereference | Use only for unversioned canonicals, and verify the returned resource's type and `url`. |
+| Versioned direct fetch | Do not satisfy a versioned canonical by stripping the version suffix and fetching the bare URL. |
+| `profilesFrom[]` family lookup | Local routing or family classification can use the base URL unless the family definition is version-sensitive. |
+| Exact profile matching | Preserve and compare the exact versioned canonical or equivalent trusted exact-version evidence. |
+| `QuestionnaireResponse.questionnaire` | Preserve the requested Questionnaire canonical, including the version suffix, when it identifies the Questionnaire being answered. |
+| Returned `meta.profile[]` | Preserve exact profile strings, including version suffixes, where known. |
+| Fixtures and diagnostics | Preserve exact wire strings. |
+
+FHIR search examples:
 
 ```text
-one artifact can fulfill multiple request items
-one request item can be fulfilled by multiple artifacts
-some request items may have no artifacts
+GET [base]/StructureDefinition?url={url}&version={version}
+GET [base]/Questionnaire?url={url}&version={version}
+GET [base]/Questionnaire?url={url}
 ```
 
-Each artifact says which item ids it fulfills:
+After resolution, verify the expected `resourceType`, `url`, and requested
+`version` when a version was requested.
+
+## 6. Response format
+
+The response is Artifact-centered:
+
+```text
+one Artifact can fulfill multiple request items
+one request item can be fulfilled by multiple Artifacts
+some request items may have no Artifacts
+```
+
+Each Artifact says which item ids it fulfills:
 
 ```text
 artifact.fulfills = ["item-id-1", "item-id-2"]
 ```
 
-Per-item status is separate so that a wallet can report declined, unavailable, unsupported, or error outcomes even when there is no artifact.
+Per-item status is separate so that a Wallet can report declined, unavailable,
+unsupported, partial, or error outcomes even when there is no Artifact.
 
 ### Response TypeScript
 
 ```ts
 import type * as fhir_r4 from "./fhir_r4";
 
-/**
- * SMART Health Check-in response.
- *
- * The response is artifact-centered.
- */
 export interface SmartHealthCheckinResponse {
-  /**
-   * Fixed discriminator.
-   */
   type: "smart-health-checkin-response";
-
-  /**
-   * Version of this response schema.
-   */
   version: "1";
-
-  /**
-   * Echoes SmartHealthCheckinRequest.id.
-   */
   requestId: string;
-
-  /**
-   * Returned clinical artifacts.
-   *
-   * Each artifact declares which request item ids it fulfills.
-   */
   artifacts: SmartHealthCheckinArtifact[];
-
-  /**
-   * Per-item status.
-   *
-   * This is needed because some request items may be declined, unavailable,
-   * unsupported, partially fulfilled, or failed without producing an artifact.
-   */
   requestStatus: SmartHealthCheckinItemStatus[];
 }
 
-/**
- * Status for one request item.
- */
 export interface SmartHealthCheckinItemStatus {
-  /**
-   * Request item id from SmartHealthCheckinRequest.items[].id.
-   */
   item: string;
-
-  /**
-   * Overall status for this request item.
-   */
   status: SmartHealthCheckinItemStatusCode;
-
-  /**
-   * Optional explanation.
-   *
-   * Examples:
-   *   "Patient declined to share this item."
-   *   "No matching records found."
-   *   "Shared available matching resources."
-   */
   message?: string;
 }
 
@@ -650,138 +345,42 @@ export type SmartHealthCheckinItemStatusCode =
   | "unsupported"
   | "error";
 
-/**
- * Returned artifact.
- */
 export type SmartHealthCheckinArtifact =
   | SmartHealthCardArtifact
-  | FhirJsonArtifact
-  | GenericArtifact;
+  | FhirJsonArtifact;
 
-/**
- * Common artifact fields.
- */
 export interface SmartHealthCheckinArtifactBase {
-  /**
-   * Stable only within this response.
-   */
   id: ArtifactId;
-
-  /**
-   * Request item ids this artifact fulfills.
-   *
-   * A single artifact may fulfill multiple request items.
-   */
   fulfills: string[];
 }
 
-/**
- * SMART Health Card artifact.
- *
- * For mediaType application/smart-health-card, value is the same JSON object
- * used for SMART Health Card file download:
- *
- *   {
- *     "verifiableCredential": [
- *       "<<Verifiable Credential as JWS>>"
- *     ]
- *   }
- *
- * Each JWS is a SMART Health Card Verifiable Credential. The authoritative
- * FHIR version is inside the signed credential payload, not in this wrapper.
- */
 export interface SmartHealthCardArtifact extends SmartHealthCheckinArtifactBase {
   mediaType: "application/smart-health-card";
-
   value: SmartHealthCardFile;
 }
 
-/**
- * JSON body for media type application/smart-health-card.
- */
 export interface SmartHealthCardFile {
-  /**
-   * One or more SMART Health Card Verifiable Credential JWS strings.
-   */
   verifiableCredential: string[];
 }
 
-/**
- * Raw FHIR JSON artifact.
- *
- * This is not independently issuer-signed unless the payload itself contains
- * a proof. The surrounding transport proves transaction binding; it does not
- * prove clinical provenance.
- */
 export interface FhirJsonArtifact extends SmartHealthCheckinArtifactBase {
   mediaType: "application/fhir+json";
-
-  /**
-   * Required FHIR release/version for this raw FHIR payload.
-   *
-   * If value is a Bundle, all resources in that Bundle are interpreted under
-   * this same FHIR version. Mixed-version FHIR content should be returned as
-   * separate application/fhir+json artifacts.
-   */
   fhirVersion: FhirVersion;
-
-  /**
-   * Raw FHIR Resource or Bundle.
-   *
-   * This specification uses fhir_r4.Resource for examples because the likely first
-   * target is FHIR R4. A multi-version implementation may use a wider generated
-   * FHIR union here.
-   */
   value: fhir_r4.Resource;
 }
 
-/**
- * Generic extension artifact.
- */
-export type GenericArtifact =
-  | GenericValueArtifact
-  | GenericUrlArtifact
-  | GenericDataArtifact;
-
-export interface GenericArtifactBase extends SmartHealthCheckinArtifactBase {
-  mediaType: string;
-
-  filename?: string;
-
-  /**
-   * Optional only when the artifact is known to contain raw FHIR content.
-   */
-  fhirVersion?: FhirVersion;
-}
-
-export interface GenericValueArtifact extends GenericArtifactBase {
-  value: unknown;
-}
-
-export interface GenericUrlArtifact extends GenericArtifactBase {
-  url: string;
-}
-
-export interface GenericDataArtifact extends GenericArtifactBase {
-  data: string;
-}
-
-/**
- * Stable only within this response.
- */
 export type ArtifactId = string;
-
-/**
- * FHIR release version.
- */
-export type FhirVersion = string;
 ```
 
-## 6. Response artifact semantics
+The core Artifact union has no `GenericArtifact` catch-all. Future Artifact
+extensions should be branded, media-type-defined variants with pinned or bounded
+`mediaType` values and typed payload fields. Receivers should not infer protocol
+semantics from generic fields named `value`, `url`, or `data` for an unknown
+media type.
 
-### SMART Health Card artifacts
+## 7. Response Artifact semantics
 
-A SMART Health Card artifact has:
+### SMART Health Card Artifacts
 
 ```json
 {
@@ -796,13 +395,11 @@ A SMART Health Card artifact has:
 }
 ```
 
-The artifact does not list profiles. Verifiers inspect the signed SHC payload.
+The Artifact does not list profiles. Verifiers inspect and verify the signed
+SMART Health Card payload. The wrapper does not carry an outer `fhirVersion`;
+the signed credential payload carries FHIR version information.
 
-The artifact must not carry an outer `fhirVersion`. Verifiers inspect each signed health-card credential, where the FHIR version is part of the signed payload.
-
-### Raw FHIR JSON artifacts
-
-A raw FHIR JSON artifact has:
+### Raw FHIR JSON Artifacts
 
 ```json
 {
@@ -818,18 +415,14 @@ A raw FHIR JSON artifact has:
 }
 ```
 
-The artifact must declare `fhirVersion`.
-
-The artifact does not list profiles. Verifiers inspect:
-
-```text
-value.meta.profile
-Bundle.entry[].resource.meta.profile
-```
+The Artifact declares `fhirVersion`. Verifiers inspect `value.meta.profile` and
+`Bundle.entry[].resource.meta.profile` where present. Raw FHIR JSON is not
+independently issuer-signed unless the payload or deployment evidence supplies a
+proof.
 
 ### Many-to-many fulfillment
 
-A single artifact can fulfill multiple request items:
+A single Artifact can fulfill multiple request items:
 
 ```json
 {
@@ -839,27 +432,19 @@ A single artifact can fulfill multiple request items:
   "fulfills": ["migraine-intake", "us-core-records"],
   "value": {
     "resourceType": "QuestionnaireResponse",
-    "status": "completed"
+    "status": "completed",
+    "questionnaire": "https://clinic.example.org/fhir/Questionnaire/migraine-intake|1.2.3"
   }
 }
 ```
 
-A single request can be fulfilled by multiple artifacts:
+A single request item can be fulfilled by multiple Artifacts when several pieces
+of content together satisfy or partially satisfy that item. Every fulfillment
+edge still needs to be valid: the Artifact media type must be accepted by the
+item, the content must be responsive to the selector, and status accounting
+still happens once per request item.
 
-```json
-[
-  {
-    "id": "artifact-us-core-bundle-1",
-    "fulfills": ["us-core-records"]
-  },
-  {
-    "id": "artifact-questionnaire-response",
-    "fulfills": ["us-core-records", "migraine-intake"]
-  }
-]
-```
-
-## 7. Full example request
+## 8. Full example request
 
 ```ts
 import type * as fhir_r4 from "./fhir_r4";
@@ -869,10 +454,7 @@ export const exampleRequest: SmartHealthCheckinRequest = {
   version: "1",
   id: "req_123",
   purpose: "check-in",
-
-  // Ordered by verifier preference.
   fhirVersions: ["4.0.1"],
-
   items: [
     {
       id: "insurance-card",
@@ -885,60 +467,55 @@ export const exampleRequest: SmartHealthCheckinRequest = {
           "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage"
         ]
       },
-      accept: [
-        "application/smart-health-card",
-        "application/fhir+json"
-      ]
+      accept: ["application/smart-health-card", "application/fhir+json"]
     },
-
     {
       id: "us-core-records",
       title: "US Core records",
-      summary: "Patient records your app can share that conform to US Core profiles.",
+      summary: "US Core resources, including patient demographics, problems, medications, and allergies.",
       required: false,
       content: {
         kind: "fhir.resources",
-        profilesFrom: ["http://hl7.org/fhir/us/core"]
+        profilesFrom: ["http://hl7.org/fhir/us/core"],
+        profiles: [
+          "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
+          "http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns",
+          "http://hl7.org/fhir/us/core/StructureDefinition/us-core-allergyintolerance",
+          "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+        ]
       },
-      accept: [
-        "application/smart-health-card",
-        "application/fhir+json"
-      ]
+      accept: ["application/smart-health-card", "application/fhir+json"]
     },
-
     {
       id: "migraine-intake",
       title: "Migraine check-in",
       required: true,
       content: {
         kind: "questionnaire",
-        questionnaire: {
-          canonical: "https://clinic.example.org/fhir/Questionnaire/migraine-intake",
-          resource: {
-            resourceType: "Questionnaire",
-            url: "https://clinic.example.org/fhir/Questionnaire/migraine-intake",
-            status: "active",
-            title: "Migraine Check-in",
-            item: [
-              {
-                linkId: "visit-priority",
-                type: "text",
-                text: "What would you most like to discuss today?",
-                required: true
-              }
-            ]
-          } as fhir_r4.Questionnaire
-        }
+        canonical: "https://clinic.example.org/fhir/Questionnaire/migraine-intake|1.2.3",
+        resource: {
+          resourceType: "Questionnaire",
+          url: "https://clinic.example.org/fhir/Questionnaire/migraine-intake",
+          version: "1.2.3",
+          status: "active",
+          title: "Migraine Check-in",
+          item: [
+            {
+              linkId: "visit-priority",
+              type: "text",
+              text: "What would you most like to discuss today?",
+              required: true
+            }
+          ]
+        } as fhir_r4.Questionnaire
       },
-      accept: [
-        "application/fhir+json"
-      ]
+      accept: ["application/fhir+json"]
     }
   ]
 };
 ```
 
-## 8. Full example response
+## 9. Full example response
 
 ```ts
 import type * as fhir_r4 from "./fhir_r4";
@@ -947,7 +524,6 @@ export const exampleResponse: SmartHealthCheckinResponse = {
   type: "smart-health-checkin-response",
   version: "1",
   requestId: "req_123",
-
   artifacts: [
     {
       id: "artifact-insurance-shc",
@@ -959,7 +535,6 @@ export const exampleResponse: SmartHealthCheckinResponse = {
         ]
       }
     },
-
     {
       id: "artifact-us-core-bundle",
       mediaType: "application/fhir+json",
@@ -978,45 +553,22 @@ export const exampleResponse: SmartHealthCheckinResponse = {
                   "http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns"
                 ]
               },
-              subject: {
-                reference: "Patient/patient-1"
-              },
-              code: {
-                text: "Migraine"
-              }
-            }
-          },
-          {
-            resource: {
-              resourceType: "Observation",
-              id: "observation-1",
-              meta: {
-                profile: [
-                  "http://hl7.org/fhir/us/core/StructureDefinition/us-core-observation-lab"
-                ]
-              },
-              status: "final",
-              code: {
-                text: "Example lab result"
-              },
-              subject: {
-                reference: "Patient/patient-1"
-              }
+              subject: { reference: "Patient/patient-1" },
+              code: { text: "Migraine" }
             }
           }
         ]
       } as fhir_r4.Bundle
     },
-
     {
       id: "artifact-migraine-questionnaire-response",
       mediaType: "application/fhir+json",
       fhirVersion: "4.0.1",
-      fulfills: ["migraine-intake", "us-core-records"],
+      fulfills: ["migraine-intake"],
       value: {
         resourceType: "QuestionnaireResponse",
         status: "completed",
-        questionnaire: "https://clinic.example.org/fhir/Questionnaire/migraine-intake",
+        questionnaire: "https://clinic.example.org/fhir/Questionnaire/migraine-intake|1.2.3",
         item: [
           {
             linkId: "visit-priority",
@@ -1030,144 +582,44 @@ export const exampleResponse: SmartHealthCheckinResponse = {
       } as fhir_r4.QuestionnaireResponse
     }
   ],
-
   requestStatus: [
-    {
-      item: "insurance-card",
-      status: "fulfilled"
-    },
+    { item: "insurance-card", status: "fulfilled" },
     {
       item: "us-core-records",
       status: "partial",
       message: "Shared available matching US Core resources."
     },
-    {
-      item: "migraine-intake",
-      status: "fulfilled"
-    }
+    { item: "migraine-intake", status: "fulfilled" }
   ]
 };
 ```
 
-## 9. Normative rules
+## 10. Validation rules to remember
 
-### Request rules
+Request validation:
 
-1. `SmartHealthCheckinRequest.type` SHALL be `"smart-health-checkin-request"`.
+1. `type` is `"smart-health-checkin-request"` and `version` is `"1"`.
+2. `items[].id` values are unique within a request.
+3. `items[].accept` is a non-empty ordered list.
+4. The request object does not include self-asserted requester identity or
+   deployment routing metadata.
+5. `profiles[]` values are FHIR profile canonicals and may include `|version`.
+6. `profilesFrom[]` is an array of canonical URLs identifying profile families.
+7. `profiles[]` and `profilesFrom[]`, when both present, are additive.
+8. `resourceTypes[]` uses official FHIR resource type names.
+9. Questionnaire selectors use direct `canonical?` and/or `resource?` fields.
 
-2. `SmartHealthCheckinRequest.version` SHALL be `"1"` for this version of the schema.
+Response validation:
 
-3. `items[].id` values SHALL be unique within a request.
-
-4. `items[].accept` SHALL be ordered by verifier preference.
-
-5. The request object SHALL NOT include self-asserted requester identity metadata such as clinic name, logo, or URL.
-
-6. For `content.kind = "fhir.resources"`, omitting `profiles`, `profilesFrom`, and `resourceTypes` means the verifier is requesting any patient-specific FHIR resources the wallet can offer and the patient chooses to share.
-
-7. `profiles` values SHOULD be FHIR profile canonical URLs and MAY include a `|version` suffix.
-
-8. `profilesFrom` SHALL be a non-empty array of canonical URLs identifying FHIR publications, implementation guides, or profile collections. Version 1 does not define registered URNs for profile collections.
-
-9. `profiles` and `profilesFrom`, when both present, are additive selectors: a resource may satisfy the item by matching any exact profile in `profiles` or by matching any profile from any collection in `profilesFrom`. Exact `profiles` can indicate specific records of interest, but they do not limit the broader `profilesFrom` request.
-
-10. `resourceTypes`, when present, SHALL use official FHIR resource type names.
-
-11. For `content.kind = "questionnaire"`, the questionnaire MAY be a canonical URL, an inline `Questionnaire`, or both.
-
-12. If the questionnaire is expressed as an object, it SHALL include at least one of `canonical` or `resource`.
-
-### Response rules
-
-1. `SmartHealthCheckinResponse.type` SHALL be `"smart-health-checkin-response"`.
-
-2. `SmartHealthCheckinResponse.version` SHALL be `"1"` for this version of the schema.
-
-3. `requestId` SHALL equal the corresponding request `id`.
-
-4. `artifacts[].id` values SHALL be unique within a response.
-
-5. `artifacts[].fulfills` SHALL contain ids from the original request's `items[].id`.
-
-6. For each id in `artifacts[].fulfills`, the artifact `mediaType` SHALL appear in that request item's `accept[]` list.
-
-7. A single artifact MAY fulfill multiple request items.
-
-8. A single request item MAY be fulfilled by multiple artifacts.
-
-9. `application/smart-health-card` artifact values SHALL be JSON objects with a `verifiableCredential` array containing one or more SMART Health Card JWS strings.
-
-10. `application/smart-health-card` artifacts SHALL NOT carry an outer `fhirVersion`; verifiers SHALL inspect each signed credential payload for its FHIR version.
-
-11. `application/fhir+json` artifacts SHALL include `fhirVersion`.
-
-12. If an `application/fhir+json` artifact value is a Bundle, all resources in that Bundle SHALL be interpreted under the artifact's `fhirVersion`. Mixed FHIR versions SHOULD be returned as separate artifacts.
-
-13. Artifacts SHOULD NOT include a profile summary field. Verifiers SHOULD inspect FHIR `meta.profile` values in the payload itself.
-
-14. `requestStatus` SHALL include one entry for each original request item, and `requestStatus[].item` SHALL contain that item's id.
-
-15. `requestStatus.status = "fulfilled"` means the wallet believes the request item was fully satisfied.
-
-16. `requestStatus.status = "partial"` means the wallet returned some relevant artifacts but does not claim complete fulfillment.
-
-17. `requestStatus.status = "unavailable"` means the wallet found no matching shareable content.
-
-18. `requestStatus.status = "declined"` means the patient declined the request item.
-
-19. `requestStatus.status = "unsupported"` means the wallet could not understand or support the request item or requested media types.
-
-20. `requestStatus.status = "error"` means the wallet encountered an error attempting to satisfy the request item.
-
-21. Generic extension artifacts SHALL include at least one payload locator/body field: `value`, `url`, or `data`. If an extension artifact includes more than one of these fields, its media type or profile SHALL define how the fields are interpreted together.
-
-### Direct mdoc carrier rules
-
-1. The direct mdoc carrier SHALL request the stable element
-   `smart_health_checkin_response` in namespace `org.smarthealthit.checkin`.
-
-2. The direct mdoc carrier SHALL default `intentToRetain` to `true` for
-   `smart_health_checkin_response`. A deployment MAY override this if the
-   verifier truly intends ephemeral use and will not ingest returned artifacts.
-
-## 10. Notes on SMART Health Cards
-
-For `application/smart-health-card`, the payload is modeled after SMART Health Card file download:
-
-```json
-{
-  "verifiableCredential": [
-    "<<Verifiable Credential as JWS>>",
-    "<<Verifiable Credential as JWS>>"
-  ]
-}
-```
-
-Each JWS is independently verified as a SMART Health Card credential. FHIR content and FHIR version are inside the signed credential payload.
-
-## 11. Notes on raw FHIR JSON
-
-For `application/fhir+json`, the artifact explicitly declares:
-
-```json
-{
-  "mediaType": "application/fhir+json",
-  "fhirVersion": "4.0.1",
-  "value": {
-    "resourceType": "Bundle"
-  }
-}
-```
-
-This mirrors the useful part of SMART Health Cards — an explicit FHIR version paired with FHIR content — while avoiding a false claim that raw FHIR JSON has independent issuer proof.
-
-## 12. Transport constraints
-
-The request/response payload schema does not define one universal maximum
-response size. Size policy belongs to the transport or deployment profile.
-
-For the front-desk kiosk flow, the request advertises `constraints.maxPlaintextBytes`
-and the Instant-backed transport enforces that limit before accepting an
-encrypted submission. Same-device Digital Credentials API demos should still
-prefer compact response artifacts, but the active direct-mdoc profile does not
-depend on alternate claim-name encodings.
+1. `type` is `"smart-health-checkin-response"` and `version` is `"1"`.
+2. `requestId` equals the corresponding request `id`.
+3. `artifacts[].id` values are unique within a response.
+4. `artifacts[].fulfills[]` contains ids from the original request.
+5. Each fulfillment edge uses a media type accepted by that request item.
+6. `application/smart-health-card` values contain `verifiableCredential[]` and no
+   outer `fhirVersion`.
+7. `application/fhir+json` values contain `fhirVersion` and a FHIR Resource or
+   Bundle.
+8. `requestStatus[]` covers every original request item exactly once.
+9. Unknown core media types are not interpreted through a generic Artifact
+   fallback.

@@ -524,7 +524,7 @@
         <span class="pill">MIT licensed</span>
       </div>
       <p class="lede">
-        A web verifier &mdash; clinic, kiosk, or patient portal &mdash; asks a patient wallet for
+        A web verifier &mdash; clinic, front-desk page, or patient portal &mdash; asks a patient wallet for
         check-in information: <abbr title="Fast Healthcare Interoperability Resources">FHIR</abbr>
         resources, <abbr title="FHIR Questionnaire / QuestionnaireResponse">questionnaires</abbr>,
         <abbr title="SMART Health Cards: signed JWS payload of FHIR data">SMART Health Cards</abbr>,
@@ -557,8 +557,8 @@
               <h3>Check in at a kiosk</h3>
               <p>
                 Staff starts check-in on a workstation. A QR code appears. The patient scans it on
-                their phone, runs the same presentation, and the kiosk receives the encrypted SMART
-                response.
+                their phone and lands on a same-device verifier page. The desktop handoff is demo UX,
+                not a separate SMART Health Check-in protocol layer.
               </p>
             </div>
             <span class="badge">In-person</span>
@@ -581,22 +581,25 @@
       <h2 id="model-h">A verifier asks. A wallet answers.</h2>
       <div class="anchor-grid" aria-label="Request / response example">
         <article class="anchor-card req">
-          <h3>Verifier request <span class="role-tag">clinic &middot; kiosk &middot; portal</span></h3>
+          <h3>Verifier request <span class="role-tag">clinic &middot; front desk &middot; portal</span></h3>
 <pre><span class="com">// SmartHealthCheckinRequest (excerpt)</span>
 {
   <span class="key">"type"</span>:    <span class="str">"smart-health-checkin-request"</span>,
+  <span class="key">"version"</span>: <span class="str">"1"</span>,
   <span class="key">"purpose"</span>: <span class="str">"Clinic check-in"</span>,
   <span class="key">"fhirVersions"</span>: [<span class="str">"4.0.1"</span>],
   <span class="key">"items"</span>: [
     { <span class="key">"id"</span>: <span class="str">"insurance"</span>,
       <span class="key">"required"</span>: <span class="num">true</span>,
-      <span class="key">"content"</span>: { <span class="key">"profile"</span>:
-        <span class="str">"…/C4DIC-Coverage"</span> } },
+      <span class="key">"content"</span>: { <span class="key">"kind"</span>: <span class="str">"fhir.resources"</span>,
+        <span class="key">"profiles"</span>: [<span class="str">"…/C4DIC-Coverage"</span>] } },
     { <span class="key">"id"</span>: <span class="str">"intake"</span>,
-      <span class="key">"content"</span>: { <span class="key">"questionnaire"</span>: { … } } },
+      <span class="key">"content"</span>: { <span class="key">"kind"</span>: <span class="str">"questionnaire"</span>,
+        <span class="key">"canonical"</span>: <span class="str">"…/Questionnaire/intake|1.2.3"</span>,
+        <span class="key">"resource"</span>: { … } } },
     { <span class="key">"id"</span>: <span class="str">"summary"</span>,
-      <span class="key">"content"</span>: { <span class="key">"profileFamily"</span>:
-        <span class="str">"us-core"</span> } }
+      <span class="key">"content"</span>: { <span class="key">"kind"</span>: <span class="str">"fhir.resources"</span>,
+        <span class="key">"profilesFrom"</span>: [<span class="str">"http://hl7.org/fhir/us/core"</span>] } }
   ]
 }</pre>
         </article>
@@ -607,18 +610,20 @@
   <span class="key">"type"</span>: <span class="str">"smart-health-checkin-response"</span>,
   <span class="key">"artifacts"</span>: [
     { <span class="key">"id"</span>: <span class="str">"a1"</span>,
-      <span class="key">"type"</span>: <span class="str">"fhir_resource"</span>,
+      <span class="key">"mediaType"</span>: <span class="str">"application/fhir+json"</span>,
+      <span class="key">"fhirVersion"</span>: <span class="str">"4.0.1"</span>,
       <span class="key">"fulfills"</span>: [<span class="str">"insurance"</span>],
-      <span class="key">"data"</span>: { <span class="key">"resourceType"</span>:
+      <span class="key">"value"</span>: { <span class="key">"resourceType"</span>:
         <span class="str">"Coverage"</span>, … } },
     { <span class="key">"id"</span>: <span class="str">"a2"</span>,
-      <span class="key">"type"</span>: <span class="str">"questionnaire_response"</span>,
+      <span class="key">"mediaType"</span>: <span class="str">"application/fhir+json"</span>,
+      <span class="key">"fhirVersion"</span>: <span class="str">"4.0.1"</span>,
       <span class="key">"fulfills"</span>: [<span class="str">"intake"</span>], … }
   ],
   <span class="key">"requestStatus"</span>: [
-    { <span class="key">"id"</span>: <span class="str">"insurance"</span>, <span class="key">"status"</span>: <span class="str">"shared"</span>   },
-    { <span class="key">"id"</span>: <span class="str">"intake"</span>,    <span class="key">"status"</span>: <span class="str">"shared"</span>   },
-    { <span class="key">"id"</span>: <span class="str">"summary"</span>,   <span class="key">"status"</span>: <span class="str">"declined"</span> }
+    { <span class="key">"item"</span>: <span class="str">"insurance"</span>, <span class="key">"status"</span>: <span class="str">"fulfilled"</span> },
+    { <span class="key">"item"</span>: <span class="str">"intake"</span>,    <span class="key">"status"</span>: <span class="str">"fulfilled"</span> },
+    { <span class="key">"item"</span>: <span class="str">"summary"</span>,   <span class="key">"status"</span>: <span class="str">"declined"</span> }
   ]
 }</pre>
         </article>
@@ -638,9 +643,9 @@
     <section id="layers" aria-labelledby="layers-h">
       <h2 id="layers-h">How it's wired</h2>
       <p class="section-lead">
-        Three layers; both flows share the bottom two. The clinical content layer is transport-neutral.
-        The browser transport is the W3C Digital Credentials API. The kiosk handoff is an extra wrapper
-        for in-person check-in.
+        Two protocol layers are standardized: a transport-neutral clinical content model and the
+        same-device W3C Digital Credentials API / direct <code>org-iso-mdoc</code> presentation flow.
+        Kiosk and QR handoffs in this repo are demo/deployment UX that land on the same-device flow.
       </p>
       <div class="layers-grid">
         <article class="layer smart">
@@ -667,10 +672,10 @@
           </div>
         </article>
         <article class="layer kiosk">
-          <h3>Kiosk handoff wrapper</h3>
+          <h3>Kiosk handoff demo</h3>
           <p>
-            Cross-device only. A desktop QR points the phone to a signed, encrypted request and
-            returns an encrypted SMART response back to the kiosk.
+            Deployment-defined in-person UX. The demo uses a desktop QR and untrusted mailbox around
+            the same-device verifier; it is not a standardized SMART Health Check-in 1.0 wire layer.
           </p>
           <div class="layer-links">
             <a href="./kiosk-flow-explainer.html">Kiosk flow explainer →</a>

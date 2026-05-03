@@ -3,10 +3,17 @@
 A **SMART Health Check-in** prototype: a transport-neutral check-in
 request/response model bound to the W3C Digital Credentials API over direct
 `org-iso-mdoc`. The repo ships an end-to-end demo — Android wallet, web
-verifier, and a cross-device kiosk flow — driven by checked-in byte fixtures
-captured from a real Chrome/Android session and exercised by Android,
+verifier, and an in-person kiosk handoff demo — driven by checked-in byte
+fixtures captured from a real Chrome/Android session and exercised by Android,
 TypeScript, and Python test suites that validate request parsing, HPKE-opened
 response bytes, MSO digest binding, and COSE signatures.
+
+SMART Health Check-in 1.0 is intentionally two-layered: the clinical
+request/response JSON model plus the same-device direct `org-iso-mdoc`
+presentation flow. QR codes, kiosks, desktop/staff handoffs, relays, and
+completion screens in this repo are deployment/demo UX around that same-device
+flow, not standardized SMART Health Check-in 1.0 pointer, relay, submission, or
+completion protocols.
 
 Live demo: <https://jmandel.github.io/smart-health-checkin-mdoc/>
 
@@ -17,8 +24,8 @@ cd rp-web && bun install && cd ..
 scripts/serve-pages.sh         # builds _site, serves http://localhost:3015/
 ```
 
-The preview serves the same `_site` artifact GitHub Pages deploys, so kiosk
-URLs live under `/verifier/` exactly as in production.
+The preview serves the same `_site` artifact GitHub Pages deploys, so verifier
+and demo handoff URLs live under `/verifier/` exactly as in production.
 
 ## Where to start
 
@@ -51,16 +58,17 @@ and `docs/archive/` are historical and not part of the public pickup path.
 
 - **TypeScript verifier SDK.** Framework-neutral SMART request/response
   validation, browser DC API verifier flow, verifier-authority seam, and
-  kiosk request descriptor helpers. Optional React bindings ship alongside.
+  deployment-handoff helpers used by the kiosk demo. Optional React bindings ship alongside.
   Start at [`rp-web/src/sdk/README.md`](rp-web/src/sdk/README.md) and
   [`rp-web/src/sdk/react.README.md`](rp-web/src/sdk/react.README.md).
 
-- **Web verifier and kiosk demo.** React app under
-  [`rp-web/`](rp-web/README.md) hosting the same-device verifier and the
-  cross-device kiosk flow (desktop creator ↔ phone submitter over an
-  untrusted realtime mailbox). The transport sits behind a small provider
-  interface; the shipped provider uses InstantDB rows plus Instant Storage
-  blobs. Slim row schema documented in
+- **Web verifier and kiosk handoff demo.** React app under
+  [`rp-web/`](rp-web/README.md) hosting the same-device verifier and an
+  in-person desktop-to-phone handoff demo (desktop creator ↔ phone submitter
+  over an untrusted realtime mailbox). That handoff is demo/deployment behavior
+  around the same-device verifier page, not a version 1.0 protocol layer. The
+  demo transport sits behind a small provider interface; the shipped provider
+  uses InstantDB rows plus Instant Storage blobs. Slim row schema documented in
   [`docs/plans/kiosk-transport-row-slim.md`](docs/plans/kiosk-transport-row-slim.md).
 
 - **Android wallet.** Modular Gradle project under
@@ -70,7 +78,7 @@ and `docs/archive/` are historical and not part of the public pickup path.
   ([`wallet-android/app/matcher-rs/README.md`](wallet-android/app/matcher-rs/README.md)).
 
 - **Public site.** Landing page and HTML explainers in
-  [`site/`](site/index.html): the SMART model explainer, the kiosk flow
+  [`site/`](site/index.html): the SMART model explainer, the kiosk handoff demo
   explainer, and a byte-level wire-protocol inspector that fetches the same
   checked-in fixtures the test suites use.
 
@@ -89,10 +97,10 @@ pushes to `main` and on manual workflow dispatch.
 | --- | --- |
 | `/` | Landing page (`site/index.html`) |
 | `/verifier/` | Same-device verifier |
-| `/verifier/creator.html` | Kiosk creator (desktop) |
-| `/verifier/submit.html` | Kiosk submit (phone) |
+| `/verifier/creator.html` | Kiosk handoff demo creator (desktop) |
+| `/verifier/submit.html` | Kiosk handoff demo submitter (phone) |
 | `/smart-model-explainer.html` | SMART Health Check-in model explainer |
-| `/kiosk-flow-explainer.html` | Cross-device kiosk flow explainer |
+| `/kiosk-flow-explainer.html` | Kiosk handoff demo explainer |
 | `/wire-protocol-explainer.html` | Byte-level wire-protocol explainer |
 | `/llms.txt` | Generated LLM-friendly docs bundle |
 | `/fixtures/` | Checked-in test fixtures |
@@ -104,4 +112,3 @@ cd rp-web && bun install
 cd ..
 scripts/build-pages.sh
 ```
-

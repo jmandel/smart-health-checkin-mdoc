@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SMART Health Check-in Kiosk Flow Explainer</title>
+  <title>SMART Health Check-in Kiosk Handoff Demo Explainer</title>
   <style>
     :root {
       --ink: #172033;
@@ -266,13 +266,13 @@
 <body>
   <main class="page">
     <header>
-      <p class="eyebrow">Cross-device in-person check-in</p>
-      <h1>Kiosk flow: same presentation, different handoff</h1>
+      <p class="eyebrow">In-person demo handoff</p>
+      <h1>Kiosk handoff demo: same-device protocol, deployment-defined UX</h1>
       <p class="lede">
-        The front-desk kiosk is not a second clinical protocol. It wraps the
-        same SMART Health Check-in remote presentation flow so staff can start
-        an in-person visit on a desktop while the patient presents from their
-        phone.
+        The front-desk kiosk demo is not a second SMART Health Check-in 1.0
+        protocol layer. It shows one deployment-defined way for staff to start
+        an in-person visit on a desktop while the patient lands on a same-device
+        verifier page and presents from their phone.
       </p>
       <div class="actions" aria-label="Primary links">
         <a href="./index.html">Overview</a>
@@ -296,11 +296,19 @@
         <code>navigator.credentials.get()</code>, the patient approves in their
         wallet, and the requester opens and validates the response.
       </p>
+      <div class="callout warn">
+        <strong>Spec boundary:</strong> SMART Health Check-in 1.0 standardizes the
+        transport-neutral SMART request/response model and the same-device direct
+        <code>org-iso-mdoc</code> presentation flow. QR URLs, pointers, relays,
+        desktop completion screens, and response-return paths shown here are
+        demo/deployment behavior, not standardized pointer, envelope, relay,
+        submission, or completion protocols.
+      </div>
       <p>
         The kiosk demo keeps that exact phone-side presentation. The desktop
-        kiosk only creates a short-lived request pointer and watches for an
-        encrypted completion. The patient still uses their own phone and health
-        app to present.
+        page only creates a short-lived demo request pointer and watches for a
+        demo encrypted completion. The patient still uses their own phone and
+        health app to present.
       </p>
 
       <div class="flow-grid">
@@ -312,11 +320,11 @@
           </p>
         </div>
         <div class="flow-card kiosk">
-          <h3>In-person kiosk wrapper</h3>
+          <h3>In-person handoff demo</h3>
           <p>
             The desktop starts the request and displays a QR. The phone resolves
-            the pointer, runs the same presentation, and returns an encrypted
-            SMART response for the desktop to render.
+            the demo pointer, runs the same presentation, and returns an
+            encrypted SMART response for the desktop to render.
           </p>
         </div>
       </div>
@@ -328,25 +336,27 @@
         <li>
           <div>
             <strong>Kiosk initiates a request.</strong>
-            The creator page builds the full SMART request, signs it as compact
-            ES256 JWS with a demo creator key, encrypts that JWS to the demo
+            The creator page builds a SMART request, signs it as compact ES256
+            JWS with a demo creator key, encrypts that JWS to the demo
             submission-service key, and stores the encrypted request through a
-            provider.
+            demo provider.
           </div>
         </li>
         <li>
           <div>
             <strong>The QR carries only a pointer.</strong>
-            The QR URL contains <code>#r=&lt;requestId&gt;</code>. It does not
-            contain FHIR profile details, questionnaires, or response keys.
+            The QR URL contains the demo's <code>#r=&lt;requestId&gt;</code>
+            handle. It does not contain FHIR profile details, questionnaires, or
+            response keys, and this URL shape is not standardized by SMART
+            Health Check-in 1.0.
           </div>
         </li>
         <li>
           <div>
             <strong>The phone resolves and verifies.</strong>
-            The submit page fetches the encrypted request by pointer, decrypts it
-            locally, verifies the creator JWS against baked trusted demo public
-            keys, and recovers the embedded SMART request.
+            The submit page fetches the encrypted request by demo pointer,
+            decrypts it locally, verifies the creator JWS against baked trusted
+            demo public keys, and recovers the embedded SMART request.
           </div>
         </li>
         <li>
@@ -373,21 +383,21 @@
     <section id="provider">
       <h2>The provider abstraction</h2>
       <p>
-        The static apps use a narrow transport interface so the kiosk flow is not
-        hard-coded to Instant. The protocol code owns signing, encryption,
-        request verification, response encryption, and binding checks. The
-        provider only stores request rows, stores submission rows, serves
-        encrypted blobs, and reports new submissions.
+        The static apps use a narrow transport interface so the demo handoff is
+        not hard-coded to Instant. Demo code owns signing, encryption, request
+        verification, response encryption, and binding checks. The provider only
+        stores request rows, stores submission rows, serves encrypted blobs, and
+        reports new submissions.
       </p>
 
-      <div class="compact-flow" aria-label="Kiosk provider flow">
+      <div class="compact-flow" aria-label="Kiosk demo provider flow">
         <div class="compact-step">
           <strong>1. Create</strong>
-          Kiosk signs/encrypts the request and stores an opaque request row.
+          Demo creator signs/encrypts the request and stores an opaque request row.
         </div>
         <div class="compact-step">
           <strong>2. Resolve</strong>
-          Phone reads by pointer, decrypts, and verifies the creator signature.
+          Phone reads by demo pointer, decrypts, and verifies the creator signature.
         </div>
         <div class="compact-step">
           <strong>3. Complete</strong>
@@ -395,19 +405,19 @@
         </div>
         <div class="compact-step">
           <strong>4. Review</strong>
-          Kiosk downloads, decrypts, validates the request binding, and renders the result.
+          Desktop downloads, decrypts, validates the request binding, and renders the result.
         </div>
       </div>
 
-      <pre>type KioskTransportProvider = {
+      <pre>type DemoHandoffTransportProvider = {
   name: string;
   appId: string;
   configured: boolean;
-  writeRequest(...): Promise&lt;KioskRequestRow&gt;;
-  readRequest(requestId): Promise&lt;KioskRequestRow&gt;;
-  writeSubmission(...): Promise&lt;KioskSubmissionRow&gt;;
+  writeRequest(...): Promise&lt;DemoRequestRow&gt;;
+  readRequest(requestId): Promise&lt;DemoRequestRow&gt;;
+  writeSubmission(...): Promise&lt;DemoSubmissionRow&gt;;
   downloadSubmissionBlob(row): Promise&lt;Uint8Array&gt;;
-  useSubmissionRows(requestId): KioskSubmissionRows;
+  useSubmissionRows(requestId): DemoSubmissionRows;
 };</pre>
     </section>
 
@@ -416,7 +426,7 @@
       <p>
         The checked-in demo provider uses InstantDB for small pointer rows and
         Instant Storage for encrypted response blobs. Instant is intentionally
-        treated as untrusted transport.
+        treated as untrusted demo transport.
       </p>
       <div class="callout">
         <strong>What Instant can see:</strong> request IDs, submission IDs,
