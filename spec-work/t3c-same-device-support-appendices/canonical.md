@@ -105,7 +105,7 @@ The following ladder names the ordered transformations in the base same-device f
    SessionTranscript = CBOR([null, null, ["dcapi", SHA-256(CBOR([encryptionInfoBase64Url, origin]))]])
    ```
 
-   The origin is not derived from the SMART request body, `purpose`, item display text, selector URLs, request ids, kiosk metadata, callback-looking strings, or returned Artifacts.
+   The origin is not derived from the SMART request body, `purpose`, item display text, selector URLs, request ids, implementation-defined initiation metadata, callback-looking strings, or returned Artifacts.
 
 9. **Optional `ReaderAuthentication`.** If `readerAuth` is present, §8 defines the detached payload as:
 
@@ -419,8 +419,8 @@ SMART Health Check-in 1.0 is not a generic mDL profile and does not define gener
 
 The profile also does not define clinical-source provenance beyond §7. Raw FHIR JSON Artifacts remain patient-mediated unless the Artifact payload, extension profile, deployment profile, or other accepted evidence supplies separate provenance, signature, source attestation, authenticated retrieval evidence, or equivalent source proof.
 
-## G.7 Relationship to kiosk and later appendices
+## G.7 Relationship to in-person initiation and later appendices
 
-The cross-device kiosk flow re-enters the same-device §8 flow on the phone with an embedded SMART request. Appendix G does not define kiosk wrapper mechanics such as pointer URLs, kiosk request signatures, request-envelope encryption, submission encryption, relay behavior, expiration, or Completion display processing; those belong to §9 and its dependent appendix work.
+In-person initiation mechanisms such as QR codes, NFC tags, or deep links are implementation-defined ways to load a same-device Verifier page that runs §8. Appendix G does not define URL formats, pointer storage, relay behavior, response routing, or completion-display processing for those mechanisms. They do not create an alternate presentation carrier, cryptographic boundary, or trust layer for SMART Health Check-in 1.0.
 
-Appendix C owns precise CDDL and any ISO compatibility refinements needed to remove ambiguity from labels, tag-24 boundaries, duplicate handling, and encoding constraints. Appendix D owns fixture classification and the final vector index. Appendix G records compatibility intent and profile constraints so those appendices align with §8 without creating alternate encodings or semantics.
+Appendix C owns precise same-device CDDL and any ISO compatibility refinements needed to remove ambiguity from labels, tag-24 boundaries, duplicate handling, and encoding constraints. Appendix D owns same-device fixture classification and the final vector index. Appendix G records compatibility intent and profile constraints so those appendices align with §8 without creating alternate encodings or semantics.

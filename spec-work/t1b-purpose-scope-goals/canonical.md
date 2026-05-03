@@ -4,15 +4,14 @@ SMART Health Check-in 1.0 defines an interoperability profile for patient-mediat
 
 The profile fixes the shared protocol surface that otherwise varies across EHRs, patient portals, kiosk systems, payer-facing workflows, and Wallet platforms:
 
-1. the **clinical content model**, consisting of the transport-neutral SMART request and SMART response;
-2. the base **same-device presentation flow**, using direct `org-iso-mdoc` over the W3C Digital Credentials API; and
-3. the optional **cross-device kiosk flow**, which wraps the same-device presentation flow for front-desk and shared-device deployments.
+1. the **clinical content model**, consisting of the transport-neutral SMART request and SMART response; and
+2. the **same-device presentation flow**, using direct `org-iso-mdoc` over the W3C Digital Credentials API.
 
-The clinical content model defines request items, user-facing purpose and item text, accepted response media types, content selectors, returned Artifacts, fulfillment links, and per-item status reporting. The same SMART request has the same clinical meaning whether it is carried by the same-device presentation flow, by the cross-device kiosk flow, or by a future binding. Presentation transports can add origin context, reader or Verifier information, encryption, freshness, device evidence, relay behavior, and validation rules; they do not change request item semantics, selector meaning, consent granularity, Artifact media types, or response status semantics.
+The clinical content model defines request items, user-facing purpose and item text, accepted response media types, content selectors, returned Artifacts, fulfillment links, and per-item status reporting. The same SMART request has the same clinical meaning whether it is carried by the same-device presentation flow or by a future binding. Presentation transports can add origin context, reader or Verifier information, encryption, freshness, device evidence, routing metadata, and validation rules; they do not change request item semantics, selector meaning, consent granularity, Artifact media types, or response status semantics.
 
 Version 1.0 defines the same-device presentation flow as the base presentation flow. In that flow, a Verifier carries the SMART request and receives the SMART response through direct `org-iso-mdoc` presentation over the W3C Digital Credentials API on the same device where the Wallet is available.
 
-Version 1.0 also defines the cross-device kiosk flow. A Kiosk creator prepares a pointer to a signed and encrypted kiosk request. The Phone presenter resolves the pointer, obtains a kiosk request payload that embeds the SMART request directly as `smartRequest`, re-enters the same-device presentation flow locally on the phone, and submits an encrypted result for the Completion display. The kiosk flow is a wrapper around the same-device presentation flow; it is not a second clinical protocol. Demo presets, preset names, SDK helper objects, and request-wrapper shortcuts are not protocol payloads in place of the embedded SMART request.
+In-person deployments may initiate check-in by presenting a URL through a QR code, NFC tag, deep link, or similar mechanism that lands the Holder on a same-device Verifier page. The format of that URL, any pointer or relay service behind it, and any path by which completion state returns to a kiosk, desktop, or staff workflow are deployment-defined and are not standardized by version 1.0.
 
 The profile standardizes clinical content selection conventions so a Requester can ask for familiar FHIR-shaped data without inventing local topic vocabularies. Request items can use FHIR-native selectors, including exact profile canonicals in `profiles[]`, profile-family canonicals in `profilesFrom[]`, official FHIR resource-type names, Questionnaire references, inline Questionnaires, and registered extension selectors. `profilesFrom[]` is an array of canonical profile-family URLs. `profiles[]` and `profilesFrom[]` are additive profile selectors: either can identify acceptable profile matches for an item, subject to the rest of the item definition. Later §5 defines the precise selector rules, including interaction with `resourceTypes[]`.
 
@@ -32,9 +31,9 @@ The specification does not perform identity proofing. It does not define patient
 
 The specification does not define payments, eligibility adjudication, claims submission, benefit determination, coverage enrollment, payer-provider contracting, financial authorization, collection, or settlement. Insurance verification use cases are limited to patient-mediated sharing of coverage-related clinical or administrative content as Artifacts.
 
-The specification does not define a general-purpose credential issuance framework, universal wallet portability layer, arbitrary FHIR query language, replacement for SMART App Launch, replacement for FHIR APIs, or replacement for payer transaction standards. It profiles check-in-oriented clinical request and response semantics and the version 1.0 presentation flows that carry them.
+The specification does not define a general-purpose credential issuance framework, universal wallet portability layer, arbitrary FHIR query language, replacement for SMART App Launch, replacement for FHIR APIs, or replacement for payer transaction standards. It profiles check-in-oriented clinical request and response semantics and the version 1.0 same-device presentation flow that carries them.
 
-Out-of-scope behavior can be implemented by products around this protocol. Such behavior does not change the semantics of a SMART request, a SMART response, the same-device presentation flow, or the cross-device kiosk flow.
+Out-of-scope behavior can be implemented by products around this protocol. Such behavior does not change the semantics of a SMART request, a SMART response, or the same-device presentation flow. SMART Health Check-in 1.0 does not define QR-code, NFC, deep-link, pointer, relay, submission, or completion-display wire formats for in-person handoff.
 
 ## 2.1 Use cases
 
@@ -46,9 +45,9 @@ The Wallet displays the requested items for Holder review, applies its local pol
 
 ### 2.1.2 In-person front-desk kiosk check-in
 
-A patient arrives at a clinic and begins check-in at a kiosk, tablet, or staff desktop. The Kiosk creator prepares a signed and encrypted kiosk request payload that embeds the SMART request directly as `smartRequest` and displays a Pointer URL, commonly encoded as a QR code.
+A patient arrives at a clinic and begins check-in at a kiosk, tablet, or staff desktop. The local system presents a QR code, NFC tag, deep link, printed URL, or similar deployment-defined entry point that lands the patient on a same-device Verifier page on the patient's phone.
 
-The Phone presenter resolves the pointer, obtains and validates the kiosk request, and re-enters the same-device presentation flow on the phone for the embedded SMART request. After Holder review and Wallet response construction, the phone submits an encrypted result for the Completion display. The Submission service and pointer transport are not trusted with plaintext clinical content.
+Once the phone reaches that page, the same-device presentation flow carries the SMART request and SMART response. The specification does not define the QR or URL format, pointer resolution, relay storage, response routing back to the clinic, or completion display behavior; those are implementation-defined in-person handoff details.
 
 ### 2.1.3 Pre-visit intake from a patient phone
 
@@ -74,17 +73,17 @@ Plain credential issuance answers how data or credentials become available to a 
 
 Plain credential presentation is also insufficient by itself. Presentation protocols can prove possession, protect transport, and support Verifier trust, but they do not inherently define a FHIR-native request vocabulary, item-level Holder review, accepted clinical media types, per-item status, or fulfillment links between requested items and returned Artifacts.
 
-Without a check-in protocol, each EHR, portal, kiosk product, and Wallet would need private conventions for request topics, profile matching, consent granularity, response packaging, error reporting, and kiosk bridging. Those conventions are difficult to certify and brittle across many Requesters and many Wallet platforms.
+Without a check-in protocol, each EHR, portal, kiosk product, and Wallet would need private conventions for request topics, profile matching, consent granularity, response packaging, and error reporting. Those conventions are difficult to certify and brittle across many Requesters and many Wallet platforms.
 
 SMART Health Check-in supplies the missing clinical request/response layer. The Requester can express desired content using FHIR canonicals, profile families, resource types, questionnaires, and registered extension selectors. The Wallet can decide how to satisfy the request from available Holder data sources and can return Artifacts with media types the Requester advertised as acceptable. The Verifier and response consumer can validate a predictable response shape before any local ingestion or workflow processing.
 
-The result is intentionally layered. Version 1.0 specifies a base same-device direct `org-iso-mdoc` flow and a cross-device kiosk wrapper that reuses it on the phone. Those flows carry, protect, and validate the clinical content model; they do not replace it.
+The result is intentionally layered. Version 1.0 specifies the transport-neutral clinical request/response model and a same-device direct `org-iso-mdoc` flow that carries, protects, and validates that model; it does not standardize a cross-device kiosk wrapper or relay protocol.
 
 ## 2.3 Goals
 
 ### 2.3.1 Transport-neutral clinical content
 
-The SMART request and SMART response define clinical semantics independently of presentation transport. Request items, selectors, accepted media types, Artifacts, fulfillment links, and status semantics retain their meaning when carried by the same-device presentation flow, the cross-device kiosk flow, or a future binding.
+The SMART request and SMART response define clinical semantics independently of presentation transport. Request items, selectors, accepted media types, Artifacts, fulfillment links, and status semantics retain their meaning when carried by the same-device presentation flow or a future binding.
 
 ### 2.3.2 Per-item user consent
 
@@ -100,7 +99,7 @@ The response model supports realistic clinical packaging. One Artifact can satis
 
 ### 2.3.5 Interop across multiple EHRs and multiple wallet platforms
 
-The profile aims for many-to-many interoperability. A Requester from one EHR ecosystem should be able to create a SMART request that a Wallet from another ecosystem can understand. A Wallet should be able to construct a SMART response that multiple Requesters can validate without private agreements about field names, local topic vocabularies, kiosk wrappers, or response packaging.
+The profile aims for many-to-many interoperability. A Requester from one EHR ecosystem should be able to create a SMART request that a Wallet from another ecosystem can understand. A Wallet should be able to construct a SMART response that multiple Requesters can validate without private agreements about field names, local topic vocabularies, in-person handoff mechanisms, or response packaging.
 
 ### 2.3.6 Layerable trust
 
@@ -119,11 +118,11 @@ SMART Health Check-in 1.0 is not intended to solve every health-data exchange pr
 - define arbitrary FHIR search, graph traversal, cohort definition, CDS logic, or computable payer-rule evaluation;
 - guarantee that returned content is complete, current, clinically correct, or legally sufficient for a downstream workflow;
 - make raw FHIR JSON equivalent to issuer-signed clinical credentials when no separate provenance or signature is present;
-- make the Submission service trusted with plaintext clinical content;
+- define QR-code, NFC, deep-link, pointer, relay, submission, or completion-display mechanisms as interoperable protocol artifacts;
 - define a second kiosk-specific clinical request language distinct from the SMART request; or
 - make a reserved future binding, including any OpenID4VP mapping, a required version 1.0 presentation flow.
 
-These non-goals are design constraints. Implementations can build product features around the protocol, but conformance to this specification is about interoperable request construction, Holder-mediated response construction, transport binding behavior, and validation of the resulting protocol artifacts.
+These non-goals are design constraints. Implementations can build product features around the protocol, but conformance to this specification is about interoperable request construction, Holder-mediated response construction, same-device transport binding behavior, and validation of the resulting protocol artifacts.
 
 ## 2.5 Threat model summary
 
@@ -131,7 +130,7 @@ SMART Health Check-in assumes that clinical and administrative check-in informat
 
 For the same-device presentation flow, the main threats include origin spoofing, UI redress, malicious or confused Verifier pages, reader or Verifier impersonation, malformed or replayed presentation requests, profile-confusion attacks, and failure to bind the returned SMART response to the original SMART request and presentation session. The base flow uses W3C Digital Credentials API mediation and direct `org-iso-mdoc` presentation, but those mechanisms must be paired with the validation and trust-processing rules defined later in this specification.
 
-For the cross-device kiosk flow, the main additional threats include QR-code substitution, pointer tampering, relay observation, replay of kiosk requests, ciphertext swapping, confused pairing between a kiosk desktop and a phone, completion spoofing, and leakage through metadata visible to the Submission service. The kiosk wrapper treats the Submission service and pointer transport as untrusted for plaintext clinical content and relies on signed and encrypted wrapper artifacts, pointer-to-payload binding, phone-side validation, same-device re-entry, encrypted submission, expiration, replay controls, and metadata minimization developed in later sections.
+For in-person handoff deployments, additional threats can include QR-code substitution, misleading deep links, relay observation, confused pairing between a local workflow and a phone, completion spoofing, and metadata leakage. Version 1.0 does not standardize that handoff as a protocol layer; deployments are responsible for designing their URL, pointer, relay, response-routing, and completion mechanisms so that §7 trust processing and the §8 same-device presentation flow remain intact.
 
 For the clinical content model, the main threats include overbroad requests, misleading item descriptions, accidental disclosure, stale or untrusted Holder data sources, response tampering, mismatched request and response identifiers, incorrect fulfillment links, unsupported media types, and overstating the assurance of unsigned clinical content. The model addresses these risks by making request items explicit, supporting per-item Holder decisions and status, declaring Artifact media types, preserving fulfillment links, and keeping transport trust distinct from clinical-source provenance.
 

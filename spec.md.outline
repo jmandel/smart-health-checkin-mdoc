@@ -7,11 +7,11 @@ Conventions used in this outline:
 - Each binding section is intended to end with a one-row-per-rule conformance
   checklist suitable for a certification suite.
 - Architectural framing: the spec describes (1) a transport-neutral clinical
-  content model, (2) a **same-device presentation flow** over W3C Digital
-  Credentials API using direct `org-iso-mdoc`, and (3) a **cross-device kiosk
-  flow** that builds on the same-device presentation flow by wrapping it with
-  an additional pointer/relay envelope. The kiosk flow is *not* a separate
-  protocol layer; it reuses the same-device flow on the patient's phone.
+  content model and (2) a **same-device presentation flow** over W3C Digital
+  Credentials API using direct `org-iso-mdoc`. In-person QR/NFC/deep-link
+  handoffs are implementation-defined UX patterns that land the patient's phone
+  on a page running the same-device flow; they are not standardized protocol
+  layers in SMART Health Check-in 1.0.
 
 ---
 
@@ -36,7 +36,7 @@ Conventions used in this outline:
 1.5.2 JSON / CBOR / CDDL / COSE / HPKE notation
 1.5.3 Byte-string presentation (hex, base64url-no-pad)
 1.5.4 Pseudocode and example dialect
-1.6 Terminology — Verifier / Requester, Wallet / Responder, Holder, Browser / User Agent, Credential Manager, Artifact, Item, Profile family, Request item id, Kiosk creator, Submission service, Phone presenter, Completion display
+1.6 Terminology — Verifier / Requester, Wallet / Responder, Holder, Browser / User Agent, Credential Manager, Artifact, Item, Profile family, Request item id
 1.7 References
 1.7.1 Normative — RFC 2119, RFC 8174, RFC 7515 (JWS), RFC 9180 (HPKE), RFC 8949 (CBOR), RFC 8152/9052 (COSE), ISO/IEC 18013-5 mdoc, W3C Digital Credentials API, FHIR R4 (4.0.1), SMART Health Cards
 1.7.2 Informative — OpenID4VP, IETF DCQL, US Core IG, CARIN IG, mDL Annex C
@@ -45,7 +45,7 @@ Conventions used in this outline:
 
 2.1 Use cases
 2.1.1 Same-device patient portal check-in
-2.1.2 In-person front-desk kiosk check-in
+2.1.2 In-person initiation by QR/NFC/deep link (implementation-defined UX landing on §8)
 2.1.3 Pre-visit intake from a patient phone
 2.1.4 Insurance verification (CARIN-style coverage)
 2.1.5 Health summary share for prior-auth or referrals
@@ -58,28 +58,24 @@ Conventions used in this outline:
 2.3.5 Interop across multiple EHRs and multiple wallet platforms
 2.3.6 Layerable trust (origin → reader → issuer → clinical content)
 2.4 Non-goals
-2.5 Threat model summary (cross-references §10)
+2.5 Threat model summary (cross-references §§7 and 11)
 
 ## 3. Architectural overview (I, with normative pointers)
 
 3.1 Two payload domains: clinical content vs. presentation transport
 3.1.1 Clinical content domain — the SMART JSON request/response (transport-neutral)
 3.1.2 Presentation transport domain — direct `org-iso-mdoc` over W3C DC API
-3.2 Two end-to-end flows
+3.2 Normative end-to-end flow
 3.2.1 Same-device presentation flow (verifier page ↔ wallet on the same device)
-3.2.2 Cross-device kiosk flow — a desktop creator and a phone presenter, where the phone re-enters the same-device presentation flow after resolving a pointer
+3.2.2 (I) In-person QR/NFC/deep-link initiation as implementation-defined UX that loads a §8 verifier page
 3.3 Roles and component contracts (protocol-level only)
 3.3.1 Requester / Verifier (the relying party)
 3.3.2 Browser / User Agent (DC API surface, origin assertion)
 3.3.3 Wallet / Responder (consent, response construction, signing)
 3.3.4 Holder data source (wallet-internal; abstracted out of protocol)
-3.3.5 Kiosk creator
-3.3.6 Submission / relay service (untrusted transport)
-3.3.7 Phone presenter (re-uses Verifier and Wallet flows on the patient's phone)
-3.3.8 Completion display (the kiosk desktop receives the encrypted submission)
 3.4 Sequence diagrams
 3.4.1 Same-device presentation flow
-3.4.2 Cross-device kiosk flow (highlighting the call back into the same-device flow on the phone)
+3.4.2 (I) In-person handoff example that lands on the same-device verifier page
 3.5 Trust boundaries (forward reference to §7)
 3.6 Design principles (each principle restated as a normative SHALL/SHOULD)
 3.6.1 One docType, one namespace, one stable element
@@ -97,15 +93,13 @@ Conventions used in this outline:
 4.1 Conformance targets
 4.1.1 Verifier conformance class
 4.1.2 Wallet conformance class
-4.1.3 Cross-device kiosk-creator conformance class
-4.1.4 Cross-device submitter (phone) conformance class
-4.1.5 Browser / UA assumptions (defers to W3C DC API)
+4.1.3 Verifier-side validator conformance class
+4.1.4 Browser / UA assumptions (defers to W3C DC API)
 4.2 Mandatory features (any *Core* implementation SHALL support)
 4.3 Optional features (a profile MAY add; named feature flags)
 4.4 Profile identifiers
 4.4.1 Direct mdoc DC API profile id (same-device presentation)
-4.4.2 Cross-device kiosk flow profile id
-4.4.3 Future OID4VP binding profile id (placeholder)
+4.4.2 Future OID4VP binding profile id (placeholder)
 4.5 Versioning rules
 4.5.1 `type` discriminator (frozen)
 4.5.2 `version` field semantics; minor/breaking distinction
@@ -149,16 +143,21 @@ Conventions used in this outline:
 5.4.1.4 Additivity rule when both `profiles` and `profilesFrom` present
 5.4.1.5 No-selector default ("any patient-specific FHIR")
 5.4.1.6 (EX) US Core family, exact CARIN coverage, mixed
-5.4.2 `questionnaire`
-5.4.2.1 By canonical
-5.4.2.2 Inline `Questionnaire`
-5.4.2.3 Combined canonical+resource
-5.4.2.4 Wallet behavior when both forms supplied disagree
-5.4.2.5 (EX) inline migraine intake
+5.4.2 `questionnaire` selector (`content.kind = "questionnaire"`)
+5.4.2.1 Flattened selector shape with sibling `canonical?` and `resource?`
+5.4.2.2 `canonical` — FHIR canonical URL, with `|version` handled per §5.5
+5.4.2.3 `resource` — inline FHIR `Questionnaire` resource object
+5.4.2.4 Combined canonical+resource and wallet behavior when they disagree
+5.4.2.5 Rejection of legacy nested `questionnaire` key shapes
+5.4.2.6 (EX) inline migraine intake
 5.4.3 Extension selectors — registration rules
-5.5 Canonical `|version` handling (decision matrix)
-5.5.1 Strip vs. preserve table (one row per operation)
-5.5.2 Round-trip preservation requirement on returned `meta.profile` and `QuestionnaireResponse.questionnaire`
+5.5 Canonical `|version` handling
+5.5.1 Structured parse into `(url, version?)` while preserving the original wire string
+5.5.2 Resolver/package-cache and FHIR-search resolution semantics
+5.5.3 Direct HTTP dereference limited to unversioned canonicals
+5.5.4 Post-resolution verification of `resourceType`, `url`, and requested `version`
+5.5.5 Decision matrix for preservation, routing, grouping, and profile matching
+5.5.6 Round-trip preservation requirement on returned `meta.profile` and `QuestionnaireResponse.questionnaire`
 5.6 Accepted media types (`accept[]`)
 5.6.1 `application/fhir+json`
 5.6.2 `application/smart-health-card`
@@ -177,7 +176,7 @@ Conventions used in this outline:
 6.2.1 `id` uniqueness within response
 6.2.2 `mediaType`
 6.2.3 `fulfills[]` (SHALL be non-empty, ids SHALL exist in request)
-6.2.4 Body field: `value` | `url` | `data` (interpretation rules)
+6.2.4 Body field constraints defined by each pinned `mediaType` variant
 6.3 Concrete artifact shapes
 6.3.1 SMART Health Card artifact (`application/smart-health-card`)
 6.3.1.1 `value.verifiableCredential[]` JWS list
@@ -186,8 +185,8 @@ Conventions used in this outline:
 6.3.2.1 `fhirVersion` SHALL be present
 6.3.2.2 Bundle / single-resource shape rules
 6.3.2.3 Mixed-version-Bundle prohibition
-6.3.3 Generic / extension artifacts
-6.3.4 (EX) one of each
+6.3.3 Registered extension artifacts: branded variants with pinned `mediaType` and typed shape (no `GenericArtifact`)
+6.3.4 (EX) SMART Health Card and raw FHIR JSON artifacts
 6.4 Status reporting
 6.4.1 `requestStatus[]` SHALL cover every request item exactly once
 6.4.2 Status code registry — `fulfilled` / `partial` / `unavailable` / `declined` / `unsupported` / `error`
@@ -280,65 +279,6 @@ Conventions used in this outline:
 8.8 Required validation checklist (verifier)
 8.9 (EX) Annotated end-to-end byte capture (links to fixtures in Appendix D)
 
-## 9. Cross-device kiosk flow (N)
-
-> The kiosk flow builds on the same-device presentation flow defined in §8.
-> The desktop creator hands the patient a pointer to a signed, encrypted SMART
-> request; the patient's phone resolves and decrypts the pointer, runs §8 on
-> the phone, and returns an encrypted SMART response back to the desktop.
-
-9.1 Goals
-9.1.1 Desktop staff initiation; phone-side presentation
-9.1.2 Pointer-only QR (no FHIR or response keys on the wire)
-9.1.3 Untrusted transport assumption
-9.2 Roles
-9.2.1 Kiosk creator (signs and encrypts the SMART request)
-9.2.2 Submission / relay service (untrusted)
-9.2.3 Phone presenter (decrypts and runs §8 in the same browser)
-9.2.4 Completion display on the kiosk desktop
-9.3 Cryptographic suite for the wrapper
-9.3.1 Creator signature: ES256 compact JWS, `typ=smart-health-checkin+kiosk-request+jws`
-9.3.2 Request encryption: ECDH-P-256 + HKDF-SHA-256 + AES-256-GCM
-9.3.3 Submission encryption: same suite to ephemeral desktop key
-9.3.4 Salt/info conventions (`KIOSK_REQUEST_INFO`, `KIOSK_RESPONSE_INFO`)
-9.3.5 AAD = UTF-8 `requestId`
-9.4 `KioskRequestPayload` JWS body (signed by creator)
-9.4.1 `v`, `iss`, `aud`, `requestId`, `createdAt`, `expiresAt`
-9.4.2 `submitTo` (transport descriptor)
-9.4.3 Embedded `smartRequest` (full SMART request JSON)
-9.4.4 `encryptRequestTo` (submission-service KEM material)
-9.4.5 `encryptResponseTo.desktopPublicKeyJwk` (per-request ephemeral)
-9.4.6 `constraints.maxPlaintextBytes` (negotiation, normative ceiling rule)
-9.4.7 `minter.keyId` (creator key id)
-9.4.8 Canonical-JSON signing rule
-9.5 `EncryptedKioskRequest` envelope
-9.5.1 Field set; content-type id; size limits
-9.5.2 Storage shape (opaque to relay)
-9.6 QR / pointer URL
-9.6.1 Format `#r=<requestId>` (no payload data on the wire)
-9.6.2 Privacy rationale
-9.7 Phone resolution and re-entry into §8
-9.7.1 Pointer fetch via provider
-9.7.2 Decrypt with submission-service key
-9.7.3 JWS verification against trusted creator key set
-9.7.4 Bind decrypted payload to URL pointer (`requestId` match)
-9.7.5 Run §8 same-device presentation flow against the embedded SMART request
-9.8 Submission ciphertext from phone → desktop
-9.8.1 Plaintext shape (`requestId`, `submittedAt`, `payload`)
-9.8.2 Size enforcement against `maxPlaintextBytes`
-9.8.3 ECDH to `encryptResponseTo.desktopPublicKeyJwk`
-9.8.4 SHA-256 attestation
-9.9 Desktop completion processing
-9.9.1 Subscribe to provider for `requestId`
-9.9.2 Download blob; decrypt locally
-9.9.3 Validate request binding; render artifacts
-9.10 Replay, expiration, and abuse considerations
-9.10.1 Single-use guidance
-9.10.2 `expiresAt` enforcement
-9.10.3 Clock-skew tolerance
-9.10.4 Out-of-band correlation hazards
-9.11 Provider abstraction (informative — what the relay can/cannot see)
-9.12 (EX) End-to-end kiosk flow with fixture URLs
 
 ## 10. (Reserved) OpenID4VP binding (I; placeholder for v1.x or v2)
 
@@ -349,15 +289,13 @@ Conventions used in this outline:
 ## 11. Security considerations (N)
 
 11.1 End-to-end encryption requirements
-11.2 Replay & freshness (SessionTranscript & kiosk `expiresAt`)
+11.2 Replay & freshness (SessionTranscript)
 11.3 Origin spoofing & UI redress
 11.4 Reader impersonation; readerAuth weak/strong modes
 11.5 Issuer trust pivots and "untrusted source" handling
 11.6 Cryptographic agility & deprecation policy
 11.7 Plaintext leakage in logs and crash bundles
-11.8 Kiosk relay treated as honest-but-curious
-11.9 Side-channel and metadata leakage on QR
-11.10 Required wallet UX guarantees (consent, decline, partial share)
+11.8 Required wallet UX guarantees (consent, decline, partial share)
 
 ## 12. Privacy considerations (N + I)
 
@@ -374,7 +312,6 @@ Conventions used in this outline:
 13.1 Media type registrations / references
 13.1.1 `application/smart-health-card`
 13.1.2 `application/fhir+json`
-13.1.3 `application/smart-health-checkin-kiosk-request+jws+aesgcm`
 13.2 mdoc registry entries
 13.2.1 docType `org.smarthealthit.checkin.1`
 13.2.2 Namespace `org.smarthealthit.checkin`
@@ -382,9 +319,8 @@ Conventions used in this outline:
 13.2.4 `requestInfo` claim `org.smarthealthit.checkin.request`
 13.3 Status code registry & change-control policy
 13.4 Content-selector `kind` registry
-13.5 Profile-id registry (binding profiles, kiosk profiles)
-13.6 JWS `typ` registry entry
-13.7 Designated expert review process (informative)
+13.5 Profile-id registry (binding profiles)
+13.6 Designated expert review process (informative)
 
 ## 14. Internationalization (N)
 
@@ -412,10 +348,7 @@ Conventions used in this outline:
 15.2.6 Android Credential Manager: matcher / handler split (Android-specific; not part of protocol)
 15.2.7 iOS / Safari considerations (open at v1)
 15.3 EHR ingestion of returned artifacts (FHIR write paths, dedup, provenance)
-15.4 Kiosk transport-provider implementations
-15.4.1 Required interface
-15.4.2 Confidentiality envelope summary (what the relay can / cannot see)
-15.5 SDK packaging guidance (TS core / DC API verifier / framework bindings; native wallet libraries)
+15.4 SDK packaging guidance (TS core / DC API verifier / framework bindings; native wallet libraries)
 
 ## 16. Worked examples (I)
 
@@ -424,8 +357,7 @@ Conventions used in this outline:
 16.3 (EX) Inline questionnaire pre-visit intake
 16.4 (EX) Mixed bundle: insurance + history + intake
 16.5 (EX) Per-item declined / partial / error
-16.6 (EX) Cross-device kiosk full byte ladder
-16.7 (EX) "No selectors" — full open-ended share
+16.6 (EX) "No selectors" — full open-ended share
 
 ## 17. Open issues / future work (I)
 
@@ -446,8 +378,8 @@ Conventions used in this outline:
 
 A. **Conformance checklist** — one row per SHALL/SHOULD with §-link; suitable for cert programs
 B. **JSON Schema** for `SmartHealthCheckinRequest` / `SmartHealthCheckinResponse` (normative-equivalent)
-C. **CDDL** for the same-device presentation flow (DeviceRequest, ItemsRequest, encryptionInfo, DeviceResponse, IssuerSignedItem, MSO, DeviceAuthentication, dcapiResponse) and for the kiosk JWS / encrypted-request envelopes
-D. **Test vectors / fixture index** — paths under `/fixtures/`, including the real Chrome/Android capture used for byte-level oracles, plus the kiosk JWS round-trip vectors
+C. **CDDL** for the same-device presentation flow (DeviceRequest, ItemsRequest, encryptionInfo, DeviceResponse, IssuerSignedItem, MSO, DeviceAuthentication, dcapiResponse)
+D. **Test vectors / fixture index** — paths under `/fixtures/`, including the real Chrome/Android capture used for same-device byte-level oracles
 E. **SessionTranscript byte ladder** — fully worked, including origin and `encryptionInfo` round-trip
 F. **CBOR diagnostic notation cheat-sheet** (informative)
 G. **Compatibility notes for ISO/IEC 18013-5 § 9 (mdoc DC API)** — what we adopt, what we constrain
@@ -459,7 +391,7 @@ H. **Mapping to FHIR R4 idioms** — canonical|version handling, `meta.profile`,
 
 - Single Markdown file (Bikeshed `.bs` source or IETF Markdown), rendered to one HTML page.
 - Each numeric heading anchors a stable URL fragment (`#section-8-3-2`) for cross-reference from CMS / ONC programs.
-- Every `SHALL` / `SHOULD` / `MAY` line annotated with the conformance class it binds (verifier / wallet / kiosk-creator / submitter).
+- Every `SHALL` / `SHOULD` / `MAY` line annotated with the conformance class it binds (verifier / wallet / verifier-side validator).
 - Examples blocks marked `(EX)` and excluded from normative text.
 - Each binding section ends with a "Verifier MUST do exactly the following" checklist and a "Wallet MUST do exactly the following" checklist so a certification suite can be written one-to-one against the spec.
 - Platform-specific machinery (e.g., Android Credential Manager matchers, iOS wallet APIs) appears only in §15 implementation notes; protocol-level requirements MUST be platform-neutral.

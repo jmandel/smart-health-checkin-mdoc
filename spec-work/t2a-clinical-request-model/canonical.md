@@ -1,10 +1,10 @@
 ## 5. Clinical content — request
 
-This section defines the SMART request, the transport-neutral clinical JSON object by which a Requester asks a Holder, through a Wallet/Responder, to share workflow-bounded clinical or administrative content. The same SMART request semantics apply when the object is carried by the same-device presentation flow, embedded directly as `smartRequest` in the cross-device kiosk flow, or carried by a future binding.
+This section defines the SMART request, the transport-neutral clinical JSON object by which a Requester asks a Holder, through a Wallet/Responder, to share workflow-bounded clinical or administrative content. The same SMART request semantics apply when the object is carried by a presentation flow or by a future binding.
 
 Presentation transports can add origin context, Verifier or reader authentication, signatures, encryption, freshness, device evidence, routing identifiers, relay behavior, and validation artifacts. They do not change the meaning of `purpose`, request items, selectors, `accept[]`, item identifiers, or the advisory `required` flag defined here.
 
-The SMART request body is not a requester identity credential, consent record, persistent authorization grant, or transport transcript. Requester identity, Verifier identity, web origin, reader authentication, kiosk-creator identity, trust anchors, certificates, session freshness, kiosk wrapper state, and related trust metadata belong to presentation transport, trust processing, or local policy, not to self-asserted fields in the clinical request body.
+The SMART request body is not a requester identity credential, consent record, persistent authorization grant, or transport transcript. Requester identity, Verifier identity, web origin, reader authentication, trust anchors, certificates, session freshness, implementation-defined hand-off state, and related trust metadata belong to presentation transport, trust processing, or local policy, not to self-asserted fields in the clinical request body.
 
 ### 5.1 Encoding rules
 
@@ -30,7 +30,7 @@ This section defines no numeric fields. A Requester SHALL NOT encode identifiers
 
 This section does not define global maximum lengths for strings, arrays, or serialized request bytes. A Requester SHOULD keep request ids, item ids, titles, summaries, purpose text, canonicals, media type strings, and inline Questionnaire content no larger than needed for the check-in workflow and Holder review. A Wallet/Responder MAY reject a request that exceeds implementation, transport, safety, display, or policy limits, provided the rejection is reported according to the selected flow and applicable privacy requirements.
 
-Appendix B, §8, §9, fixture work, and conformance closure are expected to define any concrete schema or transport limits needed for interoperable testing. Until those limits are fixed, conformance to this section is based on the field-specific rules below rather than on ungrounded numeric maxima.
+Appendix B, §8, fixture work, and conformance closure are expected to define any concrete schema or transport limits needed for interoperable testing. Until those limits are fixed, conformance to this section is based on the field-specific rules below rather than on ungrounded numeric maxima.
 
 #### 5.1.4 Forward-compatible unknown-member handling
 
@@ -105,9 +105,9 @@ A Requester SHALL NOT include self-asserted requester identity metadata in the S
 - logo, image, icon, brand-color, or display-brand fields;
 - requester URL, website, callback URL, endpoint URL, domain, origin, package name, application id, or certificate fields;
 - signed-request, reader, Verifier, trust-framework, issuer, accreditation, or legal-entity metadata; and
-- kiosk pointer, Submission service, relay, completion, encryption, nonce, or wrapper metadata.
+- pointer, relay, completion, encryption, nonce, hand-off, or wrapper metadata from any implementation-defined initiation flow.
 
-This prohibition applies to the clinical request object itself, including the top-level object, request items, selectors, and extension members. It does not prevent presentation transports from carrying authenticated origin, reader, Verifier, or kiosk-creator information in their own envelopes.
+This prohibition applies to the clinical request object itself, including the top-level object, request items, selectors, and extension members. It does not prevent presentation transports from carrying authenticated origin, reader, Verifier, or other deployment-specific information in their own envelopes.
 
 A Wallet/Responder SHALL NOT treat any field in the SMART request body, including unknown fields, `purpose`, `items[].title`, `items[].summary`, selector values, or extension members, as authenticated requester identity unless the same fact is established by the selected presentation transport, trust processing, or local policy outside the SMART request body.
 
@@ -140,7 +140,7 @@ Example: single FHIR-resource request.
 }
 ```
 
-Example: mixed FHIR-resource and inline Questionnaire request. In the cross-device kiosk flow, §9 embeds this same object directly as the `smartRequest` member of the kiosk payload; kiosk wrapper fields are not members of the SMART request.
+Example: mixed FHIR-resource and inline Questionnaire request.
 
 ```json
 {
@@ -182,7 +182,7 @@ Example: mixed FHIR-resource and inline Questionnaire request. In the cross-devi
       "title": "Migraine check-in",
       "content": {
         "kind": "questionnaire",
-        "questionnaire": {
+        "resource": {
           "resourceType": "Questionnaire",
           "url": "https://clinic.example.org/fhir/Questionnaire/migraine-intake",
           "version": "1.2.3",
@@ -370,36 +370,44 @@ In the last example, `profiles[]` and `profilesFrom[]` are additive profile sele
 
 A `questionnaire` selector requests completion of a FHIR Questionnaire and return of an appropriate response Artifact. For `application/fhir+json`, the expected clinical response content is a FHIR `QuestionnaireResponse`; §6 defines response Artifact shapes and response validation.
 
-A Requester SHALL set `content.kind` to `"questionnaire"` for this selector. A Requester SHALL include `questionnaire`.
+A `questionnaire` selector has this shape:
 
-A Requester MAY express `questionnaire` in any of these forms:
+```json
+{
+  "kind": "questionnaire",
+  "canonical": "<Questionnaire canonical>",
+  "resource": { "resourceType": "Questionnaire" }
+}
+```
 
-1. a non-empty FHIR canonical string, optionally with a `|version` suffix;
-2. an inline FHIR `Questionnaire` resource object; or
-3. an object containing `canonical`, `resource`, or both, where `canonical` is a non-empty FHIR canonical string and `resource` is an inline FHIR `Questionnaire` resource object.
+A Requester SHALL set `content.kind` to `"questionnaire"` for this selector. A Requester SHALL include `canonical`, `resource`, or both as direct members of the selector. A Requester SHALL NOT include a nested `questionnaire` member in the selector.
 
-A Wallet/Responder SHALL reject or report unsupported for a `questionnaire` selector whose `questionnaire` member is absent, blank, or not one of those forms.
+If `canonical` is present, the Requester SHALL encode it as a non-empty FHIR canonical string. The canonical MAY include a `|version` suffix as defined in §5.5.
+
+If `resource` is present, the Requester SHALL encode it as an inline FHIR `Questionnaire` resource object whose `resourceType` is `"Questionnaire"`.
+
+A Wallet/Responder SHALL reject or report unsupported for a `questionnaire` selector that has neither `canonical` nor `resource`, that has a `canonical` value that is not a non-empty string, that has a `resource` value that is not a Questionnaire resource object, or that uses a legacy nested `questionnaire` member. The legacy forms of a bare canonical string under `questionnaire`, a bare inline Questionnaire under `questionnaire`, and a wrapper object `questionnaire: { canonical, resource }` are not valid SMART Health Check-in 1.0 selector shapes.
 
 ##### 5.4.2.1 By canonical
 
-A Requester MAY provide `questionnaire` as a non-empty FHIR canonical string. The canonical MAY include a `|version` suffix as defined in §5.5.
+A Requester MAY provide `canonical` as the Questionnaire identity to be resolved. The canonical MAY include a `|version` suffix as defined in §5.5.
 
 Example:
 
 ```json
 {
   "kind": "questionnaire",
-  "questionnaire": "https://clinic.example.org/fhir/Questionnaire/migraine-intake|1.2.3"
+  "canonical": "https://clinic.example.org/fhir/Questionnaire/migraine-intake|1.2.3"
 }
 ```
 
-A Wallet/Responder MAY resolve the canonical using a configured service, FHIR endpoint, cached content, Holder data source, or other local mechanism. When fetching by URL, a Wallet/Responder SHALL apply §5.5 and SHALL NOT treat the literal `|version` suffix as part of the HTTP URL.
+A Wallet/Responder MAY resolve the canonical using a configured canonical resolver, FHIR search against a configured endpoint, cached content, Holder data source, or other local mechanism that satisfies §5.5. Direct HTTP dereference of a Questionnaire canonical is permitted only for unversioned canonicals under §5.5.
 
 If the Wallet/Responder cannot resolve, render, or otherwise use the referenced Questionnaire, it SHALL report the item outcome using the response status mechanism in §6 rather than fabricating a Questionnaire.
 
 ##### 5.4.2.2 Inline `Questionnaire`
 
-A Requester MAY provide `questionnaire` as an inline FHIR `Questionnaire` resource object. A Requester SHALL ensure that an inline resource used in this form has `resourceType` equal to `"Questionnaire"`.
+A Requester MAY provide `resource` as an inline FHIR `Questionnaire` resource object. A Requester SHALL ensure that an inline resource used in this form has `resourceType` equal to `"Questionnaire"`.
 
 A Wallet/Responder SHALL reject or report unsupported for an inline questionnaire resource whose `resourceType` is absent or is not `"Questionnaire"`. A Wallet/Responder MAY render or process an inline Questionnaire without fetching it from a remote endpoint, subject to Wallet policy, safety checks, language support, and Questionnaire feature support.
 
@@ -408,7 +416,7 @@ Example:
 ```json
 {
   "kind": "questionnaire",
-  "questionnaire": {
+  "resource": {
     "resourceType": "Questionnaire",
     "url": "https://clinic.example.org/fhir/Questionnaire/migraine-intake",
     "version": "1.2.3",
@@ -421,27 +429,21 @@ Example:
 
 ##### 5.4.2.3 Combined canonical and resource
 
-A Requester MAY provide both a canonical and an inline Questionnaire resource by using an object with `canonical` and `resource` members.
-
-If the object form is used, a Requester SHALL include at least one of `canonical` or `resource`. If `canonical` is present, the Requester SHALL encode it as a non-empty FHIR canonical string. If `resource` is present, the Requester SHALL encode it as an object whose `resourceType` is `"Questionnaire"`.
-
-The combined form lets a Wallet/Responder render the inline resource without network retrieval while preserving a stable canonical identity for response construction and receiver interpretation.
+A Requester MAY provide both `canonical` and `resource` as direct members of the `questionnaire` selector. The combined form lets a Wallet/Responder render the inline resource without network retrieval while preserving a stable canonical identity for response construction and receiver interpretation.
 
 Example:
 
 ```json
 {
   "kind": "questionnaire",
-  "questionnaire": {
-    "canonical": "https://clinic.example.org/fhir/Questionnaire/migraine-intake|1.2.3",
-    "resource": {
-      "resourceType": "Questionnaire",
-      "url": "https://clinic.example.org/fhir/Questionnaire/migraine-intake",
-      "version": "1.2.3",
-      "status": "active",
-      "title": "Migraine Check-in",
-      "item": []
-    }
+  "canonical": "https://clinic.example.org/fhir/Questionnaire/migraine-intake|1.2.3",
+  "resource": {
+    "resourceType": "Questionnaire",
+    "url": "https://clinic.example.org/fhir/Questionnaire/migraine-intake",
+    "version": "1.2.3",
+    "status": "active",
+    "title": "Migraine Check-in",
+    "item": []
   }
 }
 ```
@@ -450,11 +452,11 @@ Example:
 
 When both `canonical` and `resource` are supplied, the canonical is the Requester's explicit identifier for the Questionnaire, and the inline resource is the Questionnaire body the Requester is asking the Wallet/Responder to render or use.
 
-A Requester SHOULD ensure that `canonical`, `resource.url`, and `resource.version` are consistent when these fields are present. At minimum, when `resource.url` is present, its canonical URL without any `|version` suffix should match the canonical URL before any `|version` suffix in `canonical`; when both a canonical `|version` suffix and `resource.version` are present, those values should describe the same intended Questionnaire version.
+A Requester SHOULD ensure that `canonical`, `resource.url`, and `resource.version` are consistent when these fields are present. At minimum, when `resource.url` is present, its canonical URL should match the `url` parsed from `canonical` under §5.5; when both a canonical `|version` suffix and `resource.version` are present, those values should describe the same intended Questionnaire version.
 
 A Wallet/Responder SHALL NOT silently merge conflicting Questionnaire definitions from the inline resource and a fetched canonical resource. A Wallet/Responder SHALL NOT silently rewrite the Requester's canonical to match a conflicting inline resource.
 
-If a Wallet/Responder detects a material disagreement between the supplied canonical and inline resource, the Wallet/Responder SHOULD treat the item as unsupported or error according to §6 rather than collecting answers against an ambiguous Questionnaire. A material disagreement includes a different canonical URL after applying §5.5 comparison rules, a different explicit version, or conflicting item structure that would change Holder answers.
+If a Wallet/Responder detects a material disagreement between the supplied canonical and inline resource, the Wallet/Responder SHOULD treat the item as unsupported or error according to §6 rather than collecting answers against an ambiguous Questionnaire. A material disagreement includes a different canonical URL after applying §5.5 parsing and comparison rules, a different explicit version, or conflicting item structure that would change Holder answers.
 
 ##### 5.4.2.5 Example
 
@@ -467,7 +469,7 @@ The following inline migraine-intake request item is illustrative and does not d
   "summary": "Brief intake questions before today's visit.",
   "content": {
     "kind": "questionnaire",
-    "questionnaire": {
+    "resource": {
       "resourceType": "Questionnaire",
       "url": "https://clinic.example.org/fhir/Questionnaire/migraine-intake",
       "version": "1.2.3",
@@ -497,30 +499,60 @@ An extension registrant SHOULD choose a collision-resistant selector kind name, 
 
 A Requester SHALL NOT use an unregistered or privately defined extension selector when interoperable processing by unrelated Wallets/Responders is expected. A Wallet/Responder that does not support an extension selector kind SHALL NOT guess its semantics or satisfy it from display text alone. It SHALL either reject the request as unsupported or report the affected item as unsupported according to §6, depending on where in the selected flow the unsupported selector is discovered.
 
-### 5.5 Canonical `|version` handling decision matrix
+### 5.5 Canonical `|version` handling
 
 FHIR canonicals can append a version suffix using `canonical|version`. The suffix is part of some semantic claims, but it is not a literal HTTP URL path or query string. Implementations need consistent handling so versioned canonicals do not break lookup while exact version claims are preserved where they matter.
 
 A Requester MAY include `|version` suffixes in fields where this section permits FHIR canonicals. A Requester SHOULD NOT include a `|version` suffix in `profilesFrom[]` unless the Requester intends to identify a versioned profile family and expects the Wallet/Responder to understand that convention.
 
+#### 5.5.1 Parsing and preservation
+
+A Requester, Wallet/Responder, or Verifier that processes a FHIR canonical SHALL parse the canonical structurally into a non-empty `url` and an optional `version`. The `url` is the substring before the first `|`, or the whole string when no `|` is present. The `version`, when present, is the substring after the first `|`; any further `|` characters are part of the opaque version string.
+
+Implementations SHALL preserve the original wire canonical string exactly for echoing, logging, response construction, test fixtures, returned `Resource.meta.profile` values, and generated `QuestionnaireResponse.questionnaire` values when that canonical is the Questionnaire identity being answered. Internal parsing for resolution, routing, grouping, or comparison SHALL NOT by itself rewrite the canonical that is carried or emitted.
+
+#### 5.5.2 Resolution
+
+A Wallet/Responder or Verifier resolving a canonical reference to a FHIR resource SHALL use a configured canonical resolver, package cache, terminology service, implementation-guide resolver, or FHIR search against a configured FHIR endpoint when such a mechanism is available. The resolver SHALL consume the parsed `(url, version)` pair, or `url` alone when no version is present, and return a matching resource.
+
+When resolving against a FHIR endpoint, the implementation SHALL use FHIR canonical search semantics for the expected resource type: `GET [base]/{ResourceType}?url={url}&version={version}` for a versioned canonical, or `GET [base]/{ResourceType}?url={url}` for an unversioned canonical. The implementation SHALL select a single resource from the search result whose `(url, version)` matches the request and SHALL fail resolution if no such resource is present.
+
+Direct HTTP dereference of the parsed `url` is permitted only for an unversioned canonical, only when the recipient is willing to accept the version the publisher serves at that URL, and only if the returned resource passes the verification rules below. A Wallet/Responder or Verifier SHALL NOT satisfy a versioned canonical by stripping `|version` and directly dereferencing the bare URL.
+
+#### 5.5.3 Post-resolution verification
+
+After resolving a canonical to a FHIR resource, the implementation SHALL verify that the resolved resource has the expected `resourceType`, has `url` equal to the parsed request `url`, and, when the request canonical was versioned, has `version` equal to the parsed request `version`.
+
+If any of these checks fail, the implementation SHALL treat the affected request item or validation step as unsupported or error under §6 rather than proceeding with a mismatched resource.
+
+#### 5.5.4 Profile matching and local classification
+
+When a `profiles[]` request value includes `|version`, a Wallet/Responder SHALL NOT report `fulfilled` for a resource unless the resource's `meta.profile` includes the same versioned canonical or the Wallet/Responder has equivalent local conformance evidence for that exact profile version. A Verifier performing exact conformance checks SHALL apply the same versioned-to-versioned comparison.
+
+When a `profiles[]` request value has no `|version`, a Wallet/Responder or Verifier MAY match resources known to conform to any supported version of the requested base canonical, subject to the evidence and validation rules applicable to the Artifact.
+
+Wallet-side routing, broad content-kind classification, profile-family membership for `profilesFrom[]`, de-duplication, and Holder-display grouping MAY strip or ignore `|version` only for those local classification or grouping operations. Such stripping SHALL NOT affect resolution, exact-version profile matching, response construction, returned `meta.profile`, generated `QuestionnaireResponse.questionnaire`, diagnostics, or validation where exact version semantics matter.
+
+#### 5.5.5 Decision matrix
+
 A Requester, Wallet/Responder, or Verifier performing an operation in the following table SHALL apply the handling rule for that operation.
 
 | Operation | Conformance target | Handling of `|version` |
 | --- | --- | --- |
-| Parse, carry, sign, encrypt, compare transport bytes, or include in test fixtures | Requester, Wallet/Responder, Verifier | Preserve the canonical string exactly as it appeared in the SMART request or response, subject to privacy minimization for retained records. |
-| HTTP fetch or URL dereference of a canonical Questionnaire or other FHIR conformance resource | Wallet/Responder | Strip the `|version` suffix before constructing the network URL, unless a FHIR-aware resolver explicitly accepts versioned canonical syntax out of band; retain the original canonical as semantic identity. |
-| Wallet-side item routing or broad content-kind classification | Wallet/Responder | Strip `|version` for routing decisions so local routing to coverage, questionnaire, clinical-history, or similar handlers does not depend on version suffix syntax. |
-| Profile-family membership for `profilesFrom[]` | Wallet/Responder | Strip `|version` before profile-family lookup unless a future profile-family definition explicitly defines version-sensitive membership. |
+| Parse, carry, sign, encrypt, compare transport bytes, log, include in test fixtures, echo, or preserve in response fields | Requester, Wallet/Responder, Verifier | Preserve the canonical string exactly as it appeared in the SMART request or response, subject to privacy minimization for retained records. |
+| Resolve a canonical Questionnaire or other FHIR conformance resource | Wallet/Responder, Verifier | Parse to `(url, version)`, use a configured canonical resolver or FHIR canonical search when available, permit direct HTTP dereference only for unversioned canonicals, and verify the resolved resource's `(url, version)` and `resourceType`. |
+| Wallet-side item routing or broad content-kind classification | Wallet/Responder | Strip or ignore `|version` only for routing decisions so local routing to questionnaire or other handlers does not depend on version suffix syntax. |
+| Profile-family membership for `profilesFrom[]` | Wallet/Responder | Strip or ignore `|version` before profile-family lookup unless a future profile-family definition explicitly defines version-sensitive membership. |
 | Exact `profiles[]` matching when the request value has no `|version` | Wallet/Responder, Verifier | Match resources known to conform to a supported version of the requested base canonical, subject to the evidence and validation rules applicable to the Artifact. |
-| Exact `profiles[]` matching when the request value includes `|version` | Wallet/Responder, Verifier | Preserve and compare the version suffix when exact version conformance is being asserted or validated; do not strip the suffix on only one side of an exact-version comparison. |
+| Exact `profiles[]` matching when the request value includes `|version` | Wallet/Responder, Verifier | Require exact-version evidence; compare the versioned request canonical to versioned `meta.profile` values or equivalent local conformance evidence. |
 | De-duplication or grouping for Holder display | Wallet/Responder | MAY group canonicals that differ only by `|version`, but SHALL preserve exact requested strings where exact version matters to Holder review, response construction, diagnostics, or validation. |
 | `QuestionnaireResponse.questionnaire` generated for a questionnaire item | Wallet/Responder | Preserve the request canonical, including `|version`, when that canonical is the Questionnaire identity being answered and the information is known. |
-| Returned FHIR `Resource.meta.profile` | Wallet/Responder | SHALL NOT remove `|version` suffixes from returned `meta.profile` values merely because request matching stripped versions for routing or grouping. |
+| Returned FHIR `Resource.meta.profile` | Wallet/Responder | SHALL NOT remove `|version` suffixes from returned `meta.profile` values merely because request matching stripped versions for routing, family lookup, or grouping. |
 | Verifier-side exact conformance checks against returned resources | Verifier | Compare at the same normalization level on both sides: versioned-to-versioned when exact version was requested and evidence is present, or unversioned-to-base-canonical when the request was unversioned. |
 
 A Wallet/Responder SHALL NOT rewrite a requested canonical in a way that changes the semantic Questionnaire or profile being requested. A Wallet/Responder SHALL NOT strip a `|version` suffix from returned clinical content fields where the suffix communicates the profile or Questionnaire version actually used.
 
-Appendix H should align FHIR R4/R4B/R5 canonical resolution, `meta.profile`, Bundles, and `QuestionnaireResponse.questionnaire` guidance with this matrix.
+Appendix H should align FHIR R4/R4B/R5 canonical resolution, `meta.profile`, Bundles, and `QuestionnaireResponse.questionnaire` guidance with these rules.
 
 ### 5.6 Accepted media types and ordering semantics
 

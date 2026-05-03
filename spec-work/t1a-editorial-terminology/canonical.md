@@ -2,7 +2,7 @@
 
 # SMART Health Check-in 1.0
 
-A transport-neutral clinical request and response model for patient-mediated check-in, with a base same-device presentation flow using direct `org-iso-mdoc` over the W3C Digital Credentials API and a cross-device kiosk wrapper that re-enters that same-device flow on the patient's phone.
+A transport-neutral clinical request and response model for patient-mediated check-in, with a version 1.0 same-device presentation flow using direct `org-iso-mdoc` over the W3C Digital Credentials API.
 
 Short title: **SMART Health Check-in 1.0**.
 
@@ -31,8 +31,9 @@ Code fragments, schemas, CDDL fragments, pseudocode, and test-vector scaffolding
 This specification separates clinical semantics from presentation transport.
 
 1. The **clinical content model** defines the SMART Health Check-in JSON request and response. It describes requested clinical content, Holder review, returned Artifacts, and per-item status independently of any particular presentation transport.
-2. The **same-device presentation flow** is the base presentation flow for version 1.0. It carries the clinical content model through the W3C Digital Credentials API using direct `org-iso-mdoc` presentation on the same device as the Wallet.
-3. The **cross-device kiosk flow** is a wrapper around the same-device presentation flow. A kiosk or desktop creates a pointer to a signed and encrypted kiosk request. The patient's phone resolves the pointer, obtains the embedded SMART request, re-enters the same-device presentation flow locally on the phone, and submits an encrypted result for desktop completion. The kiosk flow does not define a second clinical protocol.
+2. The **same-device presentation flow** is the version 1.0 presentation flow. It carries the clinical content model through the W3C Digital Credentials API using direct `org-iso-mdoc` presentation on the same device as the Wallet.
+
+In-person deployments can use a QR code, NFC tap, deep link, or similar mechanism to land the Holder on a same-device Verifier page. The URL shape, pointer or relay storage, and any completion handoff are deployment-defined and are not a SMART Health Check-in protocol layer.
 
 Sections marked normative contain requirements for the conformance targets identified by those sections. Sections and examples marked informative, explanatory, or `(EX)` provide context and illustrations only. If an example conflicts with normative prose, the normative prose controls.
 
@@ -41,8 +42,8 @@ Implementers should read the document in this order:
 - Read §§1–3 for terminology, scope, architecture, role boundaries, and payload domains.
 - Read §4 to identify the conformance class or classes implemented by a product or component.
 - Read §§5–6 for the transport-neutral clinical request and response model. Wallets, Verifiers, Requesters, and response consumers need these sections regardless of presentation transport.
-- Read §§7–8 for trust processing and the base same-device direct `org-iso-mdoc` presentation flow.
-- Read §9 for implementations that create kiosk requests, relay encrypted state, resolve kiosk pointers on phones, submit encrypted responses, or display kiosk completion state.
+- Read §§7–8 for trust processing and the same-device direct `org-iso-mdoc` presentation flow.
+- Treat QR, NFC, deep-link, pointer, relay, submission, and completion-display mechanics for in-person check-in as deployment-defined unless a future profile standardizes them.
 - Read §§11–14 for security, privacy, registry, and internationalization requirements.
 - Use the appendices for conformance checklists, schemas, CDDL, byte ladders, fixtures, and FHIR mapping details.
 
@@ -58,9 +59,9 @@ Field names, JSON member names, JSON string values, media types, protocol identi
 
 Terms defined in §1.6 appear in ordinary prose after their definition unless backticks are needed to identify an exact wire value.
 
-Requirements should identify their conformance target. Preferred phrasing is “A Wallet SHALL …”, “A Verifier SHALL …”, “A Kiosk creator SHALL …”, “A Phone presenter SHALL …”, “A Submission service SHALL …”, or “A Completion display SHALL …”. A requirement without an explicit target applies to the implementation role that performs the described function.
+Requirements should identify their conformance target. Preferred phrasing is “A Wallet SHALL …”, “A Verifier SHALL …”, “A Requester SHALL …”, “A Responder SHALL …”, or “A response consumer SHALL …”. A requirement without an explicit target applies to the implementation role that performs the described function. Informal labels for in-person deployment components, such as kiosk screens or relay services, are not protocol conformance targets in version 1.0.
 
-The phrases **SMART request** and **SMART response** refer to the transport-neutral JSON objects defined in §§5–6. They do not refer to mdoc request envelopes, kiosk pointers, demo presets, encrypted submissions, presentation tokens, or transport acknowledgments.
+The phrases **SMART request** and **SMART response** refer to the transport-neutral JSON objects defined in §§5–6. They do not refer to mdoc request envelopes, QR codes, pointer URLs, demo presets, relay records, encrypted submissions, presentation tokens, or transport acknowledgments.
 
 Examples should be introduced with “Example” or marked `(EX)` in the heading. Example data should be internally consistent with the normative model, but example-specific identifiers, keys, dates, patient data, endpoints, and display strings are not normative unless the surrounding text says they are fixed values.
 
@@ -80,7 +81,7 @@ A requirement expressed for an optional feature applies only to implementations 
 
 ### 1.5.2 JSON / CBOR / CDDL / COSE / HPKE notation
 
-JSON objects and members are described using RFC 8259 terminology. Unless a more specific rule is stated in §5 or §6, JSON strings are Unicode strings, JSON numbers are finite JSON numbers, arrays are ordered, and object member names are unique within an object. JSON object member order is not significant unless a later section defines a byte-for-byte canonicalization step for a specific artifact or fixture.
+JSON objects and members are described using RFC 8259 terminology. Unless a more specific rule is stated in §5 or §6, JSON strings are Unicode strings, JSON numbers are finite JSON numbers, arrays are ordered, and object member names are unique within an object. JSON object member order is not significant unless a later section defines a byte-for-byte canonicalization step for a specific artifact or fixture. A JSON member name should identify one value shape within its defining object. Object unions should have a clear discriminator or mutually distinguishable object keys. The protocol avoids primitive-versus-object polymorphism on the same member and avoids generic catch-all carriers whose shape is hidden behind open-ended strings.
 
 CBOR values are described using RFC 8949 terminology. CBOR diagnostic notation is used for readability and is not itself the wire encoding. Hexadecimal byte strings in CBOR diagnostic examples use `h'...'`; text strings use double quotes; arrays and maps use conventional diagnostic forms. Where deterministic encoding, tag use, or byte-exact comparison is required, the relevant section states that requirement explicitly.
 
@@ -90,7 +91,7 @@ COSE structures use the terminology and serialization model of RFC 9052 and rela
 
 HPKE structures and operations use RFC 9180 terminology, including KEM, KDF, AEAD, `enc`, `info`, `aad`, plaintext, and ciphertext. Byte strings passed into HPKE are the exact serialized bytes identified by the relevant flow section, not their diagnostic, hex, base64url, or Markdown presentation.
 
-When JSON values are carried inside CBOR, COSE, HPKE, mdoc, or kiosk structures, later sections specify whether the value is carried as JSON text, a byte string containing UTF-8 JSON, a CBOR data item, a tagged CBOR data item, a JWS payload, or another representation. Implementations must not infer a representation from an example alone.
+When JSON values are carried inside CBOR, COSE, HPKE, mdoc, or another specified structure, later sections specify whether the value is carried as JSON text, a byte string containing UTF-8 JSON, a CBOR data item, a tagged CBOR data item, a JWS payload, or another representation. Implementations must not infer a representation from an example alone.
 
 ### 1.5.3 Byte-string presentation
 
@@ -135,15 +136,13 @@ This section defines terms used throughout the specification. A component can pl
 
 **Browser / User Agent**: The software component that exposes the W3C Digital Credentials API surface to a Verifier page and mediates invocation of a Wallet or credential provider. This specification relies on user-agent behavior described by the same-device flow and W3C Digital Credentials API, but does not define browser conformance beyond the assumptions stated in relevant sections.
 
-**Clinical content model**: The transport-neutral SMART Health Check-in request and response JSON model defined in §§5–6. It describes requested patient-mediated content, accepted response media types, returned Artifacts, and per-item statuses independently of W3C Digital Credentials API, mdoc, kiosk relay, OpenID4VP, or any other presentation transport.
-
-**Completion display**: In the kiosk flow, the kiosk-side or desktop component that receives notification of an encrypted submission, decrypts and validates the returned SMART response as authorized for the kiosk session, and presents completion state to staff, to the patient, or to another local workflow.
+**Clinical content model**: The transport-neutral SMART Health Check-in request and response JSON model defined in §§5–6. It describes requested patient-mediated content, accepted response media types, returned Artifacts, and per-item statuses independently of W3C Digital Credentials API, mdoc, QR codes, pointer or relay mechanisms, OpenID4VP, or any other presentation transport.
 
 **Credential Manager**: A platform service, browser feature, or operating-system component that brokers a Digital Credentials API request to an available Wallet. A Credential Manager can influence wallet discovery and invocation, but this specification defines protocol requirements at the Verifier, Wallet, and flow levels rather than as platform-specific Credential Manager APIs.
 
-**Cross-device kiosk flow**: The optional flow in which a Kiosk creator prepares a pointer to a signed and encrypted request for a patient's phone. After resolving and validating the pointer, the phone obtains the embedded SMART request, runs the same-device presentation flow locally, and submits an encrypted result for desktop completion. The kiosk flow wraps the same-device flow; it does not replace or fork the clinical content model.
+**In-person handoff**: A deployment pattern in which a kiosk, tablet, staff desktop, printed instruction, QR code, NFC tag, deep link, or other mechanism lands the Holder on a same-device Verifier page. The URL format, pointer resolution, relay storage, response routing, and completion display behavior are deployment-defined and are not version 1.0 protocol roles or wire formats.
 
-**Demo preset**: A development-time or demonstration convenience that expands to a request. Demo presets are not protocol objects. A conforming kiosk request payload embeds the SMART request directly and does not embed a demo preset wrapper or indirect preset name.
+**Demo preset**: A development-time or demonstration convenience that expands to a request. Demo presets are not protocol objects, SMART requests, SMART responses, or standardized presentation artifacts.
 
 **FHIR canonical**: A canonical URL as used by FHIR, optionally including a `|version` suffix where permitted by the relevant field. This specification uses FHIR canonicals for exact profile selectors, profile-family selectors, Questionnaire references, and related FHIR conformance resources.
 
@@ -153,11 +152,8 @@ This section defines terms used throughout the specification. A component can pl
 
 **Item** or **request item**: One entry in `SmartHealthCheckinRequest.items[]`. A request item describes one unit of requested clinical content or action, user-facing display text, an advisory required flag, accepted response media types, and a content selector.
 
-**Kiosk creator**: In the cross-device kiosk flow, the desktop, kiosk, or server-side component that creates the SMART request, embeds it directly as `smartRequest` in the kiosk request payload, signs the payload, arranges request-envelope encryption, and produces a pointer for the patient's phone.
 
-**Phone presenter**: In the kiosk flow, the patient-phone component that resolves the pointer, obtains and validates the kiosk request, verifies that the pointer and payload identify the same request, and invokes or participates in the same-device presentation flow on the phone for the embedded SMART request. The Phone presenter then submits the encrypted result for the Completion display.
-
-**Pointer URL**: A URL, commonly encoded in a QR code, that lets the phone locate an encrypted kiosk request. The Pointer URL is transport metadata, not the clinical request itself.
+**Pointer URL**: A deployment-defined URL, commonly encoded in a QR code, NFC tag, or deep link, that lands the Holder on a same-device Verifier page or other local check-in entry point. A Pointer URL is not a SMART request and has no version 1.0 protocol wire format.
 
 **Profile**: An exact FHIR `StructureDefinition` canonical URL, optionally with a `|version` suffix where permitted by §5.5. In `profiles[]`, each value selects that exact profile canonical.
 
@@ -175,19 +171,17 @@ This section defines terms used throughout the specification. A component can pl
 
 **Selector**: A structured expression in a request item's `content` field that describes acceptable clinical content. Selectors can identify FHIR resource requests, exact FHIR profiles, profile families, FHIR resource types, questionnaires, or registered extension kinds.
 
-**SMART Health Check-in**: The protocol profile defined by this specification. It includes the clinical content model and presentation flows for patient-mediated check-in.
+**SMART Health Check-in**: The protocol profile defined by this specification. Version 1.0 includes the transport-neutral clinical content model and the same-device direct `org-iso-mdoc` presentation flow for patient-mediated check-in.
 
 **SMART request**: A `SmartHealthCheckinRequest` JSON object as defined in §5. It contains the clinical content request and no requester identity metadata.
 
 **SMART response**: A `SmartHealthCheckinResponse` JSON object as defined in §6. It binds to the SMART request by `requestId`, reports per-item status, and carries zero or more Artifacts.
 
-**Submission service**: In the kiosk flow, an untrusted relay or provider that stores, forwards, or makes available encrypted kiosk request and response blobs, rows, or notifications. The Submission service is not trusted with plaintext clinical content and is not the clinical Requester merely because it relays data.
-
 **Transport-neutral**: Independent of a particular presentation API, cryptographic envelope, browser behavior, relay mechanism, or future binding. A transport-neutral SMART request or SMART response has the same clinical semantics wherever it is carried.
 
 **Verifier**: The presentation-transport role that constructs a presentation request, invokes the same-device `org-iso-mdoc` flow, receives and opens the presentation response, validates transport artifacts as required, and applies clinical response validation. In many deployments the Verifier and Requester are components of the same EHR, portal, or check-in application.
 
-**Wallet**: Software controlled by or acting for the Holder that receives a request, renders requested items for Holder review when appropriate, obtains consent according to its policies, gathers or constructs responsive Artifacts from Holder data sources, and returns a SMART response through the selected presentation flow. The Wallet is the usual Responder in the clinical content model.
+**Wallet**: Software controlled by or acting for the Holder that receives a request, renders requested items for Holder review when appropriate, obtains consent according to its policies, gathers or constructs responsive Artifacts from Holder data sources, and returns a SMART response through the same-device presentation flow. The Wallet is the usual Responder in the clinical content model.
 
 ## 1.7 References
 
@@ -229,4 +223,4 @@ The specification should remain reviewable, diffable, and maintainable as plain 
 - Keep cryptographic byte inputs and outputs in text form, with an explicit encoding, so rendered HTML and source Markdown remain equivalent.
 - Do not use generated anchors or rendered-only metadata as the only cross-reference target; every important cross-reference should be readable in source Markdown.
 - Keep platform-specific implementation notes out of protocol requirements. If platform behavior matters, state the protocol effect and cite the implementation-note section separately.
-- Keep the clinical model, same-device direct `org-iso-mdoc` flow, and cross-device kiosk wrapper visibly distinct. Kiosk text should say when it re-enters the same-device flow rather than implying a second clinical protocol.
+- Keep the clinical model and same-device direct `org-iso-mdoc` flow visibly distinct. In-person handoff text should be labeled deployment-defined and should not imply a standardized kiosk wrapper, relay, submission, or completion protocol.

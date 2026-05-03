@@ -1,6 +1,6 @@
 # Appendix B. JSON Schema for `SmartHealthCheckinRequest` and `SmartHealthCheckinResponse`
 
-This appendix provides JSON Schema snippets for the transport-neutral SMART request and SMART response objects defined in §§5-6. The snippets are intended for structural validation, fixture review, and conformance-test scaffolding. They do not define mdoc carriage, kiosk wrapper behavior, registry behavior, full FHIR validation, SMART Health Card validation, or downstream clinical ingestion policy.
+This appendix provides JSON Schema snippets for the transport-neutral SMART request and SMART response objects defined in §§5-6. The snippets are intended for structural validation, fixture review, and conformance-test scaffolding. They do not define mdoc carriage, registry behavior, full FHIR validation, SMART Health Card validation, or downstream clinical ingestion policy.
 
 If a schema rule in this appendix appears to conflict with §§5-6, §§5-6 control. Normative language in this appendix either restates §§5-6 or is scoped to conformance with these Appendix B schema snippets.
 
@@ -8,7 +8,7 @@ If a schema rule in this appendix appears to conflict with §§5-6, §§5-6 cont
 
 The schema snippets use JSON Schema 2020-12 (`https://json-schema.org/draft/2020-12/schema`). A validator that claims conformance to Appendix B SHALL evaluate these snippets using JSON Schema 2020-12 semantics, or a later dialect only when that dialect is known to preserve the semantics of the keywords used here.
 
-The snippets intentionally keep core extension points open. Unknown members are not made schema errors solely by Appendix B, because §§5-6 allow forward-compatible unknown members, registered extension selectors, and extension Artifact media types. Deployment profiles MAY publish stricter schemas, but those schemas must identify their additional constraints rather than silently changing the core protocol.
+The snippets intentionally keep core extension points open. Unknown members are not made schema errors solely by Appendix B, because §§5-6 allow forward-compatible unknown members and registered extension selectors. Registered extension Artifact media types are represented by additional or profiled schemas rather than by a generic core catch-all. Deployment profiles MAY publish stricter schemas, but those schemas must identify their additional constraints rather than silently changing the core protocol.
 
 JSON Schema validation is not complete SMART Health Check-in validation. A Verifier still applies the request/response, FHIR, SMART Health Card, transport, trust, and deployment-policy checks required elsewhere in the specification. Section B.4 summarizes important checks that are not fully expressible in these standalone schemas.
 
@@ -42,7 +42,11 @@ The request schema fixes the top-level `type` and `version`, requires the top-le
   "additionalProperties": true,
   "$defs": {
     "nonEmptyString": { "type": "string", "minLength": 1 },
-    "canonicalString": { "type": "string", "minLength": 1 },
+    "canonicalString": {
+      "type": "string",
+      "minLength": 1,
+      "description": "FHIR canonical reference string; a |version suffix, when present, is parsed as structured canonical-reference version metadata rather than as part of a direct HTTP URL."
+    },
     "canonicalUrlString": {
       "type": "string",
       "minLength": 1,
@@ -98,37 +102,24 @@ The request schema fixes the top-level `type` and `version`, requires the top-le
     },
     "questionnaireSelector": {
       "type": "object",
-      "required": ["kind", "questionnaire"],
+      "required": ["kind"],
+      "anyOf": [
+        { "required": ["canonical"] },
+        { "required": ["resource"] }
+      ],
+      "not": { "required": ["questionnaire"] },
       "properties": {
         "kind": { "const": "questionnaire" },
-        "questionnaire": { "$ref": "#/$defs/questionnaireReference" }
+        "canonical": { "$ref": "#/$defs/canonicalString" },
+        "resource": { "$ref": "#/$defs/inlineQuestionnaire" }
       },
       "additionalProperties": true
-    },
-    "questionnaireReference": {
-      "anyOf": [
-        { "$ref": "#/$defs/canonicalString" },
-        { "$ref": "#/$defs/inlineQuestionnaire" },
-        { "$ref": "#/$defs/questionnaireObjectReference" }
-      ]
     },
     "inlineQuestionnaire": {
       "type": "object",
       "required": ["resourceType"],
       "properties": {
         "resourceType": { "const": "Questionnaire" }
-      },
-      "additionalProperties": true
-    },
-    "questionnaireObjectReference": {
-      "type": "object",
-      "anyOf": [
-        { "required": ["canonical"] },
-        { "required": ["resource"] }
-      ],
-      "properties": {
-        "canonical": { "$ref": "#/$defs/canonicalString" },
-        "resource": { "$ref": "#/$defs/inlineQuestionnaire" }
       },
       "additionalProperties": true
     },
@@ -154,13 +145,14 @@ Notes on this request schema:
 - `profiles[]` and `profilesFrom[]` are independently allowed in the same `fhir.resources` selector. Their combined presence is additive under §5.4.1.4; the schema does not make either array narrow the other.
 - `profiles[]` and `resourceTypes[]`, when present, are arrays with at least one string. Whether a `resourceTypes[]` value is an official FHIR `resourceType` for a particular FHIR release is a FHIR-aware procedural check.
 - A `fhir.resources` selector may omit all of `profiles[]`, `profilesFrom[]`, and `resourceTypes[]` to express the no-selector default from §5.4.1.5.
-- A questionnaire selector accepts a canonical string, an inline FHIR `Questionnaire` object, or an object containing `canonical`, `resource`, or both.
+- A questionnaire selector is a single object shape with `kind: "questionnaire"` and one or both of the sibling members `canonical` and `resource`. The legacy nested `questionnaire` string/object/wrapper forms are not accepted by this schema.
+- Canonical strings MAY include a `|version` suffix. Consumers parse the suffix as structured FHIR canonical-reference version metadata and do not treat it as part of a direct HTTP URL.
 - The extension-selector branch permits syntactic validation of registered extension selector kinds without embedding a future registry in Appendix B. A core-only deployment profile can replace this branch when it intentionally rejects all extension selectors.
 - The SMART request body SHALL NOT carry requester identity metadata under §5.2.7. This schema cannot reliably reject arbitrary identity-like unknown or extension members while keeping extension points open, so processors must enforce that prohibition procedurally and through extension review.
 
 ## B.3 `SmartHealthCheckinResponse` schema
 
-The response schema fixes `type` and `version`, requires `requestId`, `artifacts[]`, and `requestStatus[]`, validates the common Artifact shape, branches on `mediaType` for the two core Artifact classes, permits generic or extension Artifacts, and validates the version 1.0 status-code set.
+The response schema fixes `type` and `version`, requires `requestId`, `artifacts[]`, and `requestStatus[]`, validates the common Artifact shape, branches on `mediaType` for the two core Artifact classes, and validates the version 1.0 status-code set. Registered extensions can publish additional profiled schemas for additional Artifact media types; the core schema does not include a generic unknown-media-type catch-all.
 
 ```json
 {
@@ -203,8 +195,7 @@ The response schema fixes `type` and `version`, requires `requestId`, `artifacts
     "artifact": {
       "oneOf": [
         { "$ref": "#/$defs/smartHealthCardArtifact" },
-        { "$ref": "#/$defs/rawFhirJsonArtifact" },
-        { "$ref": "#/$defs/genericArtifact" }
+        { "$ref": "#/$defs/rawFhirJsonArtifact" }
       ]
     },
     "smartHealthCardArtifact": {
@@ -255,32 +246,6 @@ The response schema fixes `type` and `version`, requires `requestId`, `artifacts
         }
       ]
     },
-    "genericArtifact": {
-      "allOf": [
-        { "$ref": "#/$defs/artifactBase" },
-        {
-          "type": "object",
-          "properties": {
-            "mediaType": {
-              "type": "string",
-              "minLength": 1,
-              "not": {
-                "enum": ["application/smart-health-card", "application/fhir+json"]
-              }
-            },
-            "value": true,
-            "url": { "$ref": "#/$defs/nonEmptyString" },
-            "data": { "$ref": "#/$defs/nonEmptyString" }
-          },
-          "anyOf": [
-            { "required": ["value"] },
-            { "required": ["url"] },
-            { "required": ["data"] }
-          ],
-          "additionalProperties": true
-        }
-      ]
-    },
     "itemStatus": {
       "type": "object",
       "required": ["item", "status"],
@@ -303,7 +268,7 @@ Notes on this response schema:
 - Every Artifact has `id`, `mediaType`, and non-empty `fulfills[]` at the common level. Uniqueness of Artifact ids and validity of fulfillment references require procedural validation.
 - `application/smart-health-card` Artifacts use `value.verifiableCredential[]` as a non-empty array of strings and SHALL NOT carry an outer Artifact-level `fhirVersion`. FHIR-version semantics for this branch are inside each signed SMART Health Card credential payload.
 - `application/fhir+json` Artifacts require `fhirVersion` and `value`. The schema checks only that `value` is a JSON object with a string `resourceType`; it does not validate the full FHIR Resource, Bundle entries, terminology, profiles, or release-specific FHIR grammar.
-- Generic or extension Artifacts are allowed when their `mediaType` is not one of the two core media types and at least one of `value`, `url`, or `data` is present. Their registered media type or extension profile defines payload shape, dereferencing, integrity, encoding, privacy, and any FHIR-version semantics.
+- The core Artifact schema accepts only the two core `mediaType` discriminator values above. Registered extension Artifacts are represented by additional schemas or deployment profiles that pin their own `mediaType` value or bounded media-type pattern and define their own payload-bearing fields.
 - `requestStatus[].status` is limited to the version 1.0 status code set unless a future registered extension is explicitly supported by the receiving Verifier and by a corresponding schema/profile.
 
 ## B.4 Validation not fully expressible in JSON Schema
@@ -322,7 +287,7 @@ A conforming implementation MUST NOT treat successful validation against the sni
 | Bundle traversal and selector responsiveness | Raw FHIR Bundle validation requires inspecting `Bundle.entry[].resource`, resource types, profiles, and sometimes supporting resources; the outer Bundle alone is not enough. |
 | Profile-family membership for `profilesFrom[]` | Membership depends on implementation-guide knowledge, package metadata, configured family mappings, registry information, or local policy outside the JSON instance. |
 | Additive profile-selector semantics | The schema can allow `profiles[]` and `profilesFrom[]` together, but it cannot determine whether returned content satisfies either additive profile selector subject to `resourceTypes[]`. |
-| QuestionnaireResponse comparison | A Verifier may need to compare `QuestionnaireResponse.questionnaire` with a requested canonical, inline Questionnaire `url`/`version`, and §5.5 `|version` handling. |
+| QuestionnaireResponse comparison | A Verifier may need to compare `QuestionnaireResponse.questionnaire` with a requested questionnaire selector's `canonical`, inline Questionnaire `url`/`version`, and §5.5 structured `|version` handling. |
 | Raw FHIR release consistency | The schema can require an outer `fhirVersion`, but detecting mixed-release Bundles and deciding whether a raw FHIR Artifact's release is acceptable requires FHIR-aware and request-aware checks. |
 | SMART Health Card payload validation | The schema can check the wrapper's `verifiableCredential[]` shape, but JWS verification, payload inspection, issuer trust, FHIR version, and selector responsiveness are SMART Health Cards and policy checks. |
 | Full FHIR profile validation | FHIR profile, terminology, invariant, Questionnaire, and implementation-guide validation require FHIR validators and deployment policy outside the core JSON Schema. |

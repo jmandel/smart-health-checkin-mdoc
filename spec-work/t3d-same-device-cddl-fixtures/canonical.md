@@ -89,7 +89,7 @@ smart-request-json-text = tstr ; UTF-8 JSON text for SmartHealthCheckinRequest
 
 A Verifier SHALL set `DeviceRequest.version` to exactly `"1.0"` for the core version 1.0 flow. A Verifier SHALL request `docType` `org.smarthealthit.checkin.1`, namespace `org.smarthealthit.checkin`, and element identifier `smart_health_checkin_response`.
 
-A Verifier SHALL carry the SMART request only as a CBOR text string at `ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]`. A Wallet/Responder SHALL NOT treat dynamic mdoc element names, archived compressed-element experiments, kiosk wrapper fields, other `requestInfo` keys, `readerAuth`, `encryptionInfo`, or Digital Credentials API wrapper fields as version 1.0 SMART request carriers.
+A Verifier SHALL carry the SMART request only as a CBOR text string at `ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]`. A Wallet/Responder SHALL NOT treat dynamic mdoc element names, archived compressed-element experiments, implementation-defined initiation wrapper fields, other `requestInfo` keys, `readerAuth`, `encryptionInfo`, or Digital Credentials API wrapper fields as version 1.0 SMART request carriers.
 
 The boolean at `nameSpaces["org.smarthealthit.checkin"]["smart_health_checkin_response"]` is the mdoc `intentToRetain` flag for the requested stable response element. It is not Holder consent, not authenticated requester identity, not a retention authorization, and not a clinical selector.
 
@@ -146,7 +146,7 @@ handover = ["dcapi", SHA-256(dcapiInfo)]
 SessionTranscript = CBOR([null, null, handover])
 ```
 
-`encryptionInfoBase64Url` is the exact unpadded base64url text from the request wrapper. `origin` is supplied by the Browser / User Agent, platform, or deployment-approved privileged-caller mechanism. It is not derived from the SMART request, `purpose`, item display text, selector URLs, request ids, kiosk metadata, callback-looking strings, or returned Artifacts.
+`encryptionInfoBase64Url` is the exact unpadded base64url text from the request wrapper. `origin` is supplied by the Browser / User Agent, platform, or deployment-approved privileged-caller mechanism. It is not derived from the SMART request, `purpose`, item display text, selector URLs, request ids, implementation-defined initiation metadata, callback-looking strings, or returned Artifacts.
 
 The Wallet/Responder encrypts CBOR `DeviceResponse` bytes using HPKE base mode with:
 
@@ -374,7 +374,7 @@ Each final fixture entry should state whether validation is byte-exact, structur
 
 **Key byte boundaries and files:**
 
-- `wallet-response.digital-credential.json`, `credential.json`, and `submit.json`: JSON wrapper/submission views.
+- `wallet-response.digital-credential.json`, `credential.json`, and `submit.json`: JSON wrapper/result views.
 - `dcapi-response.cbor`, `dcapi-response.cbor.hex`, and `dcapi-response.cbor.b64u`: direct response envelope.
 - `hpke-enc.bin`, `hpke-enc.bin.hex`, `hpke-enc.bin.b64u`, `hpke-ciphertext.bin`, `hpke-ciphertext.bin.hex`, and `hpke-ciphertext.bin.b64u`: HPKE fields.
 - `device-response.cbor`, `device-response.cbor.hex`, and `device-response.cbor.b64u`: HPKE plaintext.

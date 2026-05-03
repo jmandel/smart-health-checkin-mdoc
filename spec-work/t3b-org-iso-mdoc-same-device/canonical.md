@@ -4,7 +4,7 @@ This section defines the base SMART Health Check-in 1.0 same-device presentation
 
 This section does not redefine clinical request or response semantics. A Wallet/Responder validates and uses the extracted SMART request under §5. A Verifier validates the extracted SMART response under §6, including the §6.6 cross-validation rules. Trust interpretation follows §7: origin evidence, optional reader authentication, mdoc issuer/device evidence, and clinical-source provenance are distinct.
 
-The cross-device kiosk flow in §9 re-enters this same-device flow on the phone. Kiosk pointer, relay, submission, and Completion display behavior are defined in §9, not here.
+This same-device direct `org-iso-mdoc` flow is the only normative SMART Health Check-in 1.0 presentation flow. In-person initiation mechanisms such as QR codes, NFC tags, or deep links MAY be used as implementation-defined ways to load a same-device Verifier page that runs this section; their URL formats, relay behavior, storage, and completion handling are outside this specification.
 
 ### 8.1 Identifiers and constants
 
@@ -22,7 +22,7 @@ The version 1.0 same-device flow uses the fixed identifiers and algorithm choice
 
 A Verifier SHALL use `org-iso-mdoc` as the Digital Credentials API protocol id for this flow. A Verifier SHALL request `docType` `org.smarthealthit.checkin.1`, namespace `org.smarthealthit.checkin`, and element identifier `smart_health_checkin_response`.
 
-A Verifier SHALL carry the SMART request only as a JSON string in `ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]`. A Wallet/Responder SHALL NOT treat dynamic element names, kiosk wrapper fields, archived claim-name experiments, or other locations as the version 1.0 request carrier for this flow.
+A Verifier SHALL carry the SMART request only as a JSON string in `ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]`. A Wallet/Responder SHALL NOT treat dynamic element names, implementation-defined initiation wrapper fields, archived claim-name experiments, or other locations as the version 1.0 request carrier for this flow.
 
 A Wallet/Responder SHALL carry the SMART response as the `elementValue` of an issuer-signed item whose namespace is `org.smarthealthit.checkin` and whose `elementIdentifier` is `smart_health_checkin_response`.
 
@@ -172,7 +172,7 @@ SessionTranscript = CBOR([null, null, handover])
 
 The SHA-256 input is the exact CBOR serialization of `[encryptionInfoBase64Url, origin]`. The `SessionTranscript` bytes are the exact CBOR serialization of `[null, null, handover]`.
 
-A Wallet/Responder SHALL obtain `origin` from an authenticated Browser / User Agent, Credential Manager, platform channel, or deployment-approved privileged-caller mechanism. A Wallet/Responder SHALL NOT derive `origin` from the SMART request JSON, `purpose`, item `title`, item `summary`, selector URLs, request ids, kiosk metadata, callback-looking strings, or Artifact contents.
+A Wallet/Responder SHALL obtain `origin` from an authenticated Browser / User Agent, Credential Manager, platform channel, or deployment-approved privileged-caller mechanism. A Wallet/Responder SHALL NOT derive `origin` from the SMART request JSON, `purpose`, item `title`, item `summary`, selector URLs, request ids, implementation-defined initiation metadata, callback-looking strings, or Artifact contents.
 
 A Verifier SHALL use the same origin value that the platform/requester context uses for this invocation when constructing `readerAuth`, HPKE `info`, and expected device authentication inputs. A Wallet/Responder SHALL use the same `SessionTranscript` bytes for optional `readerAuth` verification, for `DeviceAuthentication`, and for HPKE response encryption. A Verifier SHALL use the same bytes for HPKE opening and device-signature verification.
 
@@ -197,7 +197,7 @@ The Wallet/Responder SHALL:
 11. base64url-decode `data.encryptionInfo`, parse it as CBOR, require the direct `"dcapi"` envelope, and validate the recipient public key as P-256 COSE_Key material; and
 12. recompute the `SessionTranscript` under §8.3 using the exact request `encryptionInfo` base64url string and authenticated origin or approved origin-equivalent context.
 
-If the SMART request JSON is absent, not a string, unparsable, not a JSON object, or invalid under §5, the Wallet/Responder SHALL reject the presentation request, report failure through the selected platform mechanism, or otherwise fail safely. The Wallet/Responder SHALL NOT infer clinical request semantics from mdoc element names, display strings, archived dynamic-element encodings, unknown request fields, or kiosk wrappers.
+If the SMART request JSON is absent, not a string, unparsable, not a JSON object, or invalid under §5, the Wallet/Responder SHALL reject the presentation request, report failure through the selected platform mechanism, or otherwise fail safely. The Wallet/Responder SHALL NOT infer clinical request semantics from mdoc element names, display strings, archived dynamic-element encodings, unknown request fields, or implementation-defined initiation wrappers.
 
 If `readerAuth` is present and the Wallet/Responder supports or relies on reader authentication, the Wallet/Responder SHALL verify the detached `COSE_Sign1`, protected algorithm, `ReaderAuthenticationBytes`, `SessionTranscript`, exact tag-24 `ItemsRequestBytes`, signature, `x5chain` certificate evidence, and deployment trust policy. The Wallet/Responder SHALL distinguish at least these states for policy and display purposes: absent `readerAuth`; syntactically invalid `readerAuth`; cryptographically failed `readerAuth`; cryptographically valid but untrusted or policy-unacceptable `readerAuth`; and trusted `readerAuth` under the applicable deployment policy.
 

@@ -1,8 +1,8 @@
 ## 6. Clinical content — response
 
-This section defines the SMART response, the transport-neutral clinical JSON object by which a Wallet/Responder answers a SMART request after Holder review, Wallet policy, and available Holder data sources have been applied. The same SMART response semantics apply when the object is returned by the same-device presentation flow, encrypted for kiosk submission, or carried by a future binding.
+This section defines the SMART response, the transport-neutral clinical JSON object by which a Wallet/Responder answers a SMART request after Holder review, Wallet policy, and available Holder data sources have been applied. The same SMART response semantics apply when the object is returned by the same-device presentation flow or carried by a future binding.
 
-Presentation transports can wrap, encrypt, authenticate, retain, or relay a SMART response, but they do not change the meaning of `requestId`, `artifacts[]`, `mediaType`, `fulfills[]`, or `requestStatus[]`. A SMART response is distinct from mdoc envelopes, Digital Credentials API response objects, kiosk submissions, completion acknowledgments, and downstream EHR ingestion records.
+Presentation transports can wrap, encrypt, authenticate, retain, or relay a SMART response, but they do not change the meaning of `requestId`, `artifacts[]`, `mediaType`, `fulfills[]`, or `requestStatus[]`. A SMART response is distinct from mdoc envelopes, Digital Credentials API response objects, implementation-defined hand-off records, completion acknowledgments, and downstream EHR ingestion records.
 
 ### 6.1 `SmartHealthCheckinResponse`
 
@@ -57,11 +57,11 @@ An Artifact is a response object that contains clinical content or references cl
   "id": "<artifact-id>",
   "mediaType": "<media-type>",
   "fulfills": ["<request-item-id>"],
-  "value": {}
+  "<media-type-specific-payload>": {}
 }
 ```
 
-A Wallet/Responder SHALL include `id`, `mediaType`, and `fulfills` on every Artifact. A Wallet/Responder SHALL also include a payload body or locator as defined by §6.2.4 and by the Artifact's media type.
+A Wallet/Responder SHALL include `id`, `mediaType`, and `fulfills` on every Artifact. A Wallet/Responder SHALL also include the payload fields defined for the Artifact's media type.
 
 #### 6.2.1 `id` uniqueness within response
 
@@ -82,6 +82,10 @@ Version 1.0 defines these core Artifact media types:
 | `application/smart-health-card` | SMART Health Card Artifact | `value` is a SMART Health Card file-style JSON object with `verifiableCredential[]`. |
 | `application/fhir+json` | Raw FHIR JSON Artifact | `value` is a raw FHIR Resource or Bundle, and the Artifact declares `fhirVersion`. |
 
+The version 1.0 core Artifact union is closed over these two core variants. A version 1.0 Verifier SHALL NOT treat an unrecognized `mediaType` as a generic Artifact merely because it carries a field named `value`, `url`, `data`, or another plausible carrier.
+
+The Artifact type list is extensible by future SMART Health Check-in versions and by registered or profiled extension Artifact media types. Each extension Artifact type SHALL be a branded variant that pins a specific `mediaType` literal or clearly bounded media-type pattern and defines its own typed payload fields. The base protocol does not define generic carrier semantics for unknown media types.
+
 A Wallet/Responder SHALL NOT claim that an Artifact fulfills a request item unless the Artifact `mediaType` appears in that item's `accept[]`, except where a registered media-type compatibility rule explicitly defines compatible substitution semantics. A Verifier SHALL enforce the same check under §6.6.
 
 #### 6.2.3 `fulfills[]`
@@ -92,19 +96,15 @@ A Wallet/Responder MAY list more than one request item id in `fulfills[]` when o
 
 A Verifier SHALL reject a SMART response if any Artifact `fulfills[]` value does not resolve to exactly one request item in the original SMART request.
 
-#### 6.2.4 Body field: `value` | `url` | `data`
+#### 6.2.4 Payload fields are media-type-specific
 
-An Artifact body is carried or located by one or more of `value`, `url`, and `data`:
-
-- `value` carries the Artifact payload directly as a JSON value.
-- `url` carries a string locator for retrieving the Artifact payload.
-- `data` carries a string-encoded payload whose encoding is defined by the Artifact's media type or extension profile.
+An Artifact's payload-bearing fields are defined by its branded Artifact variant.
 
 For the two core media types defined in this section, a Wallet/Responder SHALL use `value` as the payload field. A SMART Health Card Artifact SHALL use `value.verifiableCredential[]` as defined in §6.3.1. A raw FHIR JSON Artifact SHALL use `value` as the FHIR Resource or Bundle as defined in §6.3.2.
 
-For generic or extension Artifacts, a Wallet/Responder SHALL include at least one of `value`, `url`, or `data`. If an extension Artifact includes more than one of these fields, the Artifact's registered media type or extension profile SHALL define how the fields are interpreted together, including precedence, dereferencing behavior, integrity protection, encoding, and privacy considerations.
+Registered or profiled extension Artifact types MAY define `value`, a structured locator, an encoded payload field, or any other typed fields appropriate for that media type. Such fields have only the semantics assigned by the registered or profiled extension Artifact definition. The protocol does not define a generic `value` / `url` / `data` catch-all, and it does not define a rule that allows multiple generic carrier keys to coexist with media-type-defined merge semantics.
 
-A Verifier or receiver SHALL NOT infer dereferencing, decoding, signature, freshness, or integrity rules for `url` or `data` from the field name alone. Those rules come from the Artifact media type, extension profile, transport binding, or local policy.
+A Verifier or receiver SHALL NOT infer dereferencing, decoding, signature, freshness, integrity, retention, or expiration rules from a field name alone. Those rules come from a recognized core Artifact definition, a supported registered or profiled extension Artifact definition, a transport binding, or local policy.
 
 ### 6.3 Concrete artifact shapes
 
@@ -152,7 +152,7 @@ A Wallet/Responder SHALL interpret all FHIR resources in one `application/fhir+j
 
 A Wallet/Responder SHOULD choose a `fhirVersion` advertised in the request's `fhirVersions[]` when the original request included that field and the Wallet/Responder can produce responsive raw FHIR JSON in an advertised version. A Verifier SHALL reject an `application/fhir+json` Artifact whose `fhirVersion` is absent or not a non-empty string. A Verifier SHOULD treat an `application/fhir+json` Artifact whose `fhirVersion` is not acceptable for the original request or receiver as unsupported for ingestion, even if the SMART response is otherwise syntactically valid.
 
-A raw FHIR JSON Artifact SHOULD NOT include an Artifact-level profile summary field. Wallets/Responders SHOULD preserve FHIR `meta.profile` values in the returned resource or in `Bundle.entry[].resource.meta.profile` where known, including any `|version` suffixes preserved under §5.5. Verifiers and receivers SHOULD inspect the FHIR payload itself, especially `meta.profile`, rather than relying on a wrapper-level profile summary.
+A raw FHIR JSON Artifact SHOULD NOT include an Artifact-level profile summary field. Wallets/Responders SHALL preserve FHIR `meta.profile` strings in the returned resource or in `Bundle.entry[].resource.meta.profile` where known, including any `|version` suffixes preserved under §5.5. Wallets/Responders SHALL NOT strip or normalize version suffixes from source `meta.profile` strings when constructing a raw FHIR JSON Artifact. Verifiers and receivers SHOULD inspect the FHIR payload itself, especially `meta.profile`, rather than relying on a wrapper-level profile summary.
 
 Example: raw FHIR JSON Bundle Artifact.
 
@@ -182,13 +182,15 @@ Example: raw FHIR JSON Bundle Artifact.
 }
 ```
 
-#### 6.3.3 Generic and extension artifacts
+#### 6.3.3 Extensible Artifact variants
 
-A generic or extension Artifact is any Artifact whose `mediaType` is not one of the core media types defined in §6.3.1 or §6.3.2.
+Future SMART Health Check-in versions and registered or profiled extension Artifact media types can define additional Artifact variants beyond the two version 1.0 core variants in §6.3.1 and §6.3.2.
 
-A Wallet/Responder MAY return a generic or extension Artifact only when the Artifact `mediaType` is accepted by every request item listed in `fulfills[]`, subject to any registered compatibility rule. A generic or extension Artifact SHALL include `id`, `mediaType`, `fulfills`, and at least one of `value`, `url`, or `data`.
+A Wallet/Responder MAY return an extension Artifact only when the Artifact `mediaType` is accepted by every request item listed in `fulfills[]`, subject to any registered compatibility rule, and when the Wallet/Responder can construct the Artifact according to a recognized extension Artifact definition. The extension Artifact SHALL include `id`, `mediaType`, `fulfills`, and the typed payload fields required by that definition.
 
-An extension registrant SHALL define the exact media type string; whether `value`, `url`, `data`, or a combination is used; payload shape; encoding; dereferencing and integrity rules; FHIR-version handling if any; status behavior; validation rules; security considerations; privacy considerations; and compatibility, if any, with core media types.
+An extension registrant SHALL define the exact media type string or bounded media-type pattern; the branded Artifact variant name; all required and optional typed payload fields; payload shape; encoding; dereferencing and integrity rules; FHIR-version handling if any; status behavior; validation rules; security considerations; privacy considerations; and compatibility, if any, with core media types.
+
+An extension registrant SHALL NOT define only an unbounded `mediaType: string` catch-all and SHALL NOT rely on protocol-level generic `value`, `url`, or `data` carrier semantics for unknown media types. If an extension needs a URL pointer, inline JSON payload, encoded data blob, manifest, or combination of fields, those fields and their interaction rules SHALL be part of that extension Artifact's own typed definition.
 
 An extension registrant SHALL NOT define an Artifact media type that redefines the semantics of `type`, `version`, `requestId`, `artifacts[]`, `requestStatus[]`, `id`, `mediaType`, or `fulfills[]`.
 
@@ -239,18 +241,21 @@ Example: response with a SMART Health Card Artifact, a raw FHIR JSON Artifact, a
 }
 ```
 
-Example: extension Artifact using a URL locator. This example is not a core media type and does not define a registered extension.
+Example: extension Artifact with a typed document locator. This example is not a core media type and does not define a registered extension.
 
 ```json
 {
   "id": "artifact-extension-document",
   "mediaType": "application/example-clinical-document+json",
   "fulfills": ["document-request"],
-  "url": "https://example.invalid/checkin/artifacts/artifact-extension-document"
+  "document": {
+    "url": "https://example.invalid/checkin/artifacts/artifact-extension-document",
+    "integrity": "sha256-..."
+  }
 }
 ```
 
-The extension example's dereferencing, authorization, integrity, retention, and expiration semantics would need to be defined by the extension media-type registration before interoperable use.
+The extension example's `document` field shape and dereferencing, authorization, integrity, retention, and expiration semantics would need to be defined by the extension media-type registration before interoperable use.
 
 ### 6.4 Status reporting
 
@@ -357,7 +362,9 @@ A Verifier SHALL reject a SMART response unless `SmartHealthCheckinResponse.requ
 
 A Verifier SHALL reject a SMART response if any Artifact `fulfills[]` value does not exactly match one `items[].id` value in the original SMART request. A Verifier SHALL reject a SMART response if an Artifact `fulfills[]` array is absent, empty, not an array of strings, or contains an unresolved item id.
 
-#### 6.6.3 Artifact `mediaType` is in each fulfilled item's `accept[]`
+#### 6.6.3 Artifact `mediaType` is recognized and in each fulfilled item's `accept[]`
+
+For every Artifact, a Verifier SHALL verify that the Artifact `mediaType` is one of the version 1.0 core media types or a registered or profiled extension Artifact media type that the Verifier explicitly supports. A Verifier SHALL reject an Artifact whose `mediaType` is unrecognized, even if the Artifact includes a field named `value`, `url`, `data`, or another plausible carrier.
 
 For every Artifact and every item id in that Artifact's `fulfills[]`, a Verifier SHALL verify that the Artifact `mediaType` appears in the corresponding request item's `accept[]` list, unless a registered media-type compatibility rule supported by the Verifier defines compatible substitution semantics.
 
@@ -379,7 +386,9 @@ A Verifier SHALL reject an `application/smart-health-card` Artifact that carries
 
 #### 6.6.6 Bundle and `meta.profile` guidance
 
-A Verifier SHOULD inspect returned FHIR `resourceType`, `meta.profile`, `Bundle.entry[].resource.meta.profile`, `QuestionnaireResponse.questionnaire`, and related FHIR content when validating that returned raw FHIR JSON is responsive to the original selector. Absence of `meta.profile` is not automatically a protocol error because §5 permits Wallet/Responder matching based on equivalent local knowledge or trusted conformance evidence, but receivers that require profile evidence for ingestion MAY reject or quarantine content that lacks the evidence they need.
+A Verifier SHOULD inspect returned FHIR `resourceType`, `meta.profile`, `Bundle.entry[].resource.meta.profile`, `QuestionnaireResponse.questionnaire`, and related FHIR content when validating that returned raw FHIR JSON is responsive to the original selector. Absence of `meta.profile` is not automatically a protocol error because §5 permits Wallet/Responder matching based on equivalent local knowledge or trusted conformance evidence, but a Wallet/Responder SHALL NOT report `fulfilled` for a request item that requested a versioned profile unless the returned resource's `meta.profile` includes that exact versioned canonical or the Wallet/Responder has equivalent local conformance evidence for that exact profile version. When validating a raw FHIR JSON Artifact's claimed fulfillment of a versioned profile request, a Verifier SHALL require the same exact-version evidence before accepting that fulfillment edge. Receivers that require profile evidence for ingestion MAY reject or quarantine content that lacks the evidence they need.
+
+A Verifier SHALL preserve returned `meta.profile` strings exactly as asserted in the FHIR payload when evaluating, recording, or forwarding them. In particular, a Verifier SHALL NOT strip a `|version` suffix from a returned `meta.profile` string in order to satisfy an exact-version profile request.
 
 For `profilesFrom[]`, a Verifier MAY need implementation-guide, profile-family, or local policy knowledge outside the SMART response to decide whether a returned profile belongs to the requested profile family. A Verifier SHOULD treat `meta.profile` as evidence to be evaluated in context, not as an Artifact-level shortcut. A Wallet/Responder SHOULD NOT include a separate profile-summary field outside the FHIR payload for core raw FHIR JSON Artifacts.
 
