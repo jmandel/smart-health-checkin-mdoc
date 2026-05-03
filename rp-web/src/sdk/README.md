@@ -8,7 +8,7 @@ become:
 | --- | --- | --- |
 | `@smart-health-checkin/core` | `core.ts` | Transport-neutral SMART request/response model and validation. |
 | `@smart-health-checkin/dcapi-verifier` | `dcapi-verifier.ts` | Browser Digital Credentials API verifier flow and verifier-authority seam. |
-| `@smart-health-checkin/kiosk-session` | `kiosk-session.ts` | QR request descriptors that do not depend on a specific relay/backend. |
+| `@smart-health-checkin/kiosk-session` | `kiosk-session.ts` | Optional in-person handoff helper: QR request descriptors over a relay. Not a SMART Health Check-in 1.0 protocol layer; provided as a deployment helper. |
 | `@smart-health-checkin/react` | `react.tsx` | Optional React hooks/components. Documented separately in [`react.README.md`](react.README.md). |
 
 The non-React barrel, `index.ts`, intentionally does **not** export
@@ -111,7 +111,7 @@ const request: SmartCheckinRequest = {
       title: "Headache intake form",
       content: {
         kind: "questionnaire",
-        questionnaire: "https://example.org/fhir/Questionnaire/headache-intake|2026.04",
+        canonical: "https://example.org/fhir/Questionnaire/headache-intake|2026.04",
       },
       accept: ["application/fhir+json"],
     },
@@ -263,9 +263,17 @@ In that server-owned version, the browser receives public request material and
 an opaque `handle`; the backend stores HPKE private key material and opens the
 uploaded credential response.
 
-## `kiosk-session.ts`: QR request descriptors
+## `kiosk-session.ts`: in-person handoff helper (deployment, not protocol)
 
-Use `kiosk-session.ts` to describe cross-device kiosk requests without choosing
+> **Not a SMART Health Check-in 1.0 protocol layer.** The QR/pointer/relay/
+> completion mechanics described here are deployment-defined UX around the
+> standardized same-device flow. SMART Health Check-in 1.0 standardizes only
+> the clinical content model and the same-device direct `org-iso-mdoc`
+> presentation flow; what gets shipped over a QR is a per-deployment choice.
+> This module is shipped as an SDK feature for verifiers who want a worked
+> in-person handoff implementation, not because the wire shape is normative.
+
+Use `kiosk-session.ts` to describe in-person handoff requests without choosing
 a specific transport.
 
 The descriptor answers: "what request is this phone joining, where is the relay

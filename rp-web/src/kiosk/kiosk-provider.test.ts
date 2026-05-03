@@ -40,7 +40,7 @@ const SMART_REQUEST: SmartCheckinRequest = {
       summary: "Migraine Check-in",
       content: {
         kind: "questionnaire",
-        questionnaire: {
+        resource: {
           resourceType: "Questionnaire",
           status: "active",
           title: "Migraine Check-in",

@@ -232,7 +232,7 @@ describe("fallback dynamic SMART Check-in element", () => {
         {
           id: "intake",
           title: "Intake forms",
-          content: { kind: "questionnaire", questionnaire: "https://example.org/Q/intake" },
+          content: { kind: "questionnaire", canonical: "https://example.org/Q/intake" },
           accept: ["application/fhir+json"],
         },
       ],
@@ -299,6 +299,45 @@ describe("fallback dynamic SMART Check-in element", () => {
       requestStatus: [{ item: "patient", status: "fulfilled" }],
     };
     expect(validateResponseAgainstRequest(request, response).ok).toBe(true);
+  });
+
+  test("rejects artifacts whose mediaType is not a recognized v1 type", () => {
+    const result = validateSmartCheckinResponse({
+      type: "smart-health-checkin-response",
+      version: "1",
+      requestId: "test-patient-request",
+      artifacts: [
+        {
+          id: "a1",
+          mediaType: "application/example+json",
+          fulfills: ["patient"],
+          value: { foo: "bar" },
+        },
+      ],
+      requestStatus: [{ item: "patient", status: "fulfilled" }],
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain("not a recognized SMART Health Check-in 1.0 artifact type");
+    }
+  });
+
+  test("rejects questionnaire selectors that use the legacy nested shape", () => {
+    const result = validateSmartCheckinRequest({
+      ...PATIENT_REQUEST,
+      items: [
+        {
+          id: "intake",
+          title: "Intake forms",
+          content: { kind: "questionnaire", questionnaire: "https://example.org/Q/intake" },
+          accept: ["application/fhir+json"],
+        },
+      ],
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain("not a SMART Health Check-in 1.0 selector member");
+    }
   });
 
   test("constants match the active direct mdoc mapping", () => {

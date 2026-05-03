@@ -63,12 +63,14 @@ object SmartRequestAdapter {
         content: JSONObject,
         accept: List<String>,
     ): RequestItem {
+        require(!content.has("questionnaire")) {
+            "items[id=$id].content.questionnaire is not a SMART Health Check-in 1.0 selector member; use canonical and resource directly"
+        }
         val meta = JSONObject(item.toString())
-        val questionnaire = content.opt("questionnaire")
-        val resource = questionnaireResource(questionnaire)
-        val canonical = questionnaireCanonical(questionnaire, resource)
+        val resource = questionnaireResource(content)
+        val canonical = questionnaireCanonical(content, resource)
         require(resource != null || !canonical.isNullOrBlank()) {
-            "questionnaire content must include a canonical or Questionnaire resource"
+            "items[id=$id].content must include a canonical or Questionnaire resource"
         }
         if (resource != null) meta.put("questionnaire", resource)
         if (!canonical.isNullOrBlank()) {
@@ -170,25 +172,18 @@ object SmartRequestAdapter {
         return out
     }
 
-    private fun questionnaireResource(value: Any?): JSONObject? {
-        return when (value) {
-            is JSONObject -> {
-                when {
-                    value.optString("resourceType") == "Questionnaire" -> JSONObject(value.toString())
-                    value.optJSONObject("resource") != null -> value.optJSONObject("resource")
-                    else -> null
-                }
-            }
-            else -> null
+    private fun questionnaireResource(content: JSONObject): JSONObject? {
+        val resource = content.optJSONObject("resource") ?: return null
+        require(resource.optString("resourceType") == "Questionnaire") {
+            "items[].content.resource is not a Questionnaire (resourceType=\"Questionnaire\")"
         }
+        return JSONObject(resource.toString())
     }
 
-    private fun questionnaireCanonical(value: Any?, resource: JSONObject?): String? {
-        return when (value) {
-            is String -> value
-            is JSONObject -> value.optString("canonical").ifBlank { null }
-            else -> null
-        } ?: resource?.let { questionnaire ->
+    private fun questionnaireCanonical(content: JSONObject, resource: JSONObject?): String? {
+        val direct = content.optString("canonical").ifBlank { null }
+        if (direct != null) return direct
+        return resource?.let { questionnaire ->
             val url = questionnaire.optString("url")
             if (url.isBlank()) null else {
                 val version = questionnaire.optString("version")

@@ -135,7 +135,7 @@ const SMART_REQUESTS: Array<{
           title: "Migraine Check-in",
           content: {
             kind: "questionnaire",
-            questionnaire: {
+            resource: {
               resourceType: "Questionnaire",
               title: "Migraine Check-in",
               status: "active",
@@ -201,7 +201,7 @@ const SMART_REQUESTS: Array<{
           title: "Migraine Check-in",
           content: {
             kind: "questionnaire",
-            questionnaire: {
+            resource: {
               resourceType: "Questionnaire",
               title: "Migraine Check-in",
               status: "active",

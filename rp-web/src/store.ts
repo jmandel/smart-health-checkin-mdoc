@@ -110,7 +110,7 @@ const US_CORE_CHECKIN: SmartCheckinRequest = {
       title: "Intake form",
       content: {
         kind: "questionnaire",
-        questionnaire: INTAKE_QUESTIONNAIRE,
+        resource: INTAKE_QUESTIONNAIRE,
       },
       accept: ACCEPT_FHIR,
     },
@@ -203,7 +203,7 @@ export const PRESETS: ReadonlyArray<Preset> = [
           title: "Intake form",
           content: {
             kind: "questionnaire",
-            questionnaire: INTAKE_QUESTIONNAIRE,
+            resource: INTAKE_QUESTIONNAIRE,
           },
           accept: ACCEPT_FHIR,
         },

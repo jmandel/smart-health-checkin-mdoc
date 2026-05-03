@@ -1803,21 +1803,23 @@
       if (!Array.isArray(items)) return "";
       return `<div class="item-list">${items.map(item => {
         const content = item.content || {};
-        const questionnaire = content.questionnaire || item.questionnaire;
+        const legacyQuestionnaire = content.questionnaire || item.questionnaire;
         const kind = content.kind === "fhir.resources"
           ? "FHIR resources"
           : content.kind === "questionnaire"
             ? "Questionnaire"
             : item.profile
               ? "FHIR profile (legacy)"
-              : questionnaire || item.questionnaireUrl
+              : legacyQuestionnaire || item.questionnaireUrl
                 ? "Questionnaire (legacy)"
                 : "Unknown";
         const profileList = Array.isArray(content.profiles) ? content.profiles : item.profile ? [item.profile] : [];
         const resourceTypes = Array.isArray(content.resourceTypes) ? content.resourceTypes : [];
-        const questionnaireTitle = typeof questionnaire === "object"
-          ? questionnaire.title || questionnaire.resource?.title || questionnaire.canonical || ""
-          : questionnaire || item.questionnaireUrl || "";
+        const questionnaireTitle = content.kind === "questionnaire"
+          ? content.resource?.title || content.canonical || ""
+          : typeof legacyQuestionnaire === "object"
+            ? legacyQuestionnaire?.title || legacyQuestionnaire?.resource?.title || legacyQuestionnaire?.canonical || ""
+            : legacyQuestionnaire || item.questionnaireUrl || "";
         const target = [...profileList, ...resourceTypes, questionnaireTitle].filter(Boolean).join(", ");
         return `
           <div class="item-row">
@@ -1847,7 +1849,7 @@
             <div class="item-row">
               <strong>${escapeHtml(artifact.id || "(artifact)")} <span class="pill">${escapeHtml(artifact.mediaType || artifact.type || "")}</span></strong>
               <div class="small mono">fulfills: ${escapeHtml(Array.isArray(artifact.fulfills) ? artifact.fulfills.join(", ") : "")}</div>
-              <div class="small">${escapeHtml(fhirSummary(artifact.value ?? artifact.data))}</div>
+              <div class="small">${escapeHtml(fhirSummary(artifact.value))}</div>
             </div>
           `).join("")}
         </div>

@@ -20,44 +20,33 @@ internal object SmartQuestionnaireFetcher {
             val content = item.optJSONObject("content") ?: continue
             if (content.optString("kind") != "questionnaire") continue
 
-            when (val questionnaireSpec = content.opt("questionnaire")) {
-                is String -> {
-                    val questionnaire = fetchAndValidate(i, questionnaireSpec)
-                    content.put(
-                        "questionnaire",
-                        JSONObject()
-                            .put("canonical", questionnaireSpec)
-                            .put("resource", questionnaire),
-                    )
-                }
-                is JSONObject -> {
-                    val resource = questionnaireSpec.optJSONObject("resource")
-                    if (resource != null) {
-                        require(resource.optString("resourceType") == "Questionnaire") {
-                            "items[$i].content.questionnaire.resource is not a Questionnaire"
-                        }
-                    } else if (questionnaireSpec.optString("resourceType") == "Questionnaire") {
-                        // Inline Questionnaire resource: already hydrated.
-                    } else {
-                        val canonical = questionnaireSpec.optString("canonical")
-                        require(canonical.isNotBlank()) {
-                            "items[$i].content.questionnaire object must include canonical or resource"
-                        }
-                        questionnaireSpec.put("resource", fetchAndValidate(i, canonical))
-                    }
-                }
-                else -> error("items[$i].content.questionnaire must be a canonical string or object")
+            require(!content.has("questionnaire")) {
+                "items[$i].content.questionnaire is not a SMART Health Check-in 1.0 selector member; use canonical and resource directly"
             }
+
+            val existingResource = content.optJSONObject("resource")
+            if (existingResource != null) {
+                require(existingResource.optString("resourceType") == "Questionnaire") {
+                    "items[$i].content.resource is not a Questionnaire"
+                }
+                continue
+            }
+
+            val canonical = content.optString("canonical")
+            require(canonical.isNotBlank()) {
+                "items[$i].content must include canonical or resource"
+            }
+            content.put("resource", fetchAndValidate(i, canonical))
         }
 
         copy
     }
 
     private fun fetchAndValidate(index: Int, canonical: String): JSONObject {
-        require(canonical.isNotBlank()) { "items[$index].content.questionnaire canonical is blank" }
+        require(canonical.isNotBlank()) { "items[$index].content.canonical is blank" }
         val questionnaire = fetchQuestionnaire(canonical)
         require(questionnaire.optString("resourceType") == "Questionnaire") {
-            "items[$index].content.questionnaire did not return a Questionnaire"
+            "items[$index].content.canonical did not return a Questionnaire"
         }
         return questionnaire
     }

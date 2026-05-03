@@ -75,19 +75,9 @@ class AndroidMdocValidationFixtureTest {
         for (i in 0 until items.length()) {
             val item = items.getJSONObject(i)
             val content = item.optJSONObject("content") ?: continue
-            val spec = content.opt("questionnaire")
-            val canonical = when (spec) {
-                is String -> spec
-                is JSONObject -> spec.optString("canonical")
-                else -> ""
-            }
+            val canonical = content.optString("canonical")
             if (canonical == questionnaire.optString("url")) {
-                content.put(
-                    "questionnaire",
-                    JSONObject()
-                        .put("canonical", canonical)
-                        .put("resource", questionnaire),
-                )
+                content.put("resource", questionnaire)
             }
         }
         return copy

@@ -17,13 +17,8 @@ export type SmartCheckinContentSelector =
     }
   | {
       kind: "questionnaire";
-      questionnaire:
-        | FhirCanonical
-        | unknown
-        | {
-            canonical?: FhirCanonical;
-            resource?: unknown;
-          };
+      canonical?: FhirCanonical;
+      resource?: unknown;
     };
 
 export type SmartCheckinRequestItem = {
@@ -65,13 +60,6 @@ export type SmartArtifact =
       mediaType: "application/fhir+json";
       fhirVersion: FhirVersion;
       value: unknown;
-    })
-  | (SmartArtifactBase & {
-      value?: unknown;
-      url?: string;
-      data?: string;
-      filename?: string;
-      fhirVersion?: FhirVersion;
     });
 
 export type SmartCheckinResponse = {
@@ -148,20 +136,20 @@ function validateContentSelector(content: Record<string, unknown>, path: string)
     return undefined;
   }
   if (content.kind === "questionnaire") {
-    const questionnaire = content.questionnaire;
-    if (typeof questionnaire === "string") {
-      return questionnaire.length > 0 ? undefined : `${path}.questionnaire must not be blank`;
+    if ("questionnaire" in content) {
+      return `${path}.questionnaire is not a SMART Health Check-in 1.0 selector member; use canonical and resource directly`;
     }
-    if (!isRecord(questionnaire)) return `${path}.questionnaire must be a canonical string or object`;
-    if (questionnaire.resourceType === "Questionnaire") return undefined;
-    if (questionnaire.canonical === undefined && questionnaire.resource === undefined) {
-      return `${path}.questionnaire object must include canonical or resource`;
+    if (content.canonical === undefined && content.resource === undefined) {
+      return `${path} must include canonical or resource`;
     }
-    if (questionnaire.canonical !== undefined && !nonEmptyString(questionnaire.canonical)) {
-      return `${path}.questionnaire.canonical must be a string`;
+    if (content.canonical !== undefined && !nonEmptyString(content.canonical)) {
+      return `${path}.canonical must be a non-empty string`;
     }
-    if (questionnaire.resource !== undefined && !isRecord(questionnaire.resource)) {
-      return `${path}.questionnaire.resource must be an object`;
+    if (content.resource !== undefined) {
+      if (!isRecord(content.resource)) return `${path}.resource must be an object`;
+      if (content.resource.resourceType !== "Questionnaire") {
+        return `${path}.resource must be a Questionnaire (resourceType="Questionnaire")`;
+      }
     }
     return undefined;
   }
@@ -245,10 +233,7 @@ function validateArtifact(artifact: Record<string, unknown>, path: string): stri
     if (!("value" in artifact)) return `${path}.value missing`;
     return undefined;
   }
-  if (!("value" in artifact) && !("url" in artifact) && !("data" in artifact)) {
-    return `${path} must include value, url, or data`;
-  }
-  return undefined;
+  return `${path}.mediaType "${String(artifact.mediaType)}" is not a recognized SMART Health Check-in 1.0 artifact type (expected "application/smart-health-card" or "application/fhir+json")`;
 }
 
 export function validateResponseAgainstRequest(

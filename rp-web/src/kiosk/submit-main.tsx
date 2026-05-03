@@ -308,11 +308,10 @@ function selectorKind(content: SmartCheckinRequest["items"][number]["content"]):
 
 function selectorDescription(content: SmartCheckinRequest["items"][number]["content"]): string {
   if (content.kind === "questionnaire") {
-    if (typeof content.questionnaire === "string") return content.questionnaire;
-    const questionnaire = asRecord(content.questionnaire);
-    if (typeof questionnaire?.title === "string") return questionnaire.title;
-    const resource = asRecord(questionnaire?.resource);
-    return typeof resource?.title === "string" ? resource.title : "Form answers requested by the verifier.";
+    const resource = asRecord(content.resource);
+    if (typeof resource?.title === "string") return resource.title;
+    if (typeof content.canonical === "string") return content.canonical;
+    return "Form answers requested by the verifier.";
   }
   return content.profiles?.join(", ") ?? content.resourceTypes?.join(", ") ?? "FHIR resources";
 }

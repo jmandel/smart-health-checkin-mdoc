@@ -95,6 +95,14 @@ The active protocol helper builds direct `org-iso-mdoc` requests with
 
 ## Kiosk check-in demo
 
+> **Not a SMART Health Check-in 1.0 protocol layer.** SMART Health Check-in 1.0
+> standardizes the clinical request/response content model and the same-device
+> W3C Digital Credentials API / direct `org-iso-mdoc` presentation flow. The QR
+> pointer URL, JWS+AES-GCM wrapper, submission service rows, and completion
+> display below are this demo's deployment choices for an in-person handoff,
+> not normative protocol envelopes. Other deployments can pick different
+> transports, formats, or UX entirely.
+
 The static kiosk apps are written against a provider abstraction in
 `src/kiosk/kiosk-provider.ts`, not directly against InstantDB. The high-level
 workflow is:
