@@ -556,9 +556,8 @@
             <div>
               <h3>Check in at a kiosk</h3>
               <p>
-                Staff starts check-in on a workstation. A QR code appears. The patient scans it on
-                their phone and lands on a same-device verifier page. The desktop handoff is demo UX,
-                not a separate SMART Health Check-in protocol layer.
+                Staff starts check-in on a workstation. The patient scans a QR code on their phone,
+                shares from their wallet, and the workstation updates when the response is ready.
               </p>
             </div>
             <span class="badge">In-person</span>
@@ -643,9 +642,9 @@
     <section id="layers" aria-labelledby="layers-h">
       <h2 id="layers-h">How it's wired</h2>
       <p class="section-lead">
-        Two protocol layers are standardized: a transport-neutral clinical content model and the
-        same-device W3C Digital Credentials API / direct <code>org-iso-mdoc</code> presentation flow.
-        Kiosk and QR handoffs in this repo are demo/deployment UX that land on the same-device flow.
+        The experience has two reusable pieces: a clinical request/response model and a
+        browser-mediated wallet sharing flow. The kiosk demo adds a front-desk handoff that moves
+        sharing from a shared workstation to the patient's own phone.
       </p>
       <div class="layers-grid">
         <article class="layer smart">
@@ -662,7 +661,7 @@
         <article class="layer transport">
           <h3>Digital Credentials API</h3>
           <p>
-            Browser-mediated transport for the normative same-device flow. Wallet presentation uses direct
+            Browser-mediated wallet sharing. Wallet presentation uses direct
             <code>org-iso-mdoc</code>: <abbr title="Hybrid Public Key Encryption (RFC 9180)">HPKE</abbr>
             encryption, COSE-signed mdoc, with the SMART payload carried inside.
           </p>
@@ -674,8 +673,8 @@
         <article class="layer kiosk">
           <h3>Kiosk handoff demo</h3>
           <p>
-            Deployment-defined in-person UX. The demo uses a desktop QR to open a session-bound phone
-            context around the same-device verifier; it is not a standardized SMART Health Check-in 1.0 wire layer.
+            A front-desk workflow: the desktop starts a session, the QR moves sharing to the
+            patient's phone, and the completed response comes back to the workstation.
           </p>
           <div class="layer-links">
             <a href="./kiosk-flow-explainer.html">Kiosk flow explainer →</a>
