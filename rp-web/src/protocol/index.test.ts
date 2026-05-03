@@ -518,7 +518,7 @@ describe("org-iso-mdoc request vectors", () => {
     expect(items.smartHealthCheckin.value.items.map((i) => i.id)).toEqual([
       "patient",
       "insurance",
-      "ips",
+      "clinical-history",
       "intake",
     ]);
     expect(inspection.sessionTranscript?.hex).toBe(
@@ -624,9 +624,9 @@ describe("org-iso-mdoc response wrapper", () => {
     if (!pairedValidation.ok) throw new Error(pairedValidation.error);
     expect(smartResponse.artifacts.length).toBe(4);
     expect(smartResponse.requestStatus.map((status) => status.item).sort()).toEqual([
+      "clinical-history",
       "insurance",
       "intake",
-      "ips",
       "patient",
     ]);
   });

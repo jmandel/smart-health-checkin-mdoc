@@ -1,7 +1,7 @@
 {
   "type": "smart-health-checkin-request",
   "version": "1",
-  "id": "demo-all-of-the-above",
+  "id": "demo-us-core-checkin",
   "purpose": "Clinic check-in",
   "fhirVersions": [
     "4.0.1"
@@ -38,17 +38,22 @@
       ]
     },
     {
-      "id": "ips",
-      "title": "International Patient Summary",
-      "summary": "Problems, medications, allergies, and immunizations",
+      "id": "clinical-history",
+      "title": "US Core clinical resources",
+      "summary": "US Core resources, including patient demographics, problems, medications, and allergies.",
       "content": {
         "kind": "fhir.resources",
+        "profilesFrom": [
+          "http:\/\/hl7.org\/fhir\/us\/core"
+        ],
         "profiles": [
-          "http:\/\/hl7.org\/fhir\/uv\/ips\/StructureDefinition\/Bundle-uv-ips"
+          "http:\/\/hl7.org\/fhir\/us\/core\/StructureDefinition\/us-core-patient",
+          "http:\/\/hl7.org\/fhir\/us\/core\/StructureDefinition\/us-core-condition-problems-health-concerns",
+          "http:\/\/hl7.org\/fhir\/us\/core\/StructureDefinition\/us-core-allergyintolerance",
+          "http:\/\/hl7.org\/fhir\/us\/core\/StructureDefinition\/us-core-medicationrequest"
         ]
       },
       "accept": [
-        "application\/smart-health-card",
         "application\/fhir+json"
       ]
     },
@@ -57,11 +62,16 @@
       "title": "Intake form",
       "content": {
         "kind": "questionnaire",
-        "questionnaire": {
+        "resource": {
           "resourceType": "Questionnaire",
           "title": "Migraine Check-in",
           "status": "active",
           "item": [
+            {
+              "linkId": "wellbeing",
+              "text": "How have you been feeling since your last visit?",
+              "type": "text"
+            },
             {
               "linkId": "headache",
               "text": "Are you experiencing a headache today?",
@@ -70,7 +80,17 @@
             {
               "linkId": "severity",
               "text": "Pain severity (0-10)",
-              "type": "integer"
+              "type": "integer",
+              "extension": [
+                {
+                  "url": "http:\/\/hl7.org\/fhir\/StructureDefinition\/minValue",
+                  "valueInteger": 0
+                },
+                {
+                  "url": "http:\/\/hl7.org\/fhir\/StructureDefinition\/maxValue",
+                  "valueInteger": 10
+                }
+              ]
             },
             {
               "linkId": "started",

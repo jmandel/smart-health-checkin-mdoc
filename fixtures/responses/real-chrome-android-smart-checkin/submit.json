@@ -2,11 +2,11 @@
   "declined": false,
   "selectedItems": {
     "patient": true,
+    "intake": true,
     "insurance": true,
-    "ips": true,
-    "intake": true
+    "clinical-history": true
   },
-  "answerCount": 0,
+  "answerCount": 1,
   "origin": "http:\/\/127.0.0.1:3010",
   "itemCount": 4
 }

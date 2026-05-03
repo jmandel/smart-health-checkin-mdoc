@@ -85,7 +85,7 @@ const SMART_REQUEST: SmartCheckinRequest = {
       required: false,
       content: {
         kind: "questionnaire",
-        questionnaire:
+        canonical:
           "https://smart-health-checkin.example.org/fhir/Questionnaire/chronic-migraine-followup",
       },
       accept: ["application/fhir+json"],

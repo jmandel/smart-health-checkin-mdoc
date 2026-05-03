@@ -12,7 +12,7 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const ROOT = resolve(HERE, "..");
+const ROOT = resolve(HERE, "..", "..");
 
 const args = parseArgs(process.argv.slice(2));
 const ADB = String(args.adb || process.env.ADB || "adb");
@@ -30,7 +30,7 @@ const CLICK_TIMEOUT_MS = Number(args["click-timeout"] || 12_000);
 const RP_FALLBACK_TAP = parseSingleTap(String(args["rp-tap"] || "540,1400"));
 const WALLET_TAPS = parseTapPlan(String(args["wallet-taps"] || "785,2135,2500;540,2174,2500"));
 
-const captureRoot = join(ROOT, "capture", "android-rp-flow");
+const captureRoot = join(ROOT, "tools", "capture", "android-rp-flow");
 const captureDir = join(captureRoot, new Date().toISOString().replace(/[:.]/g, "-"));
 mkdirSync(captureDir, { recursive: true });
 

@@ -1,8 +1,8 @@
 {
   "id": "real-chrome-android-smart-checkin",
   "kind": "positive-smart-health-checkin-real-platform-request",
-  "source": "/tmp/shc-handler-runs/run-1777656438734",
-  "capturedAt": "2026-05-01T17:27:18.788312Z",
+  "source": "/tmp/shc-handler-runs/run-1777775606695",
+  "capturedAt": "2026-05-03T02:36:50.122046Z",
   "origin": "http://127.0.0.1:3010",
   "originSource": "web-origin",
   "originIsPopulated": true,
@@ -21,28 +21,28 @@
     "purpose": "Allows offline HPKE open of the matching checked-in encrypted dcapi-response.cbor. Never reuse this key outside this fixture."
   },
   "sizes": {
-    "deviceRequestB64u": 2707,
-    "deviceRequestBytes": 2030,
+    "deviceRequestB64u": 3464,
+    "deviceRequestBytes": 2598,
     "encryptionInfoB64u": 190,
     "encryptionInfoBytes": 142,
     "sessionTranscriptBytes": 44
   },
   "sha256": {
-    "request.json": "3e17d0542d188434a8d91a7994171d88721f43d48a0844d6b9f2773c63870150",
-    "navigator-credentials-get.arg.json": "3e17d0542d188434a8d91a7994171d88721f43d48a0844d6b9f2773c63870150",
-    "device-request.b64u": "232362400fe721b0b85b42fceba631a54c182a97d2677f394a57643b9644b446",
-    "device-request.cbor": "8b28d33500db541fd01fb69b5ff250a64dabd83fd8832bcebf154e0c6252c08b",
-    "items-request.cbor": "266ea8a6061b9223b67c0b5e169df72226433a9e4e88058e4f40955aa38f4d1d",
-    "items-request-tag24.cbor": "62124a6ed317910f619322d0b2bf0c630ecf2be0dce68b33c106fd9d44f25d32",
-    "encryption-info.b64u": "32d2b8795b6c8642fd9685826a4bdad6c3415f48b62b4b31a56bc0830ca3f02f",
-    "encryption-info.cbor": "834e920af672f575ad79b2fbe1bb24001422b2d7052549e19624424a255c7510",
-    "session-transcript.cbor": "cd8d7107af11c495276def333040c48b1265b8a2da88c7685f5551c980045f84",
-    "smart-request.expected.json": "6abb213990219c188e512a1c9014c73334ad834d4e3f267a573035d6f230e3c4",
-    "smart-request.hydrated.json": "6abb213990219c188e512a1c9014c73334ad834d4e3f267a573035d6f230e3c4",
-    "recipient-public.jwk.json": "713b5f6b632a0c8d2545d89da5067759a51de36fb9e4c3e5931ea8d0427b5f92",
-    "recipient-private.jwk.json": "0fceaa2f9e3e66532c7b3753ab156bf6b857d0ce7ab440cab5431cb237c0f1fa",
-    "reader-auth.cbor": "c5848f69b071cddf3840fe82b837171c1dd6d7d773039ea43e518c1707dc1ced",
-    "reader-auth-detached-payload.cbor": "85e1172561286ad3827844185a4e052eaf6c65c613e47369b6f7583f257b45e7",
-    "credential-manager-request.json": "a154f5eaf8a49d61ba5ce2062a049c221d7c98a61ecc67e0a6059261b7048708"
+    "request.json": "e270d9e42f1ffa4bd918bc40966d7a12235559aef7584ffb8e39971c5773878d",
+    "navigator-credentials-get.arg.json": "e270d9e42f1ffa4bd918bc40966d7a12235559aef7584ffb8e39971c5773878d",
+    "device-request.b64u": "024bcc4a3a071f9f87e9b9a96969241c336947f930a148a7f324dc69c5cbe7e1",
+    "device-request.cbor": "19c00bf302575495a82b0c50ae6a54c74270654f1f69272c6f3730432d8a1af0",
+    "items-request.cbor": "83652f834b1446c454448d16e7e3da7fad61c27b90ac46ef4912e699f01f97d3",
+    "items-request-tag24.cbor": "b4b3ae3773bbbd393ed55fbe6a0b175a9c99221f54a11efb468b9d15e0007d63",
+    "encryption-info.b64u": "695966179860280ecb6a2d745a07c7dd4f017e4b6e717c9508e4c3563961b656",
+    "encryption-info.cbor": "bc44468e9be60bfe64e4ce8768448bba2b1f99cd57ace79cb6afa7188e5e35d7",
+    "session-transcript.cbor": "02268f7bd484f7f82e4c36965c93d5f5874c1439eeba063b1931fc28ee2f34d2",
+    "smart-request.expected.json": "bd76ab4ea876ba91f990e2365a24b02a8b1f5e846124c45a91378f68052a1841",
+    "smart-request.hydrated.json": "bd76ab4ea876ba91f990e2365a24b02a8b1f5e846124c45a91378f68052a1841",
+    "recipient-public.jwk.json": "ab965cd89e27ac5484f0be17f8eecb4dee410ab635a4f07817271119cb0a4101",
+    "recipient-private.jwk.json": "20c064168097fabb78f6fdb2d821651b4b6b2b3d3b03cd718a458a84f13c9497",
+    "reader-auth.cbor": "2f239699e61a46cd6487a4a9c3a39a4b45eca65f361f63f2d5379399db5833c4",
+    "reader-auth-detached-payload.cbor": "6fdea5cb472759db1e33474e1d4d1b237ffecb02ee301f8ef75763813865f1ef",
+    "credential-manager-request.json": "e270d9e42f1ffa4bd918bc40966d7a12235559aef7584ffb8e39971c5773878d"
   }
 }
