@@ -284,8 +284,8 @@
     <nav class="toc" aria-label="Page sections">
       <a href="#mental-model">Mental model</a>
       <a href="#flow">Flow</a>
-      <a href="#provider">Provider abstraction</a>
-      <a href="#instant">Current Instant provider</a>
+      <a href="#contract">Handoff contract</a>
+      <a href="#deployment">Deployment choices</a>
     </nav>
 
     <section id="mental-model">
@@ -306,9 +306,10 @@
       </div>
       <p>
         The kiosk demo keeps that exact phone-side presentation. The desktop
-        page only creates a short-lived demo handoff handle and watches for a
-        demo encrypted completion. The patient still uses their own phone and
-        health app to present.
+        creates a check-in session; the phone opens a session-bound context for
+        that visit, lets the patient share from their wallet, and returns the
+        result to the waiting kiosk session. The patient still uses their own
+        phone and health app to present.
       </p>
 
       <div class="flow-grid">
@@ -322,9 +323,9 @@
         <div class="flow-card kiosk">
           <h3>In-person handoff demo</h3>
           <p>
-            The desktop starts the request and displays a QR. The phone resolves
-            the demo pointer, runs the same presentation, and returns an
-            encrypted SMART response for the desktop to render.
+            The desktop starts a session and displays a QR. The phone opens the
+            session context, runs the same presentation, and returns the SMART
+            response for the desktop to render.
           </p>
         </div>
       </div>
@@ -335,115 +336,108 @@
       <ol class="steps">
         <li>
           <div>
-            <strong>Kiosk initiates a request.</strong>
-            The creator page builds a SMART request, signs it as compact ES256
-            JWS with a demo creator key, encrypts that JWS to the demo
-            submission-service key, and stores the encrypted request through a
-            demo provider.
+            <strong>Kiosk starts a check-in session.</strong>
+            Staff start the visit on a shared desktop. The kiosk prepares the
+            SMART request for that session and displays a QR or link that the
+            patient can open on their own phone.
           </div>
         </li>
         <li>
           <div>
-            <strong>The QR carries only a pointer.</strong>
-            The QR URL contains the demo's <code>#r=&lt;handoffHandle&gt;</code>
-            pointer. It is not the SMART request <code>id</code> or response
-            <code>requestId</code>, and it is not a freshness or authorization
-            mechanism. It does not contain FHIR profile details, questionnaires, or
-            response keys, and this URL shape is not standardized by SMART
-            Health Check-in 1.0.
+            <strong>The phone opens a session-bound context.</strong>
+            The QR or link gets the patient to a phone page associated with the
+            kiosk session. The URL shape, session establishment mechanism, and
+            return channel are deployment-defined; they are not SMART Health
+            Check-in 1.0 protocol elements.
           </div>
         </li>
         <li>
           <div>
-            <strong>The phone resolves and verifies.</strong>
-            The submit page fetches the encrypted request by demo pointer,
-            decrypts it locally, verifies the creator JWS against baked trusted
-            demo public keys, and recovers the embedded SMART request.
+            <strong>The phone recovers the request for review.</strong>
+            Once the session context is established, the phone page obtains the
+            SMART request for that visit and presents the requested sharing in a
+            private, patient-controlled context.
           </div>
         </li>
         <li>
           <div>
             <strong>The phone runs the same presentation flow.</strong>
-            The submit page reuses the React <code>SmartCheckinButton</code>,
-            calls the Digital Credentials API, opens and validates the wallet
-            response, extracts the SMART response, and encrypts only that
-            SMART response to the kiosk's desktop key.
+            The phone invokes the normal same-device Digital Credentials API
+            flow, the patient approves in their wallet, and the phone validates
+            the returned SMART Health Check-in response.
           </div>
         </li>
         <li>
           <div>
-            <strong>The kiosk receives and reviews.</strong>
-            The creator page watches provider submission rows, downloads each
-            encrypted blob for this request, decrypts it in browser memory,
-            checks the request binding, and renders the same SMART response
-            review UI as the same-device requester page.
+            <strong>The kiosk receives the session result.</strong>
+            The phone returns the SMART response to the waiting kiosk session
+            through deployment-defined infrastructure. The kiosk checks the
+            response against the original request before rendering or using it.
           </div>
         </li>
       </ol>
     </section>
 
-    <section id="provider">
-      <h2>The provider abstraction</h2>
+    <section id="contract">
+      <h2>The handoff contract</h2>
       <p>
-        The static apps use a narrow transport interface so the demo handoff is
-        not hard-coded to Instant. Demo code owns signing, encryption, request
-        verification, response encryption, and binding checks. The provider only
-        stores request rows, stores submission rows, serves encrypted blobs, and
-        reports new submissions.
+        The public contract is intentionally small: a kiosk session can invite a
+        phone into a deployment-authenticated or session-bound context; the phone
+        can perform the normative same-device sharing flow; and the accepted
+        SMART response can be returned to the waiting kiosk session.
       </p>
 
-      <div class="compact-flow" aria-label="Kiosk demo provider flow">
+      <div class="compact-flow" aria-label="Kiosk handoff contract">
         <div class="compact-step">
-          <strong>1. Create</strong>
-          Demo creator signs/encrypts the request and stores an opaque request row.
+          <strong>1. Start</strong>
+          Kiosk creates a visit-scoped sharing session.
         </div>
         <div class="compact-step">
-          <strong>2. Resolve</strong>
-          Phone reads by demo pointer, decrypts, and verifies the creator signature.
+          <strong>2. Join</strong>
+          Phone opens a context bound to that session.
         </div>
         <div class="compact-step">
-          <strong>3. Complete</strong>
-          Phone encrypts the SMART response and writes a submission row.
+          <strong>3. Share</strong>
+          Phone runs the same-device wallet presentation.
         </div>
         <div class="compact-step">
-          <strong>4. Review</strong>
-          Desktop downloads, decrypts, validates the request binding, and renders the result.
+          <strong>4. Return</strong>
+          Kiosk receives and validates the session result.
         </div>
       </div>
 
-      <pre>type DemoHandoffTransportProvider = {
-  name: string;
-  appId: string;
-  configured: boolean;
-  writeRequest(...): Promise&lt;DemoRequestRow&gt;;
-  readRequest(requestId): Promise&lt;DemoRequestRow&gt;;
-  writeSubmission(...): Promise&lt;DemoSubmissionRow&gt;;
-  downloadSubmissionBlob(row): Promise&lt;Uint8Array&gt;;
-  useSubmissionRows(requestId): DemoSubmissionRows;
-};</pre>
-    </section>
-
-    <section id="instant">
-      <h2>Current provider: InstantDB + Instant Storage</h2>
-      <p>
-        The checked-in demo provider uses InstantDB for small pointer rows and
-        Instant Storage for encrypted response blobs. Instant is intentionally
-        treated as untrusted demo transport.
-      </p>
       <div class="callout">
-        <strong>What Instant can see:</strong> request IDs, submission IDs,
-        storage paths, ciphertext, and the per-submission IV plus the phone's
-        ephemeral ECDH public key needed to derive the response key.
+        <strong>What the handoff proves:</strong> a phone page and kiosk page are
+        participating in the same deployment session, and the returned SMART
+        response matched the original request.
       </div>
       <div class="callout warn">
-        <strong>What Instant should not see:</strong> the plaintext SMART
-        request, requested FHIR profiles, questionnaires, raw/opened mdoc
-        response, or returned clinical artifacts.
+        <strong>What it does not prove by itself:</strong> requester identity,
+        organization authority, clinical-source provenance, patient matching,
+        downstream EHR write-back authorization, or payment/claims acceptance.
+      </div>
+    </section>
+
+    <section id="deployment">
+      <h2>What deployments choose</h2>
+      <p>
+        Different deployments can choose different ways to establish the phone
+        context and return the result: QR codes, app links, staff-assisted
+        lookup, authenticated web sessions, polling, push, or server-mediated
+        relay. Those choices are deployment plumbing, not new SMART Health
+        Check-in wire protocols.
+      </p>
+      <div class="callout warn">
+        <strong>Keep the boundary clear:</strong> companion demos may document a
+        concrete relay for implementation purposes, but the public protocol
+        story should stay at the session-handoff level unless a
+        deployment profile chooses to standardize more.
       </div>
       <p>
-        Demo public and private keys are checked into the repo so the static
-        Pages app can run without a server. They demonstrate the architecture;
-        they are not production secrets.
+        The invariant across those choices is that the phone performs the
+        normative same-device presentation, and the kiosk treats the returned
+        payload as a session-bound SMART response to validate against the
+        original request.
       </p>
     </section>
   </main>
