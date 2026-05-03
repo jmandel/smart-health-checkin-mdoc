@@ -1,0 +1,82 @@
+# T5.C Privacy considerations adjudication
+
+## Inputs reviewed
+
+Reviewed the outline and dependency tree for T5.C scope, the methodology's organizer requirements, all five privacy draft attempts, accepted prerequisite canonicals/reviews for T1-T5.B, and active implementation/docs/fixtures called out in the prompt.
+
+Key evidence used:
+
+- Methodology requires comparing all attempts, resolving contradictions by repository evidence rather than majority vote, and writing both `adjudication.md` and `canonical.md` (`spec-work/methodology.md:75-88`, `spec-work/methodology.md:412-419`).
+- The dependency tree makes §12 depend on §§5-9 and §11 and names the organizer focus: request ids, Artifact ids, QR metadata, retention, and logs (`spec.md.outline.dependency_tree:366-380`, `spec.md.outline.dependency_tree:524-525`).
+- The accepted request model makes the SMART request transport-neutral, keeps requester identity/trust metadata out of the clinical request body, treats `purpose`, item text, selectors, `accept[]`, `fhirVersions[]`, and `required` as clinical/request-review fields, and makes items the Holder-review and response-accounting granularity (`spec-work/t2a-clinical-request-model/canonical.md:1-8`, `spec-work/t2a-clinical-request-model/canonical.md:70-112`).
+- The accepted response model binds `SmartHealthCheckinResponse.requestId` to the original request `id`, scopes Artifact ids to one response, requires `fulfills[]` and media-type checks, requires `requestStatus[]`, distinguishes SMART Health Card Artifacts from raw FHIR JSON, and states raw FHIR JSON is patient-mediated unless separately provenanced or signed (`spec-work/t2b-clinical-response-model/canonical.md:33-38`, `spec-work/t2b-clinical-response-model/canonical.md:66-93`, `spec-work/t2b-clinical-response-model/canonical.md:111-155`).
+- The accepted trust framework separates origin, privileged-caller policy, reader authentication, mdoc issuer/device evidence, clinical-source provenance, identifier scoping, and deployment policy; one layer cannot substitute for another (`spec-work/t3a-trust-framework/canonical.md:1-15`, `spec-work/t3a-trust-framework/canonical.md:17-52`, `spec-work/t3a-trust-framework/canonical.md:91-125`).
+- The accepted same-device flow uses one stable element, `smart_health_checkin_response`, carries the SMART request in `ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]`, defaults `intentToRetain` to `true`, and says request items/FHIR profiles/questionnaires are not separate mdoc elements (`spec-work/t3b-org-iso-mdoc-same-device/canonical.md:9-28`, `spec-work/t3b-org-iso-mdoc-same-device/canonical.md:33-63`, `spec-work/t3b-org-iso-mdoc-same-device/canonical.md:107-115`).
+- Accepted kiosk sections fix the direct `smartRequest`, reject preset/request-profile wrappers, make the QR pointer-only, define wrapper `requestId` as distinct from `smartRequest.id`, treat the Submission service as untrusted, and define active submission plaintext as `payload.smartResponse` rather than raw `dcapiResponse` or `deviceResponse` (`spec-work/t4a-kiosk-request-pointer/canonical.md:1-16`, `spec-work/t4a-kiosk-request-pointer/canonical.md:78-155`, `spec-work/t4c-submission-completion/canonical.md:7-35`, `spec-work/t4c-submission-completion/canonical.md:44-82`).
+- Accepted completion/replay text says provider rows, storage paths, file ids, timestamps, provider app ids, IPs, user agents, row counts, retry behavior, and access patterns are metadata; provider notification is not completion or consent; cleanup and log minimization are deployment controls (`spec-work/t4c-submission-completion/canonical.md:87-125`, `spec-work/t4c-submission-completion/canonical.md:127-163`, `spec-work/t4c-submission-completion/canonical.md:165-180`).
+- Accepted security considerations explicitly warn about plaintext leakage through logs, debug panels, crash reports, browser storage, analytics, screenshots, QR images, provider dashboards, fixtures, and public screens; demo keys and developer panels are non-production; trust layers remain separate (`spec-work/t5b-security-considerations/canonical.md:1-17`, `spec-work/t5b-security-considerations/canonical.md:71-89`).
+- Active code confirms the request/response field model and validation: request `id`, item ids, Artifact ids, response `requestId`, Artifact uniqueness, `fulfills[]`, media-type checks, FHIR version checks, and status coverage (`rp-web/src/sdk/core.ts:38-83`, `rp-web/src/sdk/core.ts:175-310`).
+- Active kiosk code confirms wrapper payload fields, direct `smartRequest`, high-entropy wrapper `requestId`, signed wrapper metadata, response encryption to the desktop key, pointer-only `#r=`, and storage prefix `submissions/<requestId>/` (`rp-web/src/kiosk/protocol.ts:20-55`, `rp-web/src/kiosk/protocol.ts:145-185`, `rp-web/src/kiosk/protocol.ts:306-385`).
+- Active provider code and tests confirm provider-visible row metadata, timestamps, submission ids, storage paths/file ids, phone ephemeral public keys, pointer-only URLs with no clinical text, opaque encrypted requests, and active submissions without `dcapiResponse` or `deviceResponse` (`rp-web/src/kiosk/kiosk-provider.ts:26-80`, `rp-web/src/kiosk/kiosk-provider.ts:103-232`, `rp-web/src/kiosk/kiosk-provider.test.ts:54-172`).
+- Active demo UI exposes request rows, signed request payloads, decrypted submission review, submission metadata, and demo-only private JWK material in developer panels; this is evidence for privacy guidance, not production practice (`rp-web/src/kiosk/creator-main.tsx:153-175`, `rp-web/src/kiosk/creator-main.tsx:285-374`, `rp-web/src/kiosk/submit-main.tsx:185-260`).
+- Demo key material is explicitly checked in for static demo only and must not be used for production traffic (`rp-web/src/kiosk/demo-keys.ts:3-63`).
+- The stale `rp-web/src/sdk/kiosk-session.ts` helper inlines `deviceRequest`, `encryptionInfo`, return transport, origin, and timestamps into a URL fragment, contradicting the accepted pointer-only kiosk flow, so it was treated only as stale/non-canonical evidence (`rp-web/src/sdk/kiosk-session.ts:12-80`).
+- Docs and fixtures confirm `intentToRetain = true`, request id/item id meanings, non-PHI fixture policy, intentionally public test-only private keys, and real-platform capture status (`docs/PROTOCOL-EXPLAINER.md:123-190`, `fixtures/README.md:5-37`, `fixtures/dcapi-requests/real-chrome-android-smart-checkin/metadata.json:1-48`, `fixtures/responses/real-chrome-android-smart-checkin/metadata.json:1-42`).
+
+## Agreements across the five attempts
+
+All five attempts agreed that §12 should be a privacy-considerations overlay on accepted protocol sections, not a new protocol design or legal compliance framework. They consistently centered per-item Holder control, minimization, selective disclosure through response construction, cross-verifier linkability, rendering of requester intent, storage retention, sensitive categories, and telemetry/logging.
+
+All attempts preserved these accepted facts: SMART request/response JSON is transport-neutral; requester identity is not authenticated by SMART request text; raw `application/fhir+json` remains patient-mediated unless separately provenanced or signed; SMART Health Card Artifacts carry signed clinical-source evidence but still require verification and local trust policy; kiosk uses direct `smartRequest`, pointer-only `#r=<requestId>`, distinct wrapper `requestId` and SMART request `id`, and untrusted relay behavior; active successful submissions carry `smartResponse`, not raw `dcapiResponse` or `deviceResponse`.
+
+## Disagreements adjudicated
+
+- **Normative strength.** Attempts 01, 03, and 04 proposed more SHALL-level privacy text than attempts 02 and 05. I kept SHALL only where the statement restates accepted §§5-9/§11 obligations or prevents mislabeling of trust/identity. Deployment retention, telemetry, sensitivity, and UI details are mostly SHOULD guidance.
+- **Data minimization wording.** Attempts differed on whether to require splitting sensitive categories into separate items. Accepted §5 supports item-level Holder review, but a universal split rule is policy-dependent. Canonical text says Requesters SHOULD split when it improves understanding or partial sharing, not that every sensitive fact must always be separate.
+- **Selective disclosure layer.** Attempts varied between clinical item-level minimization and mdoc element-level disclosure. Accepted §8 has one stable mdoc element, so canonical text rejects mdoc element selection as the clinical minimization mechanism and places selective disclosure in Wallet response construction, Artifact packaging, `fulfills[]`, and `requestStatus[]`.
+- **Extension privacy.** Attempts 01 and 03 proposed hard extension requirements. I retained a brief warning and defer extension-review templates to §13/future profiles so §12 does not redefine registry policy.
+- **Kiosk linkability.** Attempts differed on whether pointer-only QR makes the flow low-risk. Code/tests prove pointer-only content, but accepted §9/§11 and active UI show wrapper ids, rows, storage paths, timestamps, key ids, IP/user-agent-like operational metadata, browser history, copied URLs, and public screens remain privacy-relevant. Canonical text therefore says pointer-only is not anonymous.
+- **Retention.** Attempts differed on whether to define hard relay retention periods or an “ephemeral mode.” Accepted §8 fixes `intentToRetain = true` default and allows `false` when truly ephemeral; accepted §9 makes cleanup deployment-defined. Canonical text does not invent fixed deletion windows or a named mode.
+- **Demo/debug evidence.** Attempts differed on how strongly to discuss checked-in demo keys and debug panels. Canonical text treats these as evidence of leakage surfaces and fixture rules, not as production claims or protocol requirements.
+- **Platform-specific advice.** Attempts sometimes gestured toward Android/iOS/browser storage and analytics implementation details. I kept §12 at protocol/privacy-semantics level and deferred platform-specific controls to §15.
+
+## Accepted decisions
+
+1. §12 begins by stating that clinical content, request context, Holder choices, and metadata can all be sensitive.
+2. §12.1 uses request items as the privacy and accounting granularity, treats `required` and `intentToRetain` as non-consent signals, and recommends narrow request construction and privacy-preserving status outcomes.
+3. §12.2 states that v1.0 selective disclosure is not mdoc element-level clinical disclosure; it occurs through Wallet policy, Holder decision, Artifact construction, media-type selection, `fulfills[]`, and `requestStatus[]`.
+4. §12.2 preserves provenance boundaries: raw FHIR is patient-mediated unless separately provenanced/signed; SHC Artifacts require SHC verification and local trust policy.
+5. §12.3 distinguishes SMART request ids, response requestIds, item ids, Artifact ids, wrapper requestIds, submission ids, storage paths, key ids, origins, certificate subjects, nonces, and provider metadata by scope.
+6. §12.3 warns that high-entropy identifiers are still correlation handles while retained and that pointer-only QR URLs can be copied, photographed, synced, logged by clients, or observed.
+7. §12.4 requires clear separation between authenticated trust signals and unauthenticated request text; request text, selectors, logos, provider app ids, relay URLs, key ids, common names, or demo branding are not verified requester identity by themselves.
+8. §12.5 aligns retention guidance with §8 `intentToRetain = true`, recognizes true ephemeral use via `false`, and covers both plaintext and metadata retention for kiosk rows/blobs, browser state, debug panels, fixtures, and downstream receivers.
+9. §12.6 remains policy-oriented: the base spec does not define a universal sensitivity taxonomy, but content and metadata can reveal sensitive categories and non-disclosure outcomes should not be over-interpreted.
+10. §12.7 covers telemetry/logging/crash/support/fixture risks and explicitly treats live PHI, production private keys, bearer credentials, or unredacted clinical content in diagnostics as incident material rather than normal conformance artifacts.
+
+## Rejected or unsupported claims
+
+- Rejected stale request-profile, preset, IPS/all-of-the-above, or inline §8 kiosk wrapper language; accepted kiosk payload embeds direct `smartRequest`.
+- Rejected inline QR fragments carrying `deviceRequest`, `encryptionInfo`, return transport, or origin as current §9 behavior; `rp-web/src/sdk/kiosk-session.ts` is stale.
+- Rejected treating `purpose`, item `title`, item `summary`, selector URLs, unknown request members, provider app ids, relay URLs, logos, common names, key ids, or demo branding as authenticated requester identity.
+- Rejected treating wrapper JWS verification, provider row presence, storage path, upload/download status, notification order, submittedAt, or QR scan as Holder consent, patient identity, response validity, §8 validation, clinical-source provenance, or downstream authorization.
+- Rejected using successful HPKE opening, mdoc issuer/device evidence, kiosk wrapper validation, Artifact ids, `fulfills[]`, or request-id matching to imply source provenance for unsigned raw FHIR JSON.
+- Rejected production privacy claims based on checked-in demo keys, browser-displayed private JWKs, public test fixture private keys, demo certificates, or debug UI behavior.
+- Rejected hard universal retention windows, universal sensitive-category taxonomy, and platform-specific mobile/browser instructions in §12.
+- Rejected reviving old payload-size or API-volatility concerns as unresolved privacy blockers; accepted §9/§11 treat size limits and implementation APIs elsewhere.
+
+## Active implementation vs production/privacy gaps
+
+- The active creator/submit demo developer panels expose request rows, signed payloads, submission rows, storage paths/file ids, decrypted submission review, timestamps, and demo-only private JWK material (`rp-web/src/kiosk/creator-main.tsx:153-175`, `rp-web/src/kiosk/creator-main.tsx:285-374`, `rp-web/src/kiosk/submit-main.tsx:185-260`). This supports §12 warnings about debug surfaces but is not production UX.
+- Active provider rows/blobs are ciphertext plus metadata, and tests prove no plaintext clinical strings in the pointer/encrypted request and no raw `dcapiResponse`/`deviceResponse` in active successful submission (`rp-web/src/kiosk/kiosk-provider.test.ts:54-108`). Metadata still needs minimization and retention controls.
+- Checked-in keys and fixture private JWKs are intentionally public test/demo material and must remain separated from production traffic (`rp-web/src/kiosk/demo-keys.ts:3-63`, `fixtures/README.md:5-37`).
+- Real-platform fixtures are marked `containsPhi: false`, but response fixtures intentionally include plaintext DeviceResponse/debug artifacts for conformance review; live PHI in similar artifacts would be an incident (`fixtures/dcapi-requests/real-chrome-android-smart-checkin/metadata.json:1-48`, `fixtures/responses/real-chrome-android-smart-checkin/metadata.json:1-42`).
+- The stale `kiosk-session.ts` fragment helper remains in the tree and can mislead implementers if treated as current; canonical privacy text explicitly relies on accepted pointer-only §9 instead.
+
+## Open issues and deferrals
+
+- **§13 registries:** privacy review expectations for future selector kinds, Artifact media types, status-code extensions, provider profiles, and algorithm/profile entries should be handled with registry/designated-expert text.
+- **§15 implementation guidance:** detailed browser storage, mobile OS integration, analytics SDKs, crash reporting, screenshots, public kiosk UI, production key custody, cleanup jobs, and support-bundle procedures belong in implementation guidance or deployment profiles.
+- **§16.6 / T6.C fixtures:** deterministic kiosk vectors should include no-plaintext-leakage checks for pointer URLs, provider request rows, submission rows, blobs, logs/debug exports where feasible, and fixture metadata labels for non-PHI/test-only-key status.
+- **Future profiles:** may define fixed relay retention windows, production trust-anchor registries, sensitive-category labels, special-consent semantics, validation-evidence payloads for Completion displays, or an explicit ephemeral-use profile.
+
+No blocking issue prevents canonical §12 privacy-considerations content.

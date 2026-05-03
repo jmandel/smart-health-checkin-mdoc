@@ -1,0 +1,565 @@
+# SMART Health Check-in 1.0 outline dependency tree
+
+Source outline: `spec.md.outline`
+
+Purpose: organize expansion so canonical text for prerequisite sections is
+completed before dependent sections are drafted canonically. Drafts within a
+tranche can run in parallel, but a tranche should not be marked complete until
+its organizer has reconciled cross-references, conformance rules, examples, and
+schema/vector implications.
+
+## Ground rules for expansion
+
+- Treat each numbered section or subsection listed below as an expansion unit.
+- For each unit, run five independent draft attempts, then have an organizer
+  synthesize one canonical section.
+- The organizer output for every normative unit should include:
+  - final Markdown prose for the section;
+  - one-row-per-rule conformance inventory for Appendix A;
+  - cross-reference updates needed elsewhere;
+  - JSON Schema / CDDL / fixture implications, if any;
+  - unresolved questions, only if the section cannot be completed safely.
+- Do not canonicalize a dependent unit until all listed prerequisite units are
+  canonical.
+- Active protocol facts to preserve throughout:
+  - the clinical request/response model is transport-neutral;
+  - the same-device direct `org-iso-mdoc` flow is the base presentation flow;
+  - the kiosk flow wraps the same-device flow and re-enters it on the phone;
+  - kiosk request payloads embed the SMART request directly, not demo preset
+    wrappers;
+  - `profilesFrom` is an array of canonical profile-family URLs;
+  - `profiles` plus `profilesFrom` are additive selectors, not narrowing
+    selectors.
+
+## Tranche tree
+
+```text
+T1 Foundation
+├─ T1.A Editorial conventions and terminology
+├─ T1.B Purpose, scope, goals, non-goals
+└─ T1.C Architecture, roles, flows, design principles
+
+T2 Clinical content core
+├─ depends on T1
+├─ T2.A Request model
+├─ T2.B Response model
+├─ T2.C FHIR mapping appendix
+└─ T2.D JSON Schema appendix
+
+T3 Same-device presentation and trust
+├─ depends on T1, T2
+├─ T3.A Trust framework
+├─ T3.B Direct org-iso-mdoc same-device flow
+├─ T3.C SessionTranscript / CBOR / ISO compatibility appendices
+└─ T3.D Same-device CDDL and byte-ladder material
+
+T4 Cross-device kiosk wrapper
+├─ depends on T1, T2, T3
+├─ T4.A Kiosk roles, signed request, encrypted request, pointer URL
+├─ T4.B Phone resolution and re-entry into same-device flow
+├─ T4.C Submission encryption and desktop completion processing
+└─ T4.D Kiosk CDDL and kiosk fixture-vector material
+
+T5 Cross-cutting normative closure
+├─ depends on T1, T2, T3, T4
+├─ T5.A Conformance classes and extension model
+├─ T5.B Security considerations
+├─ T5.C Privacy considerations
+├─ T5.D Registry / IANA considerations
+├─ T5.E Internationalization
+└─ T5.F Conformance checklist appendix
+
+T6 Explanatory and implementation material
+├─ depends on T1, T2, T3, T4, T5
+├─ T6.A Implementation notes
+├─ T6.B Worked examples
+└─ T6.C Fixture index / final example-vector alignment
+
+T7 Final future-work and Markdown draft pass
+├─ depends on T1, T2, T3, T4, T5, T6
+├─ T7.A Reserved OID4VP binding
+├─ T7.B Open issues / future work
+├─ T7.C Acknowledgments, contributors, changelog
+└─ T7.D Final abstract, status, and editorial consistency pass
+```
+
+## Detailed tranche membership
+
+### T1 — Foundation
+
+Complete this tranche before any normative payload or wire-format prose.
+
+#### T1.A Editorial conventions and terminology
+
+- Front matter placeholders:
+  - `0.1 Title block`
+  - `0.3 Editors / contributors / IPR statement`
+  - `0.4 Copyright + license`
+- `1.4 Reading guide`
+- `1.5 Document conventions`
+- `1.5.1 RFC 2119 / RFC 8174 keywords`
+- `1.5.2 JSON / CBOR / CDDL / COSE / HPKE notation`
+- `1.5.3 Byte-string presentation`
+- `1.5.4 Pseudocode and example dialect`
+- `1.6 Terminology`
+- `1.7 References`
+- Style notes at the end of the outline
+
+Dependencies: none.
+
+Organizer focus: freeze names for roles, artifacts, request items, profile
+families, kiosk creator, submission service, phone presenter, and completion
+display. Later sections should reuse these terms exactly.
+
+#### T1.B Purpose, scope, goals, non-goals
+
+- `1.2 Scope`
+- `1.3 Out of scope`
+- `2.1 Use cases`
+- `2.2 Why a check-in protocol vs. plain credential issuance/presentation`
+- `2.3 Goals`
+- `2.4 Non-goals`
+- `2.5 Threat model summary`
+
+Dependencies: T1.A terminology.
+
+Organizer focus: make clear that issuance, longitudinal wallet storage, EHR
+write-back, identity proofing, and payments are out of scope, while clinical
+content selection, per-item consent, and transport bindings are in scope.
+
+#### T1.C Architecture, roles, flows, design principles
+
+- `3.1 Two payload domains`
+- `3.2 Two end-to-end flows`
+- `3.3 Roles and component contracts`
+- `3.4 Sequence diagrams`
+- `3.5 Trust boundaries`
+- `3.6 Design principles`
+- `1.1 Abstract` after T1.B/T1.C are coherent enough to summarize.
+
+Dependencies: T1.A, T1.B.
+
+Organizer focus: establish the architectural invariant that kiosk is a wrapper
+around same-device presentation, not a separate clinical protocol.
+
+### T2 — Clinical content core
+
+Complete this tranche before trust, mdoc, kiosk, registries, examples, or
+conformance closure.
+
+#### T2.A Request model
+
+- `5.1 Encoding rules`
+- `5.2 SmartHealthCheckinRequest`
+- `5.3 SmartHealthCheckinRequestItem`
+- `5.4 Content selectors`
+- `5.4.1 fhir.resources`
+- `5.4.1.1 profiles[]`
+- `5.4.1.2 profilesFrom[]`
+- `5.4.1.3 resourceTypes[]`
+- `5.4.1.4 Additivity rule when both profiles and profilesFrom present`
+- `5.4.1.5 No-selector default`
+- `5.4.1.6 Examples`
+- `5.4.2 questionnaire`
+- `5.4.3 Extension selectors`
+- `5.5 Canonical |version handling`
+- `5.6 Accepted media types`
+
+Dependencies: T1.
+
+Organizer focus:
+- make `profilesFrom[]` array shape normative;
+- state additive selector semantics explicitly;
+- preserve `purpose` as display context, not requester identity;
+- keep requester identity metadata prohibited from the clinical request body.
+
+#### T2.B Response model
+
+- `6.1 SmartHealthCheckinResponse`
+- `6.2 Artifact common shape`
+- `6.3 Concrete artifact shapes`
+- `6.4 Status reporting`
+- `6.5 Many-to-many fulfillment`
+- `6.6 Cross-validation rules verifier SHALL apply`
+
+Dependencies: T2.A.
+
+Organizer focus:
+- response `requestId` binds to request `id`;
+- artifacts use `mediaType`, not an artifact-level protocol type;
+- raw FHIR JSON requires `fhirVersion`;
+- SMART Health Cards use `value.verifiableCredential[]` and no outer
+  `fhirVersion`;
+- `requestStatus[]` covers every request item exactly once.
+
+#### T2.C FHIR mapping appendix
+
+- Appendix H: mapping to FHIR R4 idioms
+
+Dependencies: T2.A, T2.B.
+
+Organizer focus: canonical/version handling, `meta.profile`, Bundles, and
+QuestionnaireResponse mapping should support the normative model, not introduce
+new requirements silently.
+
+#### T2.D JSON Schema appendix
+
+- Appendix B: JSON Schema for request and response
+
+Dependencies: T2.A, T2.B, T2.C.
+
+Organizer focus: schema must encode the normative array shape for
+`profilesFrom`, additive-selector permissiveness, artifact media-type rules, and
+status coverage constraints as far as JSON Schema can express them.
+
+### T3 — Same-device presentation and trust
+
+Complete this tranche before kiosk and before final security/privacy.
+
+#### T3.A Trust framework
+
+- `7.1 Origin trust`
+- `7.2 Reader / Verifier trust`
+- `7.3 Issuer / device-attestation trust`
+- `7.4 Source trust on clinical content`
+- `7.5 Identifier scoping & uniqueness`
+- `7.6 Out-of-band trust establishment`
+
+Dependencies: T1, T2.
+
+Organizer focus: separate web origin, optional readerAuth, mdoc issuer/device
+proofs, and clinical-content source trust. Raw FHIR JSON remains
+patient-mediated unless separately signed/provenanced.
+
+#### T3.B Direct org-iso-mdoc same-device flow
+
+- `8.1 Identifiers`
+- `8.2 Verifier-side request construction`
+- `8.3 SessionTranscript construction`
+- `8.4 Wallet-side request handling`
+- `8.5 Wallet-side response construction`
+- `8.6 HPKE encryption`
+- `8.7 Verifier-side processing`
+- `8.8 Required validation checklist`
+- `8.9 Annotated end-to-end byte capture`
+
+Dependencies: T2.A, T2.B, T3.A.
+
+Organizer focus: this is the normative base flow that kiosk reuses. Specify
+requestInfo, one stable element, Tag-24 wrapping, SessionTranscript, HPKE info,
+and verifier response checks precisely enough for byte-level tests.
+
+#### T3.C Same-device support appendices
+
+- Appendix E: SessionTranscript byte ladder
+- Appendix F: CBOR diagnostic notation cheat-sheet
+- Appendix G: compatibility notes for ISO/IEC 18013-5 §9
+
+Dependencies: T3.B.
+
+Organizer focus: appendices should be derived from §8 and should not create
+alternate normative behavior.
+
+#### T3.D Same-device CDDL and byte-ladder material
+
+- Appendix C portions for same-device presentation flow
+- Appendix D portions for real Chrome/Android same-device fixtures
+
+Dependencies: T3.B, T3.C.
+
+Organizer focus: keep CDDL and fixture index aligned with actual §8 field names,
+CBOR envelopes, and byte-ladder examples.
+
+### T4 — Cross-device kiosk wrapper
+
+Complete this tranche after same-device is canonical.
+
+#### T4.A Kiosk request creation and pointer transport
+
+- `9.1 Goals`
+- `9.2 Roles`
+- `9.3 Cryptographic suite for the wrapper`
+- `9.4 KioskRequestPayload JWS body`
+- `9.5 EncryptedKioskRequest envelope`
+- `9.6 QR / pointer URL`
+
+Dependencies: T2, T3.
+
+Organizer focus: the signed kiosk payload embeds `smartRequest` directly; the QR
+is pointer-only; the relay is untrusted and sees opaque request/submission
+state.
+
+#### T4.B Phone resolution and same-device re-entry
+
+- `9.7 Phone resolution and re-entry into §8`
+
+Dependencies: T4.A, T3.B.
+
+Organizer focus: bind pointer `requestId` to decrypted payload, verify creator
+JWS, then run the same-device §8 flow against the embedded SMART request.
+
+#### T4.C Submission and desktop completion
+
+- `9.8 Submission ciphertext from phone to desktop`
+- `9.9 Desktop completion processing`
+- `9.10 Replay, expiration, and abuse considerations`
+- `9.11 Provider abstraction`
+- `9.12 End-to-end kiosk example`
+
+Dependencies: T4.A, T4.B.
+
+Organizer focus: response encryption to the desktop ephemeral key, size limits,
+single-use/expiration guidance, and provider abstraction must not weaken the
+untrusted-relay model.
+
+#### T4.D Kiosk CDDL and fixture material
+
+- Appendix C portions for kiosk JWS / encrypted-request envelopes
+- Appendix D kiosk JWS round-trip vectors and fixture index entries
+
+Dependencies: T4.A, T4.B, T4.C.
+
+Organizer focus: after T4 is canonical, decide whether the checked-in real
+Chrome/Android capture should remain historical or be replaced with a new
+capture matching the current demo request. If a new Android capture is desired,
+ask for human help only after §8, §9, §16.6, and Appendix D expectations are
+stable.
+
+### T5 — Cross-cutting normative closure
+
+Complete this tranche after all core protocol sections are canonical.
+
+#### T5.A Conformance
+
+- `4.1 Conformance targets`
+- `4.2 Mandatory features`
+- `4.3 Optional features`
+- `4.4 Profile identifiers`
+- `4.5 Versioning rules`
+- `4.6 Extension model`
+- `4.7 Conformance checklist cross-link`
+
+Dependencies: T2, T3, T4.
+
+Organizer focus: conformance classes must match the actual obligations in
+request, response, same-device, and kiosk sections. Avoid inventing new
+obligations here that are not specified elsewhere.
+
+#### T5.B Security considerations
+
+- `11.1 End-to-end encryption requirements`
+- `11.2 Replay & freshness`
+- `11.3 Origin spoofing & UI redress`
+- `11.4 Reader impersonation`
+- `11.5 Issuer trust pivots`
+- `11.6 Cryptographic agility`
+- `11.7 Plaintext leakage`
+- `11.8 Kiosk relay treated as honest-but-curious`
+- `11.9 Side-channel and metadata leakage on QR`
+- `11.10 Wallet UX guarantees`
+
+Dependencies: T3, T4.
+
+Organizer focus: restate and threat-check the actual cryptographic flows; do not
+move platform-specific Android/iOS implementation advice out of §15.
+
+#### T5.C Privacy considerations
+
+- `12.1 Data minimization and per-item consent`
+- `12.2 Selective disclosure responsibilities`
+- `12.3 Cross-verifier linkability`
+- `12.4 Wallet rendering of requester intent`
+- `12.5 Storage retention defaults`
+- `12.6 Sensitive category handling`
+- `12.7 Telemetry guidance`
+
+Dependencies: T2, T3, T4, T5.B.
+
+Organizer focus: privacy language should reflect actual fields and flows,
+especially request ids, artifact ids, QR metadata, retention, and logs.
+
+#### T5.D Registry / IANA considerations
+
+- `13.1 Media type registrations / references`
+- `13.2 mdoc registry entries`
+- `13.3 Status code registry`
+- `13.4 Content-selector kind registry`
+- `13.5 Profile-id registry`
+- `13.6 JWS typ registry entry`
+- `13.7 Designated expert review process`
+
+Dependencies: T2, T3, T4, T5.A.
+
+Organizer focus: registry entries should be a mirror of already-canonical
+identifiers, media types, status codes, selector kinds, profile ids, and JWS
+types.
+
+#### T5.E Internationalization
+
+- `14.1 Language tags`
+- `14.2 Unicode normalization and BIDI handling`
+- `14.3 Locale negotiation guidance`
+
+Dependencies: T2.A, T2.B, T5.C.
+
+Organizer focus: only fields that actually carry human-readable display text
+should have i18n requirements.
+
+#### T5.F Conformance checklist appendix
+
+- Appendix A: conformance checklist
+
+Dependencies: T5.A, plus all normative rules in T2, T3, T4, T5.B, T5.C, T5.D,
+T5.E.
+
+Organizer focus: each SHALL/SHOULD row should link to exactly one stable
+section number and identify the conformance target.
+
+### T6 — Explanatory and implementation material
+
+Complete this tranche only after normative text is stable enough to avoid
+examples becoming stale.
+
+#### T6.A Implementation notes
+
+- `15.1 Verifier app`
+- `15.2 Wallet implementation guidance`
+- `15.3 EHR ingestion`
+- `15.4 Kiosk transport-provider implementations`
+- `15.5 SDK packaging guidance`
+
+Dependencies: T2, T3, T4, T5.
+
+Organizer focus: section 15 is informative. Platform-specific machinery belongs
+here, not in the normative core.
+
+#### T6.B Worked examples
+
+- `16.1 Insurance-card-only check-in`
+- `16.2 US Core summary check-in`
+- `16.3 Inline questionnaire pre-visit intake`
+- `16.4 Mixed bundle`
+- `16.5 Per-item declined / partial / error`
+- `16.6 Cross-device kiosk full byte ladder`
+- `16.7 No selectors`
+
+Dependencies: T2, T3, T4, T5.
+
+Organizer focus: examples should exercise the canonical selectors, artifact
+shapes, statuses, byte ladders, and kiosk envelope without introducing new
+semantics.
+
+#### T6.C Fixture index / final example-vector alignment
+
+- Appendix D: test vectors / fixture index
+
+Dependencies: T3.D, T4.D, T6.B.
+
+Organizer focus: align generated vectors, checked-in fixtures, and examples.
+This is the natural checkpoint to decide whether new Android captures are needed
+to replace older historical fixtures.
+
+### T7 — Future-work and Markdown draft pass
+
+Complete this tranche last.
+
+#### T7.A Reserved OID4VP binding
+
+- `10.1 Mapping request to OID4VP request object`
+- `10.2 Mapping response to vp_token`
+- `10.3 Open issues`
+
+Dependencies: T2, T3, T5.D.
+
+Organizer focus: keep this informative and clearly reserved for v1.x/v2. It
+should not weaken the direct mdoc requirements.
+
+#### T7.B Open issues / future work
+
+- `17.1 Production issuer trust anchors and registries`
+- `17.2 Privileged-browser allowlist policy`
+- `17.3 requestInfo size limits`
+- `17.4 iOS / Safari feasibility`
+- `17.5 OID4VP binding alignment`
+- `17.6 External verifier conformance suite`
+
+Dependencies: all prior tranches.
+
+Organizer focus: future-work items should not read like active protocol
+requirements.
+
+#### T7.C Final matter
+
+- `18 Acknowledgments and contributors`
+- `19 Change log`
+- `0.2 Document status, version, publication date, change log`
+
+Dependencies: all prior tranches.
+
+#### T7.D Final Markdown editorial pass
+
+- Revisit `1.1 Abstract`
+- Revisit cross-references and section numbering
+- Revisit front-matter status
+- Confirm Appendix A/B/C/D/H match final normative text
+
+Dependencies: T7.A, T7.B, T7.C.
+
+## Top-level dependency table
+
+| Unit | Depends on | Blocks |
+| --- | --- | --- |
+| Front matter partial (`0.1`, `0.3`, `0.4`) | none | T1 |
+| Front matter final (`0.2`) | all tranches | Markdown draft finalization |
+| §1 Introduction | T1.A/T1.B/T1.C internally | all later sections |
+| §2 Purpose / goals | §1 terms | §3, §5–§17 |
+| §3 Architecture | §1, §2 | §4–§17 |
+| §4 Conformance | §§5–14 | Appendix A, final Markdown draft |
+| §5 Request | §§1–3 | §§6–16, Appendices B/H |
+| §6 Response | §5 | §§7–16, Appendices B/H |
+| §7 Trust | §§3,5,6 | §§8,9,11,12 |
+| §8 Same-device mdoc | §§5,6,7 | §9, Appendices C/D/E/F/G |
+| §9 Kiosk | §§5,6,7,8 | §§11,12,13,15,16, Appendix C/D |
+| §10 OID4VP reserved | §§5,6,8,13 | §17 |
+| §11 Security | §§7,8,9 | §12, final conformance review |
+| §12 Privacy | §§5–9, §11 | final conformance review |
+| §13 Registries | §§4–9 | final Markdown draft, extension review |
+| §14 Internationalization | §§5,6,12 | final Markdown draft |
+| §15 Implementation notes | §§5–14 | examples polish |
+| §16 Worked examples | §§5–14 | Appendix D, final Markdown draft |
+| §17 Future work | all protocol sections | final Markdown draft |
+| §18 Acknowledgments | all contributors known | final Markdown draft |
+| §19 Change log | all changes known | final Markdown draft |
+| Appendix A | all normative SHALL/SHOULD sections | certification use |
+| Appendix B | §§5,6 | validators / SDK docs |
+| Appendix C | §§8,9 | byte-level fixture review |
+| Appendix D | §§8,9,16 | capture refresh decisions |
+| Appendix E | §8.3 | HPKE / device-auth examples |
+| Appendix F | §8 | reader support |
+| Appendix G | §8, §13.2 | interoperability review |
+| Appendix H | §§5,6 | FHIR implementation notes |
+
+## Parallel drafting batches
+
+Recommended batch boundaries for the five-draft/organizer workflow:
+
+1. Batch T1.A: editorial conventions, terminology, references.
+2. Batch T1.B/T1.C: purpose, scope, architecture, roles, flows.
+3. Batch T2.A: request model and selectors.
+4. Batch T2.B: response model and validation.
+5. Batch T2.C/T2.D: FHIR mapping and JSON Schema.
+6. Batch T3.A: trust framework.
+7. Batch T3.B: same-device direct mdoc flow.
+8. Batch T3.C/T3.D: SessionTranscript, CDDL, byte ladders, ISO notes.
+9. Batch T4.A/T4.B: kiosk request, pointer, phone resolution.
+10. Batch T4.C/T4.D: kiosk submission, desktop completion, kiosk fixtures.
+11. Batch T5.A/T5.D/T5.F: conformance, registries, checklist.
+12. Batch T5.B/T5.C/T5.E: security, privacy, internationalization.
+13. Batch T6.A: implementation notes.
+14. Batch T6.B/T6.C: examples and fixture index.
+15. Batch T7: OID4VP placeholder, future work, final matter.
+
+Each batch should produce an organizer note listing any upstream text that must
+be reopened. Reopenings should be exceptional; if a downstream batch discovers a
+real contradiction, pause the next tranche and patch the prerequisite section
+before continuing.
