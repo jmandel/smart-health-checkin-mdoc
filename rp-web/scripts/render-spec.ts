@@ -82,7 +82,7 @@ const body = await marked.parse(md, { renderer });
 
 const docTitle = "SMART Health Check-in 1.0 — Draft Spec";
 const docDescription =
-  "Assembled draft of SMART Health Check-in 1.0: clinical request/response model, trust framework, and same-device org-iso-mdoc presentation flow with JSON Schema, CDDL, and fixture appendices.";
+  "SMART Health Check-in 1.0 draft: TypeScript/JSDoc clinical model, trust rules and layer separation, same-device org-iso-mdoc flow, and Appendix A diagnostic bridge.";
 
 const tocItems = headings
   .map(

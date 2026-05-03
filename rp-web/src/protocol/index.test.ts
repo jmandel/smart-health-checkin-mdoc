@@ -8,9 +8,6 @@ import {
   buildOrgIsoMdocRequest,
   buildReaderAuthenticationBytes,
   cborDecode,
-  decodeDynamicElement,
-  DYNAMIC_ELEMENT_PREFIX,
-  encodeDynamicElement,
   hex,
   hpkeSealDirectMdoc,
   inspectDcapiMdocResponse,
@@ -52,9 +49,6 @@ const PATIENT_REQUEST: SmartCheckinRequest = {
 
 const PATIENT_REQUEST_JSON = JSON.stringify(PATIENT_REQUEST);
 
-const PATIENT_DYNAMIC_ELEMENT =
-  `${DYNAMIC_ELEMENT_PREFIX}.${base64UrlEncodeBytes(new TextEncoder().encode(PATIENT_REQUEST_JSON))}`;
-
 const VERIFIER_PUBLIC_JWK: JsonWebKey = {
   kty: "EC",
   crv: "P-256",
@@ -64,16 +58,7 @@ const VERIFIER_PUBLIC_JWK: JsonWebKey = {
   alg: "ECDH-ES",
 };
 
-describe("fallback dynamic SMART Check-in element", () => {
-  test("encodes and decodes compact JSON", () => {
-    const element = encodeDynamicElement(PATIENT_REQUEST);
-
-    expect(element).toBe(PATIENT_DYNAMIC_ELEMENT);
-    expect(element.startsWith(`${DYNAMIC_ELEMENT_PREFIX}.`)).toBe(true);
-    expect(element).not.toContain("=");
-    expect(decodeDynamicElement(element)).toEqual(PATIENT_REQUEST);
-  });
-
+describe("SMART Check-in request validation", () => {
   test("validates request shape", () => {
     expect(validateSmartCheckinRequest(PATIENT_REQUEST).ok).toBe(true);
     expect(validateSmartCheckinRequest({ version: "1", items: [{ id: "x" }] }).ok).toBe(false);

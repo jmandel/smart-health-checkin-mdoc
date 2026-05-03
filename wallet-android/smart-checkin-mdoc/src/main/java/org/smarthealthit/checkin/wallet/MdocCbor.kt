@@ -10,7 +10,7 @@ import java.nio.charset.StandardCharsets
  * Just enough to walk an mdoc DeviceRequest emitted by Chrome / Safari for the
  * `org-iso-mdoc` Digital Credentials API protocol and to emit the demo
  * DeviceResponse bytes — see
- * `spec.md` §8 + Appendix C for the captured shape.
+ * `spec.md` §8 + Appendix A for the captured shape.
  *
  * Supports: unsigned integers (0..2^32-1), negative integers, byte strings,
  * text strings, arrays, maps, tags, booleans, and null.

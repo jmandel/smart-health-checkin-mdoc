@@ -17,11 +17,11 @@ Use this module when you need to:
 | API | Purpose |
 | --- | --- |
 | `ReaderAuthVerification` | Shared reader-auth status model for UI and response flows. |
-| `VerifiedRequest` | App-facing consent model derived from a SMART request. |
+| `VerifiedRequest` | App-facing holder review model derived from a SMART request. |
 | `RequestItem` | One requested item, including title, subtitle, kind, metadata, and accepted media types. |
 | `RequestKind` | `Coverage`, `Plan`, `Clinical`, `Questionnaire`, or `Unknown`. |
 | `SmartHealthWalletStore` | Holder-data boundary implemented by the app. |
-| `SmartHealthWalletArtifact` | FHIR/other artifact returned by the wallet store. |
+| `SmartHealthWalletArtifact` | Raw FHIR, SMART Health Card, or explicitly supported extension artifact returned by the wallet store. |
 | `SmartRequestAdapter.build(...)` | Parses SMART request JSON into `VerifiedRequest`. |
 | `SmartCheckinResponseFactory.build(...)` | Produces SMART Check-in response JSON from selected items and wallet data. |
 | `QuestionnaireResponseBuilder.build(...)` | Converts Questionnaire answers into a FHIR `QuestionnaireResponse`. |
@@ -88,6 +88,9 @@ selectors: exact profiles highlight specific records of interest, but do not
 limit the broader profile-family request. The current adapter recognizes
 canonical families such as US Core for UI classification. Production holder
 matching can be more precise and should live behind `SmartHealthWalletStore`.
+Selectors are request intent, not disclosure limits: policy and holder choice
+may lead the wallet to return more, less, or different accepted content while
+still accounting for every item with `requestStatus[]`.
 
 ## Wallet-store boundary
 
@@ -134,8 +137,10 @@ val responseJson = SmartCheckinResponseFactory.build(
 ```
 
 Items explicitly set to `false` become `declined`. Items whose resolved artifact
-media type is not accepted become `unsupported`. Successful items get a FHIR or
-other artifact plus `fulfilled` status.
+media type is not accepted become `unsupported`. Successful items get raw FHIR,
+SMART Health Card, or explicitly supported extension Artifacts plus status.
+One Artifact can fulfill multiple items, and multiple Artifacts can reference
+one item; every original item still gets exactly one `requestStatus[]` entry.
 
 ## Questionnaire answers
 

@@ -662,7 +662,7 @@
         <article class="layer transport">
           <h3>Digital Credentials API</h3>
           <p>
-            Browser transport for both flows. Wallet presentation uses direct
+            Browser-mediated transport for the normative same-device flow. Wallet presentation uses direct
             <code>org-iso-mdoc</code>: <abbr title="Hybrid Public Key Encryption (RFC 9180)">HPKE</abbr>
             encryption, COSE-signed mdoc, with the SMART payload carried inside.
           </p>
@@ -695,7 +695,8 @@
           <h3>Read the spec</h3>
           <ul>
             <li><a href="./smart-model-explainer.html">SMART model explainer</a><small>Application-level model: items, artifacts, statuses</small></li>
-            <li><a href="./spec.html">SMART Health Check-in 1.0 draft spec</a><small>Assembled draft: clinical model, trust framework, same-device <code>org-iso-mdoc</code> presentation flow, JSON Schema and CDDL appendices</small></li>
+            <li><a href="./spec.html">SMART Health Check-in 1.0 draft spec</a><small>Rendered spec: TypeScript/JSDoc clinical model, trust rules and layer separation, same-device <code>org-iso-mdoc</code> flow, and Appendix A diagnostic bridge</small></li>
+            <li><a href="./spec.md">Raw spec Markdown</a><small>Source Markdown for the same draft spec</small></li>
             <li><a href="./wire-protocol-explainer.html">Wire-protocol explainer</a><small>Byte-level walkthrough with annotated fixtures</small></li>
           </ul>
         </div>

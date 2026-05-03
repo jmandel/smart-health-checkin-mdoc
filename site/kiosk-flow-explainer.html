@@ -306,7 +306,7 @@
       </div>
       <p>
         The kiosk demo keeps that exact phone-side presentation. The desktop
-        page only creates a short-lived demo request pointer and watches for a
+        page only creates a short-lived demo handoff handle and watches for a
         demo encrypted completion. The patient still uses their own phone and
         health app to present.
       </p>
@@ -345,8 +345,10 @@
         <li>
           <div>
             <strong>The QR carries only a pointer.</strong>
-            The QR URL contains the demo's <code>#r=&lt;requestId&gt;</code>
-            handle. It does not contain FHIR profile details, questionnaires, or
+            The QR URL contains the demo's <code>#r=&lt;handoffHandle&gt;</code>
+            pointer. It is not the SMART request <code>id</code> or response
+            <code>requestId</code>, and it is not a freshness or authorization
+            mechanism. It does not contain FHIR profile details, questionnaires, or
             response keys, and this URL shape is not standardized by SMART
             Health Check-in 1.0.
           </div>

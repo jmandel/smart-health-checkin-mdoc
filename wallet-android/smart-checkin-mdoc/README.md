@@ -25,7 +25,7 @@ request:   ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]
 response:  smart_health_checkin_response
 ```
 
-See [`../../spec.md`](../../spec.md) §8 and Appendix C for the wire profile
+See [`../../spec.md`](../../spec.md) §8 and Appendix A for the wire profile
 and invariants.
 
 ## Key types and APIs
@@ -63,8 +63,9 @@ val readerAuth = direct.readerAuth
 - SessionTranscript can be reconstructed from `encryptionInfo` and origin;
 - readerAuth is verified when present.
 
-The parser supports the active `org-iso-mdoc` protocol string and the older
-`org.iso.mdoc` spelling when searching wrapper JSON.
+The v1.0 protocol string is exactly `org-iso-mdoc`. Any local compatibility for
+older wrapper spellings is diagnostic behavior, not SMART Health Check-in 1.0
+wire compatibility.
 
 ## Response flow
 

@@ -2,7 +2,7 @@
 
 `wallet-android` is a native Android wallet for SMART Health Check-in over W3C
 Digital Credentials API using direct `org-iso-mdoc` (specified in
-[`../spec.md`](../spec.md) §8 + Appendix C).
+[`../spec.md`](../spec.md) §8 + Appendix A).
 
 The project is now split into library-shaped Gradle modules plus a demo app.
 The split is intended to make future Android wallet apps small: app code should
@@ -17,7 +17,7 @@ screens.
 | `smart-checkin-core` | SMART request/response domain model, request classification, response building, QuestionnaireResponse building, wallet-store interface. | [`smart-checkin-core/README.md`](smart-checkin-core/README.md) |
 | `smart-checkin-mdoc` | Direct `org-iso-mdoc` request parsing, SessionTranscript, readerAuth verification, CBOR, COSE, HPKE-sealed wallet response. | [`smart-checkin-mdoc/README.md`](smart-checkin-mdoc/README.md) |
 | `smart-checkin-credential-manager` | Android Credential Manager / registry-provider registration for the wallet entry and matcher bytes. | [`smart-checkin-credential-manager/README.md`](smart-checkin-credential-manager/README.md) |
-| `smart-checkin-ui-compose` | Compose demo/reusable UI layer: registration home, consent screens, Questionnaire rendering helpers, theme/state. | [`smart-checkin-ui-compose/README.md`](smart-checkin-ui-compose/README.md) |
+| `smart-checkin-ui-compose` | Compose demo/reusable UI layer: registration home, holder review screens, Questionnaire rendering helpers, theme/state. | [`smart-checkin-ui-compose/README.md`](smart-checkin-ui-compose/README.md) |
 | `app` | Demo app shell: manifest, `HandlerActivity`, sample wallet store, bundled demo assets, matcher build/copy tasks, end-to-end wiring. | This file |
 
 Dependency direction:
@@ -52,8 +52,8 @@ Android Credential Manager
 
 HandlerActivity / libraries
   smart-checkin-mdoc parses deviceRequest and encryptionInfo
-  smart-checkin-core turns SMART JSON into consent/request models
-  smart-checkin-ui-compose renders consent and questionnaire input
+  smart-checkin-core turns SMART JSON into holder-review/request models
+  smart-checkin-ui-compose renders holder review and questionnaire input
   app DemoWalletStore resolves selected resources
   smart-checkin-core builds SMART response JSON
   smart-checkin-mdoc returns encrypted direct-mdoc DeviceResponse
@@ -138,7 +138,7 @@ First launch:
 2. Tap **Register with Credential Manager**.
 3. Open the web verifier in a browser with Digital Credentials support.
 4. Request SMART Health Check-in information.
-5. Choose the wallet entry, review consent, and accept.
+5. Choose the wallet entry, review requested sharing, and accept.
 
 The app currently registers both modern `DigitalCredential.TYPE_DIGITAL_CREDENTIAL`
 and legacy `com.credman.IdentityCredential` entries by default for browser

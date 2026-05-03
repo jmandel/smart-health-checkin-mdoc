@@ -15,9 +15,6 @@ Stable exports:
 - `MDOC_NAMESPACE` (`"org.smarthealthit.checkin"`)
 - `SMART_REQUEST_INFO_KEY` (`"org.smarthealthit.checkin.request"`)
 - `SMART_RESPONSE_ELEMENT_ID` (`"smart_health_checkin_response"`)
-- `DYNAMIC_ELEMENT_PREFIX` (`"shc1j"`) — fallback only
-- `encodeDynamicElement(request)`
-- `decodeDynamicElement(element)`
 - `buildOrgIsoMdocRequest(request, options?)`
 - `buildDeviceRequestBytes(...)`
 - `buildEncryptionInfoBytes(...)`
@@ -55,14 +52,10 @@ The checked-in implementation carries SMART request JSON in
 payload shape defined in `../../../spec.md`. The requested mdoc element
 remains the stable `smart_health_checkin_response`.
 
-The `shc1j`/`shc1d` dynamic element encoding remains a fallback strategy if a
-real wallet API hides `requestInfo`; it is not used by the active request
-builder.
-
-Canonical `|version` rule of thumb: strip the suffix for HTTP fetches,
-profile-family routing, and IG membership checks; preserve it in returned
-records, `QuestionnaireResponse.questionnaire`, logs, fixtures, and exact
-conformance comparisons.
+Canonical `|version` rule of thumb: preserve the original wire string exactly.
+Direct HTTP dereference is only appropriate for unversioned canonicals. Versioned
+canonicals require resolver or FHIR-search semantics that check both URL and
+version, and responses must preserve exact returned profile/canonical strings.
 
 CLI wrapper:
 

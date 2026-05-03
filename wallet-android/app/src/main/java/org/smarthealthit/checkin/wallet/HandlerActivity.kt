@@ -39,7 +39,7 @@ import java.time.Instant
  *   - Read ProviderGetCredentialRequest.
  *   - Find the org-iso-mdoc option and parse the SMART request out of
  *     `ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]`.
- *   - Drive the existing Compose consent UI (DemoApp + ConsentScreen).
+ *   - Drive the existing Compose holder review UI (DemoApp + ConsentScreen).
  *   - On submit, package the SMART-shaped response JSON as a direct mdoc
  *     DeviceResponse and return it as a DigitalCredential.
  */
@@ -139,8 +139,7 @@ class HandlerActivity : ComponentActivity() {
         if (smartJson == null) {
             screenState = ScreenState.Error(
                 "ItemsRequest.requestInfo[\"org.smarthealthit.checkin.request\"] is absent. " +
-                    "Verifier may have used the dynamic-element fallback (shc1j.<b64u>), " +
-                    "which is not yet implemented."
+                    "SMART Health Check-in 1.0 requires the request JSON in this carrier."
             )
             return
         }

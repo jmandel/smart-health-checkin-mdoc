@@ -22,7 +22,7 @@ SMART Health Check-in has two application-level roles:
 | Role | What it does |
 | --- | --- |
 | Requester/verifier | Builds a SMART Check-in request: "for this check-in, please share these FHIR resources or answer this Questionnaire." |
-| Responder/wallet | Parses the request, shows the user what is being requested, gets consent/input, and returns a SMART Check-in response. |
+| Responder/wallet | Parses the request, shows the user what is being requested, gets holder approval/input, and returns a SMART Check-in response. |
 
 The SMART payloads are transport-neutral JSON. The current demo carries them
 over W3C Digital Credentials API using direct `org-iso-mdoc`, but the core
@@ -38,7 +38,7 @@ Requester/verifier
 Responder/wallet
   SmartCheckinResponse
     artifacts:
-      - FHIR JSON, SMART Health Cards, or other accepted media
+      - raw FHIR JSON, SMART Health Cards, or explicitly supported extension media
     requestStatus:
       - fulfilled, partial, unavailable, declined, unsupported, or error
 ```
@@ -71,7 +71,7 @@ Main exports:
 | `SmartArtifact` | One returned artifact, such as FHIR JSON or SMART Health Card. |
 | `validateSmartCheckinRequest(value)` | Runtime shape validation for untrusted request JSON. |
 | `validateSmartCheckinResponse(value)` | Runtime shape validation for untrusted response JSON. |
-| `validateResponseAgainstRequest(request, response)` | Cross-checks `requestId`, `artifacts[].fulfills` reachability, `mediaType ∈ item.accept[]`, `fhirVersion ∈ request.fhirVersions[]`, and per-item status coverage. |
+| `validateResponseAgainstRequest(request, response)` | Cross-checks `requestId`, `artifacts[].fulfills` reachability, supported media types, `mediaType ∈ item.accept[]`, per-item status coverage, raw FHIR/SMART Health Card wrapper rules, exact-version evidence, and separation between protocol validity and downstream clinical acceptance. |
 
 Example request:
 
@@ -125,6 +125,12 @@ const responseValidation = validateResponseAgainstRequest(request, maybeResponse
 if (!responseValidation.ok) throw new Error(responseValidation.error);
 ```
 
+`purpose`, item `title`/`summary`, unknown members, URLs, callback-looking
+strings, and handoff metadata are display or deployment context only. They are
+not requester identity, organization identity, origin, reader credentials, or
+trust claims; those signals come from presentation flow evidence and deployment
+policy.
+
 ### Profiles and profile families
 
 Use `profiles` when the requester needs specific StructureDefinitions:
@@ -154,6 +160,11 @@ additive selectors: exact profiles highlight specific records of interest, but
 do not limit the broader profile-family request. The core validator checks shape
 only; actual holder-side matching belongs in wallet/store logic because it
 depends on available patient data and profile knowledge.
+
+More generally, SMART Health Check-in is a request model, not a disclosure-limit
+model. Selectors say what the requester is looking for; the holder and wallet
+may return more, less, or different content when policy, user choice,
+`accept[]`, and response validation allow it.
 
 ## `dcapi-verifier.ts`: browser verifier flow
 

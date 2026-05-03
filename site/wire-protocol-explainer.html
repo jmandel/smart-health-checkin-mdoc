@@ -642,6 +642,12 @@
         <li><b>Namespace</b> <code>org.smarthealthit.checkin</code></li>
         <li><b>Element</b> <code>smart_health_checkin_response</code></li>
       </ul>
+      <p class="lede">
+        Version 1.0 standardizes only the same-device direct
+        <code>org-iso-mdoc</code> presentation flow. QR, kiosk, SMS, portal, and
+        relay handoffs are deployment UX that land on this flow, not separate
+        SMART Health Check-in wire protocols.
+      </p>
     </div>
   </header>
 
@@ -654,7 +660,7 @@
       <a href="#construct-response">Build the response</a>
       <a href="#encrypt">Encrypt with HPKE</a>
       <a href="#parse-verify">Parse &amp; verify</a>
-      <a href="#checklist">Verification checklist</a>
+      <a href="#debug-steps">Fixture/debug steps</a>
       <a href="#known-edges">Known edges</a>
       <a href="./wire-protocol-inspector.html">Capture inspector →</a>
     </nav>
@@ -673,7 +679,7 @@
           </div>
           <div class="flow-step">
             <strong>2. Browser</strong>
-            Shows the trust prompt and reveals its web origin (e.g. <code>http://127.0.0.1:3010</code>) to the wallet.
+            Mediates user interaction and supplies an authenticated origin/equivalent to the wallet.
           </div>
           <div class="flow-step">
             <strong>3. Android Credential Manager</strong>
@@ -681,7 +687,7 @@
           </div>
           <div class="flow-step">
             <strong>4. Wallet</strong>
-            Recovers the SessionTranscript, gets user consent, packs the SMART response into a self-attested mdoc,
+            Recovers the SessionTranscript, performs holder review, packs the SMART response into a self-attested mdoc,
             signs it, and HPKE-seals it.
           </div>
           <div class="flow-step">
@@ -694,6 +700,7 @@
           <strong>End-to-end success signal:</strong> the verifier displays
           <code>HPKE opened</code>, <code>digest matched</code>, four artifacts, and four fulfilled item statuses.
           That means the browser origin, the SessionTranscript, the HPKE key schedule, and every digest line up across the two sides.
+          It does not by itself prove requester identity, clinical-source provenance, patient matching, or EHR write-back authorization.
         </div>
       </section>
 
@@ -701,25 +708,25 @@
         <h2>Roles and what each owns</h2>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Role</th><th>Owns</th><th>Sends</th><th>Trusts</th></tr></thead>
+            <thead><tr><th>Role</th><th>Owns</th><th>Sends</th><th>Trust signal</th></tr></thead>
             <tbody>
               <tr>
                 <td>Verifier page</td>
                 <td>SMART intent, HPKE recipient keypair, nonce</td>
                 <td><code>navigator.credentials.get(...)</code></td>
-                <td>The wallet response can be opened with the saved private key and binds to the request transcript.</td>
+                <td>HPKE opening proves the response was encrypted to this request's retained key and transcript, not clinical provenance.</td>
               </tr>
               <tr>
                 <td>Browser</td>
                 <td>Web origin assertion</td>
                 <td>Credential Manager request plus <code>callingAppInfo.origin</code></td>
-                <td>The user approved the trust prompt.</td>
+                <td>Authenticated origin/equivalent is one input to policy; it is not organization identity by itself.</td>
               </tr>
               <tr>
                 <td>Android Credential Manager</td>
                 <td>Matcher dispatch, picker UI, PendingIntent delivery</td>
                 <td><code>ProviderGetCredentialRequest</code> to the wallet</td>
-                <td>Wallet registration and the user-selected credential entry.</td>
+                <td>Platform dispatch and user-selected entry; requester trust still comes from separate policy.</td>
               </tr>
               <tr>
                 <td>Wallet matcher</td>
@@ -729,9 +736,9 @@
               </tr>
               <tr>
                 <td>Wallet handler</td>
-                <td>FHIR data, consent UI, mdoc response, device key</td>
+                <td>FHIR data, holder review UI, mdoc response, device key</td>
                 <td><code>DigitalCredential</code> wrapping a base64url CBOR response</td>
-                <td>Browser origin if the calling browser package and signing certificate are on the privileged allowlist.</td>
+                <td>Origin, readerAuth, issuer/device evidence, holder choice, and clinical-source provenance remain separate states.</td>
               </tr>
             </tbody>
           </table>
@@ -750,7 +757,7 @@
               <p>
                 Start with a typed clinical request &mdash; the same shape the
                 <a href="./smart-model-explainer.html">SMART model explainer</a> documents. Each item names a FHIR resource
-                or a questionnaire, plus accepted media types.
+                or questionnaire intent, plus accepted media types. Selectors are not disclosure limits.
               </p>
 <pre>{
   "type":    "smart-health-checkin-request",
@@ -796,8 +803,9 @@
             <div>
               <h3>Generate an HPKE recipient keypair</h3>
               <p>
-                Generate a fresh ECDH P-256 keypair. The private key stays in the verifier page; the public key
-                travels to the wallet so the wallet can encrypt to it.
+                Generate a fresh baseline ECDH P-256 keypair. The private key stays in the verifier page; the public key
+                travels to the wallet so the wallet can encrypt to it. Deployment profiles can use another HPKE suite only
+                when both parties support it through the wire identifiers.
               </p>
 <pre>recipientPublicKey = COSE_Key {
   1:  2,        // kty:  EC2
@@ -805,7 +813,7 @@
   -2: x,
   -3: y         // public coordinates
 }</pre>
-              <p class="note"><b>Math</b> ECDH on P-256 (HPKE DHKEM). <b>Lifetime</b> per request. <b>Why</b> binds the response ciphertext to <em>this</em> verifier session.</p>
+              <p class="note"><b>Math</b> baseline ECDH on P-256 (HPKE DHKEM). <b>Lifetime</b> per request. <b>Why</b> binds the response ciphertext to <em>this</em> verifier session.</p>
             </div>
           </div>
           <div class="calc-row">
@@ -842,7 +850,7 @@
     }]
   }
 })</pre>
-              <p class="note"><b>Browser surface</b> Web Digital Credentials API. <b>Why</b> the browser brokers the call to a vetted wallet, with user consent.</p>
+              <p class="note"><b>Browser surface</b> Web Digital Credentials API. <b>Why</b> the browser brokers the call to a vetted wallet, with user approval.</p>
             </div>
           </div>
         </div>
@@ -868,7 +876,7 @@
                 into <code>getOrigin(...)</code>. The dev wallet reflects the actual caller signature for traceability;
                 production should pin trusted browser package names plus signing-cert fingerprints.
               </p>
-              <p class="note"><b>What it is</b> the verifier's web origin (e.g. <code>http://127.0.0.1:3010</code>). <b>Caveat</b> if it falls back to <code>android-app:com.android.chrome</code>, the transcript will not match the verifier page.</p>
+              <p class="note"><b>What it is</b> an authenticated origin or approved equivalent (e.g. <code>https://clinic.example</code>). <b>Caveat</b> origin is a presentation-layer signal, not requester or organization identity by itself.</p>
             </div>
           </div>
           <div class="calc-row">
@@ -919,7 +927,7 @@
               <h3>SMART response JSON</h3>
               <p>
                 The wallet produces <code>{type:"smart-health-checkin-response", version:"1", requestId, artifacts, requestStatus}</code>.
-                Each artifact declares <code>mediaType</code>, optional <code>fhirVersion</code>, a <code>value</code>/<code>url</code>/<code>data</code> payload, and the request-item ids it <code>fulfills</code>. <code>requestStatus[].item</code> records whether each requested item was fulfilled, declined, unsupported, or errored.
+                Each artifact declares <code>mediaType</code>, media-type-specific payload fields, and the request-item ids it <code>fulfills</code>. Raw FHIR uses <code>value</code> plus <code>fhirVersion</code>; SMART Health Cards use <code>value.verifiableCredential[]</code>; extensions define their own typed fields. <code>requestStatus[].item</code> records whether each requested item was fulfilled, declined, unsupported, or errored.
               </p>
               <p class="note"><b>Encoding</b> JSON. <b>Why</b> the same shape the verifier later renders to the user.</p>
             </div>
@@ -967,7 +975,7 @@ issuerSignedItemTag24 = Tag(24, bstr .cbor IssuerSignedItem)</pre>
 }
 
 issuerAuth = COSE_Sign1(MSO, issuerKey)</pre>
-              <p class="note"><b>Math</b> ECDSA P-256 (issuer). <b>Why</b> binds digest + deviceKey + identity + validity into one signed object.</p>
+              <p class="note"><b>Math</b> baseline ES256 / SHA-256 fixture values. <b>Why</b> binds digest + deviceKey + docType + validity into one signed object. Mutually supported alternatives use the normal COSE/MSO identifiers.</p>
             </div>
           </div>
           <div class="calc-row">
@@ -991,7 +999,7 @@ issuerAuth = COSE_Sign1(MSO, issuerKey)</pre>
                 the issuer pinned in the MSO.
               </p>
 <pre>deviceSignature = COSE_Sign1(DeviceAuthentication, deviceKey)</pre>
-              <p class="note"><b>Math</b> ECDSA P-256 (device). <b>Why</b> proves the holder of the device key consented to <em>this</em> session.</p>
+              <p class="note"><b>Math</b> baseline ES256 fixture value. <b>Why</b> proves the device key signed for <em>this</em> session; holder approval remains a separate wallet/policy decision.</p>
             </div>
           </div>
           <div class="calc-row">
@@ -1026,7 +1034,7 @@ issuerAuth = COSE_Sign1(MSO, issuerKey)</pre>
         </p>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Parameter</th><th>This profile</th></tr></thead>
+            <thead><tr><th>Parameter</th><th>Baseline fixture value</th></tr></thead>
             <tbody>
               <tr><td>KEM</td><td><code>DHKEM(P-256, HKDF-SHA256)</code> &middot; suite id <code>0x0010</code></td></tr>
               <tr><td>KDF</td><td><code>HKDF-SHA256</code> &middot; suite id <code>0x0001</code></td></tr>
@@ -1037,6 +1045,12 @@ issuerAuth = COSE_Sign1(MSO, issuerKey)</pre>
             </tbody>
           </table>
         </div>
+        <p class="note">
+          These algorithms are baseline required support and fixture choices,
+          not immutable pins. Mutually supported alternatives are allowed only
+          when carried through the existing COSE, MSO, HPKE,
+          <code>encryptionInfo</code>, and <code>dcapiResponse</code> identifiers.
+        </p>
         <p>The encrypted result is wrapped as a small CBOR array and returned to the browser through Credential Manager.</p>
 <pre>dcapiResponse = CBOR([
   "dcapi",
@@ -1074,7 +1088,7 @@ SessionTranscript = CBOR([ null, null, handover ])</pre>
             <div>
               <h3>HPKE-open the dcapiResponse</h3>
               <p>
-                Extract <code>enc</code> and <code>cipherText</code>. Use the saved private key plus the wallet's ephemeral public key to derive a shared secret. Run HKDF-SHA256 with <code>info = SessionTranscript</code> bytes, then decrypt with AES-128-GCM, nonce 0, AAD empty.
+                Extract <code>enc</code> and <code>cipherText</code>. Use the saved private key plus the wallet's ephemeral public key to derive a shared secret. For the baseline fixture suite, run HKDF-SHA256 with <code>info = SessionTranscript</code> bytes, then decrypt with AES-128-GCM, nonce 0, AAD empty.
               </p>
 <pre>plaintext = HPKE_Open({
   kem:     DHKEM(P-256, HKDF-SHA256),
@@ -1086,7 +1100,7 @@ SessionTranscript = CBOR([ null, null, handover ])</pre>
   aad:     &lt;empty&gt;,
   ct:      cipherText
 })</pre>
-              <p class="note"><b>Math</b> ECDH(P-256) &rarr; HKDF &rarr; AES-GCM. <b>Why</b> only this verifier holds the private half; the SessionTranscript info prevents replays into a different verifier session.</p>
+              <p class="note"><b>Math</b> baseline ECDH(P-256) &rarr; HKDF &rarr; AES-GCM. <b>Why</b> only this verifier holds the private half; the SessionTranscript info prevents replays into a different verifier session.</p>
             </div>
           </div>
           <div class="calc-row">
@@ -1104,7 +1118,7 @@ SessionTranscript = CBOR([ null, null, handover ])</pre>
               <h3>Verify the issuer signature</h3>
               <p>
                 The MSO sits in the <code>COSE_Sign1</code> payload. Verify the signature using the issuer certificate
-                chain in the headers (here a fixture-issued P-256 cert).
+                or key evidence in the headers, then evaluate issuer trust under deployment policy.
               </p>
 <pre>verify_COSE_Sign1(issuerAuth, issuerCertChainPubKey)</pre>
               <p class="note"><b>What it proves</b> the issuer signed <em>this</em> MSO &mdash; its digest, deviceKey, docType, and validity.</p>
@@ -1144,7 +1158,7 @@ verify_COSE_Sign1(deviceSignature, MSO.deviceKey)</pre>
               <h3>Render SMART artifacts</h3>
               <p>
                 Parse <code>IssuerSignedItem.elementValue</code> as the SMART response JSON. Walk <code>artifacts[]</code>
-                and <code>requestStatus[]</code>; render each artifact's mediaType + value/url/data; show fulfillment status
+                and <code>requestStatus[]</code>; render each artifact according to its media-type-specific fields; show fulfillment status
                 for every requested item.
               </p>
             </div>
@@ -1152,8 +1166,9 @@ verify_COSE_Sign1(deviceSignature, MSO.deviceKey)</pre>
         </div>
       </section>
 
-      <section id="checklist">
-        <h2>Verification checklist</h2>
+      <section id="debug-steps">
+        <h2>Fixture/debug verification steps</h2>
+        <p class="note">These steps are non-normative debugging guidance for the checked-in fixtures, not a normative test plan.</p>
         <div class="three">
           <div class="mini">
             <h3>Request</h3>
@@ -1218,12 +1233,12 @@ bun run inspect:response \
               <tr>
                 <td>HPKE binding</td>
                 <td>SessionTranscript is HPKE <code>info</code>; AEAD AAD is empty.</td>
-                <td>Keep tests pinned to this binding or migrate both verifier and wallet together if a target platform requires a different one.</td>
+                <td>Profiles may allow mutually supported alternatives only through existing wire identifiers; unilateral substitutions fail closed.</td>
               </tr>
               <tr>
                 <td>Request carrier</td>
                 <td><code>requestInfo["org.smarthealthit.checkin.request"]</code> is load-bearing.</td>
-                <td>Archived dynamic-element-name experiments are not part of the active profile.</td>
+                <td>Other request carriers are not SMART Health Check-in 1.0.</td>
               </tr>
             </tbody>
           </table>

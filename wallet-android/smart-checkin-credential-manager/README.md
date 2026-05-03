@@ -5,7 +5,7 @@ registers this wallet with Android Credential Manager / registry-provider so
 the wallet can appear in the system picker for Digital Credentials requests.
 
 This module does not parse mdoc requests, build SMART responses, or render
-consent UI. It only owns registration of the wallet entry and matcher bytes.
+holder review UI. It only owns registration of the wallet entry and matcher bytes.
 
 ## Key APIs
 

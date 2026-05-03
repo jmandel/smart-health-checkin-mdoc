@@ -32,6 +32,19 @@ Notable checked-in fixtures:
    certificate artifacts. Android parses this fixture and verifies the detached
    signature.
 - `responses/real-chrome-android-smart-checkin/` - matching real Android wallet
-    response debug artifacts, including the encrypted `dcapi` wrapper, plaintext
-    `DeviceResponse`, issuer/device COSE artifacts, Python byte-check output, and
-   saved RP-web HPKE-open inspection.
+     response debug artifacts, including the encrypted `dcapi` wrapper, plaintext
+     `DeviceResponse`, issuer/device COSE artifacts, Python byte-check output, and
+    saved RP-web HPKE-open inspection.
+
+Current fixture coverage should stay aligned with the spec source of truth:
+
+- request fixtures use `selection.fhir` and `form.fhir`, with exact
+  `ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]` carriage;
+- response fixtures use raw FHIR or SMART Health Card payload shapes, with no
+  generic Artifact catch-all;
+- mdoc fixtures use `org-iso-mdoc`, `org.smarthealthit.checkin.1`,
+  `org.smarthealthit.checkin`, and `smart_health_checkin_response` exactly;
+- future negative fixtures should cover canonical `|version` preservation,
+  many-to-many `fulfills[]`, §6.4 cross-validation failures, SMART Health Cards
+  without outer `fhirVersion`, raw FHIR with required `fhirVersion`, and Appendix
+  A byte-boundary checks.

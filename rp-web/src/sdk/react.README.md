@@ -173,7 +173,7 @@ layer should add reusable components for:
 - SMART request summaries;
 - FHIR resource/profile-family request rows;
 - Questionnaire prompts and answer collection;
-- consent/selection review;
+- holder review and selection;
 - response artifacts and per-item status;
 - debug/evidence panels.
 

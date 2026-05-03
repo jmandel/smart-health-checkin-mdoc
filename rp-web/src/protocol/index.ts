@@ -4,10 +4,6 @@
 //   Digital Credentials API protocol: "org-iso-mdoc"
 //   SMART request carrier: ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]
 //   Requested mdoc element: smart_health_checkin_response
-//
-// A dynamic element-identifier fallback (shc1j/shc1d) is documented and kept as
-// utility code, but the active path assumes requestInfo is available to the
-// wallet library and uses it as the load-bearing carrier.
 
 import {
   validateResponseAgainstRequest,
@@ -44,8 +40,6 @@ export const MDOC_DOC_TYPE = "org.smarthealthit.checkin.1" as const;
 export const MDOC_NAMESPACE = "org.smarthealthit.checkin" as const;
 export const SMART_REQUEST_INFO_KEY = "org.smarthealthit.checkin.request" as const;
 export const SMART_RESPONSE_ELEMENT_ID = "smart_health_checkin_response" as const;
-export const DYNAMIC_ELEMENT_PREFIX = "shc1j" as const;
-export const RESERVED_COMPRESSED_ELEMENT_PREFIX = "shc1d" as const;
 
 export type OrgIsoMdocNavigatorArgument = {
   mediation: "required";
@@ -236,18 +230,6 @@ export type OpenWalletResponseResult = {
   deviceResponse: DeviceResponseInspection;
   smartResponseValidation?: { ok: true; value: SmartCheckinResponse };
 };
-
-export function encodeDynamicElement(request: SmartCheckinRequest): string {
-  return `${DYNAMIC_ELEMENT_PREFIX}.${base64UrlEncodeUtf8(JSON.stringify(request))}`;
-}
-
-export function decodeDynamicElement(element: string): SmartCheckinRequest {
-  const prefix = `${DYNAMIC_ELEMENT_PREFIX}.`;
-  if (!element.startsWith(prefix)) {
-    throw new Error(`unsupported SMART Check-in element prefix: ${element.slice(0, 16)}`);
-  }
-  return JSON.parse(base64UrlDecodeUtf8(element.slice(prefix.length))) as SmartCheckinRequest;
-}
 
 export async function buildOrgIsoMdocRequest(
   smartRequest: SmartCheckinRequest,

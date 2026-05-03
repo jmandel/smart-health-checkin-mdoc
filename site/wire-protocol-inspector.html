@@ -1633,7 +1633,7 @@
 
       chain.appendChild(drillNode({
         title: "4. ReaderAuth pass-through",
-        text: "The verifier signs ReaderAuthentication as a detached COSE_Sign1. Android preserves the exact tag-24 ItemsRequest bytes, reconstructs the direct dcapi SessionTranscript, and verifies this signature before showing consent.",
+        text: "The verifier signs ReaderAuthentication as a detached COSE_Sign1. Android preserves the exact tag-24 ItemsRequest bytes, reconstructs the direct dcapi SessionTranscript, and verifies this signature before holder review.",
         facts: [
           ["present", docRequest?.readerAuth ? "yes" : manifest?.readerAuth?.present],
           ["signature valid", manifest?.readerAuth?.signatureValid],
@@ -1646,7 +1646,7 @@
 
       chain.appendChild(drillNode({
         title: "5. SMART request JSON in requestInfo",
-        text: "The wallet parses requestInfo[\"org.smarthealthit.checkin.request\"] as JSON. These items drive the consent UI and data selection.",
+        text: "The wallet parses requestInfo[\"org.smarthealthit.checkin.request\"] as JSON. These items shape holder review; selectors express request intent, not disclosure limits.",
         facts: [
           ["version", smartRequest?.version],
           ["item count", smartRequest?.items?.length],
@@ -1795,7 +1795,7 @@
     function countQuestionnaires(smartRequest) {
       const items = smartRequest?.items;
       if (!Array.isArray(items)) return undefined;
-      return items.filter(item => item?.content?.kind === "form.fhir" || item?.questionnaire || item?.questionnaireUrl).length;
+      return items.filter(item => item?.content?.kind === "form.fhir").length;
     }
 
     function renderSmartItems(smartRequest) {
@@ -1803,23 +1803,16 @@
       if (!Array.isArray(items)) return "";
       return `<div class="item-list">${items.map(item => {
         const content = item.content || {};
-        const legacyQuestionnaire = content.questionnaire || item.questionnaire;
         const kind = content.kind === "selection.fhir"
           ? "FHIR resources"
           : content.kind === "form.fhir"
             ? "Questionnaire"
-            : item.profile
-              ? "FHIR profile (legacy)"
-              : legacyQuestionnaire || item.questionnaireUrl
-                ? "Questionnaire (legacy)"
-                : "Unknown";
-        const profileList = Array.isArray(content.profiles) ? content.profiles : item.profile ? [item.profile] : [];
+            : "Unknown";
+        const profileList = Array.isArray(content.profiles) ? content.profiles : [];
         const resourceTypes = Array.isArray(content.resourceTypes) ? content.resourceTypes : [];
         const questionnaireTitle = content.kind === "form.fhir"
           ? (content.questionnaire && typeof content.questionnaire === "object" ? content.questionnaire.title : null) || content.questionnaireCanonical || ""
-          : typeof legacyQuestionnaire === "object"
-            ? legacyQuestionnaire?.title || legacyQuestionnaire?.resource?.title || legacyQuestionnaire?.canonical || ""
-            : legacyQuestionnaire || item.questionnaireUrl || "";
+          : "";
         const target = [...profileList, ...resourceTypes, questionnaireTitle].filter(Boolean).join(", ");
         return `
           <div class="item-row">
@@ -2212,7 +2205,7 @@
         type: "SMART Check-in payload type discriminator",
         version: "SMART Check-in payload version or mdoc envelope version",
         requestId: "Echoes the verifier request id.",
-        items: "The verifier's requested SMART/FHIR items; each child can be rendered as a consent row.",
+        items: "The verifier's requested SMART/FHIR items; each child can be rendered as a holder review row.",
         content: "Request item content selector.",
         kind: "Selector kind, such as selection.fhir or form.fhir.",
         profiles: "Canonical FHIR StructureDefinition URLs requested by the verifier.",

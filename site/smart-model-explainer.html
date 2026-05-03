@@ -364,7 +364,7 @@
           <h3>Responder</h3>
           <p>
             A patient wallet or health app. It owns available data, renders
-            consent, and creates a SMART Health Check-in response.
+            holder review, and creates a SMART Health Check-in response.
           </p>
           <ul>
             <li>Matches request items it understands.</li>
@@ -376,10 +376,13 @@
     </section>
 
     <section id="conversation">
-      <h2>The conversation is a checklist</h2>
+      <h2>The conversation is a request, not a limit</h2>
       <p>
         This is not "give me one credential." It is "here is a checklist of
-        consentable check-in tasks; tell me what the patient shared for each."
+         holder-reviewable check-in tasks; tell me what the patient shared for each."
+        Selectors describe what the requester is looking for; they do not bound
+        what the wallet and holder may choose to disclose, subject to policy,
+        accepted media types, validation, and per-item status.
       </p>
 
       <ol class="steps">
@@ -449,18 +452,24 @@
         <dt>id</dt>
         <dd>Requester-chosen id echoed by <code>response.requestId</code>.</dd>
         <dt>purpose</dt>
-        <dd>Human-readable reason to show in consent UI.</dd>
+        <dd>Human-readable reason to show in holder review UI; not authenticated requester identity or trust evidence.</dd>
         <dt>fhirVersions</dt>
         <dd>FHIR versions the requester can consume.</dd>
         <dt>items</dt>
         <dd>The named checklist of clinical requests.</dd>
       </dl>
+      <p class="note warning">
+        <strong>Identity boundary:</strong> SMART request JSON does not carry
+        requester identity, organization identity, origin, reader credentials,
+        callbacks, handoff metadata, or trust claims. Those signals come from the
+        presentation flow, trust processing, and deployment policy.
+      </p>
     </section>
 
     <section id="items">
       <h2>What makes a request item?</h2>
       <p>
-        A request item is one consentable task. It has a stable id, display
+        A request item is one holder-review task. It has a stable id, display
         text, a content selector, and a list of accepted response formats.
       </p>
 
@@ -477,7 +486,7 @@
         <dt>id</dt>
         <dd>Short stable name. Responses refer to this id.</dd>
         <dt>title / summary</dt>
-        <dd>User-facing display text for the wallet consent screen.</dd>
+        <dd>User-facing display text for the wallet holder review screen; not authenticated requester identity.</dd>
         <dt>required</dt>
         <dd>Requester preference. The user still controls sharing.</dd>
         <dt>content</dt>
@@ -580,9 +589,10 @@
       </dl>
 
       <p class="note warning">
-        <strong>Version rule:</strong> strip <code>|version</code> when checking
-        profile-family membership or fetching canonical content; preserve it in
-        returned records, fixtures, logs, and exact profile checks.
+        <strong>Version rule:</strong> preserve the original canonical string
+        exactly. Versioned canonicals require resolver or FHIR-search semantics
+        that verify the requested version; do not satisfy them by stripping
+        <code>|version</code> and directly dereferencing the bare URL.
       </p>
     </section>
 
@@ -677,14 +687,9 @@
             <td>Must be non-empty and reference real request item ids.</td>
           </tr>
           <tr>
-            <td><code>value</code></td>
-            <td>Inline JSON content, such as FHIR JSON.</td>
-            <td>Use for clear JSON artifacts.</td>
-          </tr>
-          <tr>
-            <td><code>data</code></td>
-            <td>Compact encoded artifact, such as an SHC string.</td>
-            <td>Use for signed or binary-friendly payloads.</td>
+            <td>Payload fields</td>
+            <td>Defined by <code>mediaType</code>.</td>
+            <td>Raw FHIR uses <code>value</code> plus <code>fhirVersion</code>; SMART Health Cards use <code>value.verifiableCredential[]</code>; extensions define typed fields explicitly.</td>
           </tr>
         </tbody>
       </table>

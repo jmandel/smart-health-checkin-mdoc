@@ -447,11 +447,11 @@ class MainActivity : ComponentActivity() {
     // encryptResponse / postResponse / getJson / fetchText (×2) and the
     // requireString / isBareOrigin / isLocalDemoHost / audienceIsValid URL
     // helpers were removed in Stage B. The Stage C path replaces them with:
-    //   - HPKE seal (DHKEM-P256 + HKDF-SHA256 + AES-128-GCM, AAD =
-    //     SessionTranscript) producing the response bytes.
+    //   - HPKE seal (baseline DHKEM-P256 + HKDF-SHA256 + AES-128-GCM,
+    //     info = SessionTranscript, AAD = empty) producing the response bytes.
     //   - Credential Manager `setGetCredentialResponse` for delivery (no
     //     network call).
-    //   - browser-supplied callingAppInfo.origin for verifier identity (no
+    //   - browser-supplied callingAppInfo.origin as a presentation signal (no
     //     well-known fetch, no JWS signature check).
 
     private fun readAssetJson(path: String): JSONObject {

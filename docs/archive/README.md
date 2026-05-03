@@ -24,4 +24,3 @@ Current docs to read instead:
 
 - `../../README.md`
 - `../../spec.md`
-- `../CONTEXT.md`

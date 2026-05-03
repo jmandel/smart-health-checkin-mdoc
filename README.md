@@ -33,11 +33,9 @@ For a fresh pickup, in order:
 
 1. The deployed site (or the local preview above).
 2. [`spec.md`](spec.md) — the assembled SMART Health Check-in 1.0 draft
-   spec: clinical request/response model, trust framework, and the same-device
-   `org-iso-mdoc` presentation flow with appendices for JSON Schema, CDDL,
-   the byte ladder, and the fixture index.
-3. [`docs/CONTEXT.md`](docs/CONTEXT.md) — repository-level orientation for
-   what's checked in and how the pieces wire together.
+   spec: §§5-6 define the normative TypeScript/JSDoc clinical request/response
+   model, §8 defines the same-device `org-iso-mdoc` presentation flow, and
+   Appendix A is a diagnostic bridge for the same-device byte boundaries.
 
 Research notes and archive material under `docs/research/` and
 `docs/archive/` are historical and not part of the public pickup path.
@@ -46,14 +44,15 @@ Research notes and archive material under `docs/research/` and
 
 - **SMART Health Check-in protocol.** A transport-neutral JSON
   request/response model used by every component. Defined in [`spec.md`](spec.md)
-  (sections 5/6, JSON Schema in Appendix B).
+  §§5-6 by normative TypeScript interfaces and JSDoc comments.
 
 - **`org-iso-mdoc` wire profile.** The active binding to the W3C Digital
   Credentials API: the SMART request rides inside
   `ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]` and the
   SMART response comes back in the stable mdoc element
   `smart_health_checkin_response`. Specified in [`spec.md`](spec.md) §8,
-  with CDDL and byte-ladder details in Appendices C and E.
+  with a non-normative diagnostic bridge in Appendix A. Byte ladders, schemas,
+  fixtures, and tutorials are companion material in this repository.
 
 - **TypeScript verifier SDK.** Framework-neutral SMART request/response
   validation, browser DC API verifier flow, verifier-authority seam, and
@@ -101,7 +100,7 @@ pushes to `main` and on manual workflow dispatch.
 | `/kiosk-flow-explainer.html` | Kiosk handoff demo explainer |
 | `/wire-protocol-explainer.html` | Byte-level wire-protocol explainer |
 | `/spec.html` | SMART Health Check-in 1.0 draft spec — rendered HTML with TOC, syntax highlighting, and Mermaid diagrams |
-| `/spec.md` | SMART Health Check-in 1.0 draft spec — raw Markdown source (assembled from `spec-work/`) |
+| `/spec.md` | SMART Health Check-in 1.0 draft spec — raw Markdown source |
 | `/llms.txt` | Generated LLM-friendly docs bundle |
 | `/fixtures/` | Checked-in test fixtures |
 
