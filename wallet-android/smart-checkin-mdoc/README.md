@@ -25,8 +25,8 @@ request:   ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]
 response:  smart_health_checkin_response
 ```
 
-See [`../../docs/profiles/org-iso-mdoc.md`](../../docs/profiles/org-iso-mdoc.md) for the
-wire profile and invariants.
+See [`../../spec.md`](../../spec.md) §8 and Appendix C for the wire profile
+and invariants.
 
 ## Key types and APIs
 

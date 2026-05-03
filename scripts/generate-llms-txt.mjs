@@ -19,9 +19,7 @@ const HTML_EXPLAINERS = [
 
 const MARKDOWN_SOURCES = [
   "README.md",
-  "docs/SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md",
-  "docs/PROTOCOL-EXPLAINER.md",
-  "docs/profiles/org-iso-mdoc.md",
+  "spec.md",
   "rp-web/README.md",
   "rp-web/src/sdk/README.md",
   "rp-web/src/sdk/react.README.md",

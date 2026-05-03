@@ -28,7 +28,7 @@ for page in \
 do
   cp "$ROOT/site/$page" "$SITE_DIR/$page"
 done
-cp "$ROOT/docs/SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md" "$SITE_DIR/SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md"
+cp "$ROOT/spec.md" "$SITE_DIR/spec.md"
 bun "$ROOT/scripts/generate-llms-txt.mjs" "$SITE_DIR/llms.txt"
 cp -R "$ROOT/fixtures" "$SITE_DIR/fixtures"
 cp -R "$ROOT/rp-web/dist/." "$SITE_DIR/verifier/"

@@ -5,9 +5,9 @@ design input.
 
 Current source of truth:
 
-- `../../SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md` for the transport-neutral
-  SMART Health Check-in request and response model.
-- `../../profiles/org-iso-mdoc.md` for the active direct `org-iso-mdoc` carrier.
+- `../../../spec.md` for the SMART Health Check-in 1.0 draft spec, including
+  the transport-neutral request/response model and the active direct
+  `org-iso-mdoc` presentation flow.
 - `../../../README.md` for the current repo pickup path.
 
 The `legacy-oid4vp/` folder contains the older OID4VP/DCQL material that this

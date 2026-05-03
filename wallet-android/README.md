@@ -1,8 +1,8 @@
 # Android SMART Health Check-in wallet libraries
 
 `wallet-android` is a native Android wallet for SMART Health Check-in over W3C
-Digital Credentials API using direct `org-iso-mdoc` (Profile B; see
-[`../docs/profiles/org-iso-mdoc.md`](../docs/profiles/org-iso-mdoc.md)).
+Digital Credentials API using direct `org-iso-mdoc` (specified in
+[`../spec.md`](../spec.md) §8 + Appendix C).
 
 The project is now split into library-shaped Gradle modules plus a demo app.
 The split is intended to make future Android wallet apps small: app code should

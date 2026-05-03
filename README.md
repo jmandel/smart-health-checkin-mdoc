@@ -32,29 +32,28 @@ and demo handoff URLs live under `/verifier/` exactly as in production.
 For a fresh pickup, in order:
 
 1. The deployed site (or the local preview above).
-2. [`docs/SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md`](docs/SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md)
-   — the transport-neutral request/response model.
-3. [`docs/PROTOCOL-EXPLAINER.md`](docs/PROTOCOL-EXPLAINER.md) — roles, data
-   movement, and trust boundaries.
-4. [`docs/profiles/org-iso-mdoc.md`](docs/profiles/org-iso-mdoc.md) — the
-   active wire profile and mdoc/COSE invariants.
+2. [`spec.md`](spec.md) — the assembled SMART Health Check-in 1.0 draft
+   spec: clinical request/response model, trust framework, and the same-device
+   `org-iso-mdoc` presentation flow with appendices for JSON Schema, CDDL,
+   the byte ladder, and the fixture index.
+3. [`docs/CONTEXT.md`](docs/CONTEXT.md) — repository-level orientation for
+   what's checked in and how the pieces wire together.
 
-Plans, research, and archive material under `docs/plans/`, `docs/research/`,
-and `docs/archive/` are historical and not part of the public pickup path.
+Research notes and archive material under `docs/research/` and
+`docs/archive/` are historical and not part of the public pickup path.
 
 ## Major components
 
 - **SMART Health Check-in protocol.** A transport-neutral JSON
-  request/response model used by every component. Defined in
-  [`docs/SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md`](docs/SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md);
-  walked through in [`docs/PROTOCOL-EXPLAINER.md`](docs/PROTOCOL-EXPLAINER.md).
+  request/response model used by every component. Defined in [`spec.md`](spec.md)
+  (sections 5/6, JSON Schema in Appendix B).
 
 - **`org-iso-mdoc` wire profile.** The active binding to the W3C Digital
   Credentials API: the SMART request rides inside
   `ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]` and the
   SMART response comes back in the stable mdoc element
-  `smart_health_checkin_response`. See
-  [`docs/profiles/org-iso-mdoc.md`](docs/profiles/org-iso-mdoc.md).
+  `smart_health_checkin_response`. Specified in [`spec.md`](spec.md) §8,
+  with CDDL and byte-ladder details in Appendices C and E.
 
 - **TypeScript verifier SDK.** Framework-neutral SMART request/response
   validation, browser DC API verifier flow, verifier-authority seam, and
@@ -68,8 +67,7 @@ and `docs/archive/` are historical and not part of the public pickup path.
   over an untrusted realtime mailbox). That handoff is demo/deployment behavior
   around the same-device verifier page, not a version 1.0 protocol layer. The
   demo transport sits behind a small provider interface; the shipped provider
-  uses InstantDB rows plus Instant Storage blobs. Slim row schema documented in
-  [`docs/plans/kiosk-transport-row-slim.md`](docs/plans/kiosk-transport-row-slim.md).
+  uses InstantDB rows plus Instant Storage blobs.
 
 - **Android wallet.** Modular Gradle project under
   [`wallet-android/`](wallet-android/README.md) that registers credentials
@@ -102,6 +100,7 @@ pushes to `main` and on manual workflow dispatch.
 | `/smart-model-explainer.html` | SMART Health Check-in model explainer |
 | `/kiosk-flow-explainer.html` | Kiosk handoff demo explainer |
 | `/wire-protocol-explainer.html` | Byte-level wire-protocol explainer |
+| `/spec.md` | SMART Health Check-in 1.0 draft spec (assembled from `spec-work/`) |
 | `/llms.txt` | Generated LLM-friendly docs bundle |
 | `/fixtures/` | Checked-in test fixtures |
 

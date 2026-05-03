@@ -52,8 +52,8 @@ The active request shape is direct `org-iso-mdoc`:
 
 The checked-in implementation carries SMART request JSON in
 `ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]`, using the
-payload shape in `../../../docs/SMART-HEALTH-CHECKIN-REQUEST-RESPONSE.md`. The requested
-mdoc element remains the stable `smart_health_checkin_response`.
+payload shape defined in `../../../spec.md`. The requested mdoc element
+remains the stable `smart_health_checkin_response`.
 
 The `shc1j`/`shc1d` dynamic element encoding remains a fallback strategy if a
 real wallet API hides `requestInfo`; it is not used by the active request

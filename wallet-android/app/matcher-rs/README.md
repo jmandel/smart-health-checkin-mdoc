@@ -5,8 +5,7 @@ Self-contained Rust WASM matcher for the SMART Health Check-in wallet.
 The Credential Manager runs this in its sandbox to decide whether to surface
 our wallet entry for a given Digital Credentials API request. The eligibility
 rule is documented in
-[`../../../docs/profiles/org-iso-mdoc.md`](../../../docs/profiles/org-iso-mdoc.md) §"Matcher
-contract":
+[`../../../spec.md`](../../../spec.md) §8 ("Matcher contract"):
 
 1. The outer Credential Manager request bytes must contain the literal
    substring `"org-iso-mdoc"`. The matcher is the **only** protocol filter
