@@ -47,7 +47,7 @@ const SMART_REQUEST: SmartCheckinRequest = {
       summary: "Member coverage and payer details.",
       required: true,
       content: {
-        kind: "fhir.resources",
+        kind: "selection.fhir",
         profiles: [
           "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage",
         ],
@@ -60,7 +60,7 @@ const SMART_REQUEST: SmartCheckinRequest = {
       summary: "Patient demographics and clinical summary.",
       required: true,
       content: {
-        kind: "fhir.resources",
+        kind: "selection.fhir",
         profiles: ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"],
       },
       accept: ["application/fhir+json"],
@@ -71,7 +71,7 @@ const SMART_REQUEST: SmartCheckinRequest = {
       summary: "Summary of Benefits and Coverage.",
       required: false,
       content: {
-        kind: "fhir.resources",
+        kind: "selection.fhir",
         profiles: [
           "http://hl7.org/fhir/us/insurance-card/StructureDefinition/sbc-insurance-plan",
         ],
@@ -84,8 +84,8 @@ const SMART_REQUEST: SmartCheckinRequest = {
       summary: "Migraine follow-up form.",
       required: false,
       content: {
-        kind: "questionnaire",
-        canonical:
+        kind: "form.fhir",
+        questionnaireCanonical:
           "https://smart-health-checkin.example.org/fhir/Questionnaire/chronic-migraine-followup",
       },
       accept: ["application/fhir+json"],

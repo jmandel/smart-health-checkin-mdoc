@@ -142,7 +142,7 @@ string:
       "title": "Insurance card",
       "required": true,
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "profiles": ["http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage"]
       },
       "accept": ["application/fhir+json"]
@@ -152,7 +152,7 @@ string:
       "title": "US Core clinical resources",
       "summary": "US Core resources, including patient demographics, problems, medications, and allergies.",
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "profilesFrom": ["http://hl7.org/fhir/us/core"],
         "profiles": [
           "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
@@ -167,9 +167,9 @@ string:
       "id": "intake",
       "title": "Intake form",
       "content": {
-        "kind": "questionnaire",
-        "canonical": "https://clinic.example.org/fhir/Questionnaire/intake|1.2.3",
-        "resource": {
+        "kind": "form.fhir",
+        "questionnaireCanonical": "https://clinic.example.org/fhir/Questionnaire/intake|1.2.3",
+        "questionnaire": {
           "resourceType": "Questionnaire",
           "url": "https://clinic.example.org/fhir/Questionnaire/intake",
           "version": "1.2.3",
@@ -188,10 +188,10 @@ Rules:
 - `type` is `"smart-health-checkin-request"` and `version` is `"1"`.
 - `id` is the verifier's request id; the response echoes it as `requestId`.
 - `items[].id` is the stable item correlation key.
-- `items[].content.kind` identifies FHIR-resource selectors versus
-  questionnaire selectors. Questionnaire selectors use direct `canonical?` and
-  `resource?` members; the older nested `questionnaire` wrapper is not the
-  active shape.
+- `items[].content.kind` identifies FHIR-resource selectors (`selection.fhir`)
+  versus form selectors (`form.fhir`). Form selectors use direct
+  `questionnaireCanonical?` and `questionnaire?` members; the older
+  `canonical`/`resource` field names are not the active 1.0 shape.
 - `items[].accept` declares acceptable response media types.
 
 ## EncryptionInfo and SessionTranscript

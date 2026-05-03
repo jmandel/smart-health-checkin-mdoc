@@ -1,23 +1,23 @@
 {
   "cose": {
-    "deviceAuthenticationSessionTranscriptHex": "83f6f6826564636170695820b1b7e63caf2be5ae8cf3783764f394c33a7af749760d7b71be11042fdbad0fb5",
+    "deviceAuthenticationSessionTranscriptHex": "83f6f682656463617069582086d0b2ca29b66966f3599b5af885a8d89f66a41ff75fc10a38105f68be5fcf2d",
     "deviceSignature": {
       "alg": "ES256",
-      "payloadSha256": "c303d0cf97c0968b3520be95aeb50a7a72edfd8e3ef4b444791b2b6628d0868c",
-      "sigStructureSha256": "dec64bb77853945223d3f75cd78ebb1e64e87f98258bd8eb3214206b7cf2edc6",
+      "payloadSha256": "a9473ba927e162845710142f2d16423ad321f3fdae142d289263d779e533d118",
+      "sigStructureSha256": "0620fa73da7d1b88660cd76ae475eb1bf7aea555726368cd4a7c43eaf5cb5e35",
       "verified": true
     },
     "issuerAuth": {
       "alg": "ES256",
-      "payloadSha256": "f3944d26e0101d1379632db0eaa609dc9090029beb0ebb582c74455fed713e37",
-      "sigStructureSha256": "6184588674172b961818bfc588abeee0727458057c8a9830756bb7c62b3dc861",
+      "payloadSha256": "6a5a5240da6184f5e12a8e3a6cafbefec0c215fd87292370245f83022a56488a",
+      "sigStructureSha256": "da45a1e4c014b8eb8c4f6643202dd5821f1df11056b0dc9943e4e68585722e1a",
       "verified": true
     }
   },
-  "documentSha256": "c2679c4de80b10a7edd25020ba016def1f894f6cb161cf6ae29017ff7695d165",
+  "documentSha256": "643402905cbd560032ed3c1cdc1c84551af46ce6657430a2ade28876c73c6d8d",
   "issuerCertificateSubject": "CN=SMART Health Check-in Demo",
-  "issuerSignedItemTag24Sha256": "b19f66f1ced4c031b6c7314b2a90ee3611855d4eb4819c09a613124c51f7758d",
-  "msoSha256": "9264864f0b00cd8f5ed4b083cb488c31112cfc5e54097a2673ab83f32e6469ed",
+  "issuerSignedItemTag24Sha256": "35db0ad685d8c55c4a1246ce0635dd6403d379614760d58e0faf66a48fad4d40",
+  "msoSha256": "36958b1c347a8190442f4037cbacd5138c9c91aae87cd5561e60be2184a7e6bd",
   "ok": true,
   "walk": {
     "digestID": 0,
@@ -29,9 +29,9 @@
       "docType": "org.smarthealthit.checkin.1",
       "version": "1.0"
     },
-    "msoDigestSha256": "b19f66f1ced4c031b6c7314b2a90ee3611855d4eb4819c09a613124c51f7758d",
+    "msoDigestSha256": "35db0ad685d8c55c4a1246ce0635dd6403d379614760d58e0faf66a48fad4d40",
     "namespace": "org.smarthealthit.checkin",
-    "recomputedDigestSha256": "b19f66f1ced4c031b6c7314b2a90ee3611855d4eb4819c09a613124c51f7758d",
+    "recomputedDigestSha256": "35db0ad685d8c55c4a1246ce0635dd6403d379614760d58e0faf66a48fad4d40",
     "smartResponse": {
       "artifacts": [
         {
@@ -775,7 +775,7 @@
           "id": "artifact-intake",
           "mediaType": "application/fhir+json",
           "value": {
-            "authored": "2026-05-03T02:33:29.340295Z",
+            "authored": "2026-05-03T03:32:04.054804Z",
             "id": "intake-response",
             "item": [
               {

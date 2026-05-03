@@ -49,9 +49,9 @@ object SmartRequestAdapter {
             val content = item.optJSONObject("content") ?: error("items[$i].content must be an object")
             val accept = requiredStringArray(item.optJSONArray("accept"), "items[$i].accept")
             out += when (content.optString("kind")) {
-                "questionnaire" -> parseQuestionnaireItem(id, item, content, accept)
-                "fhir.resources" -> parseFhirResourcesItem(id, item, content, accept)
-                else -> error("items[$i].content.kind must be fhir.resources or questionnaire")
+                "form.fhir" -> parseQuestionnaireItem(id, item, content, accept)
+                "selection.fhir" -> parseFhirResourcesItem(id, item, content, accept)
+                else -> error("items[$i].content.kind must be selection.fhir or form.fhir")
             }
         }
         return out
@@ -63,14 +63,17 @@ object SmartRequestAdapter {
         content: JSONObject,
         accept: List<String>,
     ): RequestItem {
-        require(!content.has("questionnaire")) {
-            "items[id=$id].content.questionnaire is not a SMART Health Check-in 1.0 selector member; use canonical and resource directly"
+        require(!content.has("canonical")) {
+            "items[id=$id].content.canonical is not a SMART Health Check-in 1.0 selector member; use questionnaireCanonical"
+        }
+        require(!content.has("resource")) {
+            "items[id=$id].content.resource is not a SMART Health Check-in 1.0 selector member; use questionnaire"
         }
         val meta = JSONObject(item.toString())
         val resource = questionnaireResource(content)
         val canonical = questionnaireCanonical(content, resource)
         require(resource != null || !canonical.isNullOrBlank()) {
-            "items[id=$id].content must include a canonical or Questionnaire resource"
+            "items[id=$id].content must include questionnaireCanonical or a Questionnaire resource"
         }
         if (resource != null) meta.put("questionnaire", resource)
         if (!canonical.isNullOrBlank()) {
@@ -173,15 +176,15 @@ object SmartRequestAdapter {
     }
 
     private fun questionnaireResource(content: JSONObject): JSONObject? {
-        val resource = content.optJSONObject("resource") ?: return null
+        val resource = content.optJSONObject("questionnaire") ?: return null
         require(resource.optString("resourceType") == "Questionnaire") {
-            "items[].content.resource is not a Questionnaire (resourceType=\"Questionnaire\")"
+            "items[].content.questionnaire is not a Questionnaire (resourceType=\"Questionnaire\")"
         }
         return JSONObject(resource.toString())
     }
 
     private fun questionnaireCanonical(content: JSONObject, resource: JSONObject?): String? {
-        val direct = content.optString("canonical").ifBlank { null }
+        val direct = content.optString("questionnaireCanonical").ifBlank { null }
         if (direct != null) return direct
         return resource?.let { questionnaire ->
             val url = questionnaire.optString("url")

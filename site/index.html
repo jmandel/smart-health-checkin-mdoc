@@ -591,14 +591,14 @@
   <span class="key">"items"</span>: [
     { <span class="key">"id"</span>: <span class="str">"insurance"</span>,
       <span class="key">"required"</span>: <span class="num">true</span>,
-      <span class="key">"content"</span>: { <span class="key">"kind"</span>: <span class="str">"fhir.resources"</span>,
+      <span class="key">"content"</span>: { <span class="key">"kind"</span>: <span class="str">"selection.fhir"</span>,
         <span class="key">"profiles"</span>: [<span class="str">"…/C4DIC-Coverage"</span>] } },
     { <span class="key">"id"</span>: <span class="str">"intake"</span>,
-      <span class="key">"content"</span>: { <span class="key">"kind"</span>: <span class="str">"questionnaire"</span>,
-        <span class="key">"canonical"</span>: <span class="str">"…/Questionnaire/intake|1.2.3"</span>,
-        <span class="key">"resource"</span>: { … } } },
+      <span class="key">"content"</span>: { <span class="key">"kind"</span>: <span class="str">"form.fhir"</span>,
+        <span class="key">"questionnaireCanonical"</span>: <span class="str">"…/Questionnaire/intake|1.2.3"</span>,
+        <span class="key">"questionnaire"</span>: { … } } },
     { <span class="key">"id"</span>: <span class="str">"summary"</span>,
-      <span class="key">"content"</span>: { <span class="key">"kind"</span>: <span class="str">"fhir.resources"</span>,
+      <span class="key">"content"</span>: { <span class="key">"kind"</span>: <span class="str">"selection.fhir"</span>,
         <span class="key">"profilesFrom"</span>: [<span class="str">"http://hl7.org/fhir/us/core"</span>] } }
   ]
 }</pre>

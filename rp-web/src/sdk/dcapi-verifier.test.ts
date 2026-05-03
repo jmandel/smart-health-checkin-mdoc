@@ -32,7 +32,7 @@ const PATIENT_REQUEST: SmartCheckinRequest = {
       title: "Patient demographics",
       required: true,
       content: {
-        kind: "fhir.resources",
+        kind: "selection.fhir",
         profiles: ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"],
       },
       accept: ["application/fhir+json"],

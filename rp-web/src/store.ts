@@ -76,7 +76,7 @@ const US_CORE_CHECKIN: SmartCheckinRequest = {
       summary: "Demographics for check-in",
       required: true,
       content: {
-        kind: "fhir.resources",
+        kind: "selection.fhir",
         profiles: ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"],
       },
       accept: ACCEPT_FHIR,
@@ -87,7 +87,7 @@ const US_CORE_CHECKIN: SmartCheckinRequest = {
       summary: "Insurance card for billing",
       required: true,
       content: {
-        kind: "fhir.resources",
+        kind: "selection.fhir",
         profiles: [
           "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage",
         ],
@@ -99,7 +99,7 @@ const US_CORE_CHECKIN: SmartCheckinRequest = {
       title: "US Core clinical resources",
       summary: "US Core resources, including patient demographics, problems, medications, and allergies.",
       content: {
-        kind: "fhir.resources",
+        kind: "selection.fhir",
         profilesFrom: US_CORE_PROFILE_FAMILIES,
         profiles: US_CORE_CLINICAL_PROFILES,
       },
@@ -109,8 +109,8 @@ const US_CORE_CHECKIN: SmartCheckinRequest = {
       id: "intake",
       title: "Intake form",
       content: {
-        kind: "questionnaire",
-        resource: INTAKE_QUESTIONNAIRE,
+        kind: "form.fhir",
+        questionnaire: INTAKE_QUESTIONNAIRE,
       },
       accept: ACCEPT_FHIR,
     },
@@ -142,7 +142,7 @@ export const PRESETS: ReadonlyArray<Preset> = [
           summary: "Demographics for check-in",
           required: true,
           content: {
-            kind: "fhir.resources",
+            kind: "selection.fhir",
             profiles: ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"],
           },
           accept: ACCEPT_FHIR,
@@ -166,7 +166,7 @@ export const PRESETS: ReadonlyArray<Preset> = [
           title: "Patient demographics",
           required: true,
           content: {
-            kind: "fhir.resources",
+            kind: "selection.fhir",
             profiles: ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"],
           },
           accept: ACCEPT_FHIR,
@@ -177,7 +177,7 @@ export const PRESETS: ReadonlyArray<Preset> = [
           summary: "Insurance card from your wallet",
           required: false,
           content: {
-            kind: "fhir.resources",
+            kind: "selection.fhir",
             profiles: [
               "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage",
             ],
@@ -202,8 +202,8 @@ export const PRESETS: ReadonlyArray<Preset> = [
           id: "intake",
           title: "Intake form",
           content: {
-            kind: "questionnaire",
-            resource: INTAKE_QUESTIONNAIRE,
+            kind: "form.fhir",
+            questionnaire: INTAKE_QUESTIONNAIRE,
           },
           accept: ACCEPT_FHIR,
         },

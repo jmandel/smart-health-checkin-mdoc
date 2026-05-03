@@ -70,7 +70,7 @@ The adapter maps requested FHIR resources to coarse UI/store categories:
 | CARIN Coverage profile or `Coverage` resource type | `Coverage` |
 | C4DIC/SBC InsurancePlan profile or `InsurancePlan` resource type | `Plan` |
 | US Core, patient/clinical resource types, or matching `profilesFrom` family | `Clinical` |
-| `content.kind == "questionnaire"` | `Questionnaire` |
+| `content.kind == "form.fhir"` | `Questionnaire` |
 | Anything else valid but not recognized | `Unknown` |
 
 `profilesFrom` is the profile-family mechanism. For example, a verifier can ask
@@ -78,7 +78,7 @@ for "anything from US Core" instead of naming every StructureDefinition:
 
 ```json
 {
-  "kind": "fhir.resources",
+  "kind": "selection.fhir",
   "profilesFrom": ["http://hl7.org/fhir/us/core"]
 }
 ```

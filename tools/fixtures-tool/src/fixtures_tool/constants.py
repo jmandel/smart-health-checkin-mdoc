@@ -22,7 +22,7 @@ MINIMAL_SMART_REQUEST = {
             "summary": "Demographics for check-in",
             "required": True,
             "content": {
-                "kind": "fhir.resources",
+                "kind": "selection.fhir",
                 "profiles": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"],
             },
             "accept": ["application/fhir+json"],

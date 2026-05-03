@@ -136,16 +136,16 @@ export type SmartHealthCheckinContentSelector =
   | QuestionnaireContentSelector;
 
 export interface FhirResourcesContentSelector {
-  kind: "fhir.resources";
+  kind: "selection.fhir";
   profiles?: FhirCanonical[];
   profilesFrom?: FhirProfileCollectionRef[];
   resourceTypes?: FhirResourceType[];
 }
 
 export interface QuestionnaireContentSelector {
-  kind: "questionnaire";
-  canonical?: FhirCanonical;
-  resource?: fhir_r4.Questionnaire;
+  kind: "form.fhir";
+  questionnaireCanonical?: FhirCanonical;
+  questionnaire?: fhir_r4.Questionnaire;
 }
 
 export type SmartHealthCheckinAcceptedMediaType =
@@ -159,23 +159,23 @@ export type FhirResourceType = string;
 export type FhirVersion = string;
 ```
 
-For `content.kind = "questionnaire"`, at least one of `canonical` or `resource`
-is present. Both are direct selector members. Older nested forms such as
-`questionnaire: "..."`, `questionnaire: { resourceType: "Questionnaire" }`, and
-`questionnaire: { canonical, resource }` are not the SMART Health Check-in 1.0
-shape.
+For `content.kind = "form.fhir"`, at least one of `questionnaireCanonical` or
+`questionnaire` is present. Both are direct selector members. The
+SMART Health Check-in 1.0 selector does not use the older field names
+`canonical` or `resource`; nested forms such as
+`questionnaire: { canonical, resource }` are also not the 1.0 shape.
 
 ## 4. Request semantics
 
-### `fhir.resources`
+### `selection.fhir`
 
-`fhir.resources` requests patient-specific FHIR resources.
+`selection.fhir` requests patient-specific FHIR resources.
 
 Exact profile request:
 
 ```json
 {
-  "kind": "fhir.resources",
+  "kind": "selection.fhir",
   "profiles": [
     "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage"
   ]
@@ -186,7 +186,7 @@ Broad profile-family request:
 
 ```json
 {
-  "kind": "fhir.resources",
+  "kind": "selection.fhir",
   "profilesFrom": ["http://hl7.org/fhir/us/core"]
 }
 ```
@@ -195,7 +195,7 @@ Optional resource type narrowing:
 
 ```json
 {
-  "kind": "fhir.resources",
+  "kind": "selection.fhir",
   "profilesFrom": ["http://hl7.org/fhir/us/core"],
   "resourceTypes": ["Condition", "MedicationRequest", "Observation"]
 }
@@ -216,17 +216,17 @@ item requests any patient-specific FHIR resources the Wallet can offer and the
 Holder chooses to share, constrained by `accept[]`, `fhirVersions[]`, Wallet
 capability, policy, and Holder decision.
 
-### `questionnaire`
+### `form.fhir`
 
-`questionnaire` requests that the Wallet or source app collect answers to a FHIR
+`form.fhir` requests that the Wallet or source app collect answers to a FHIR
 Questionnaire and return a FHIR `QuestionnaireResponse`.
 
 Canonical-only request:
 
 ```json
 {
-  "kind": "questionnaire",
-  "canonical": "https://clinic.example.org/fhir/Questionnaire/migraine-intake|1.2.3"
+  "kind": "form.fhir",
+  "questionnaireCanonical": "https://clinic.example.org/fhir/Questionnaire/migraine-intake|1.2.3"
 }
 ```
 
@@ -234,8 +234,8 @@ Inline request:
 
 ```json
 {
-  "kind": "questionnaire",
-  "resource": {
+  "kind": "form.fhir",
+  "questionnaire": {
     "resourceType": "Questionnaire",
     "url": "https://clinic.example.org/fhir/Questionnaire/migraine-intake",
     "version": "1.2.3",
@@ -250,9 +250,9 @@ Canonical plus inline body:
 
 ```json
 {
-  "kind": "questionnaire",
-  "canonical": "https://clinic.example.org/fhir/Questionnaire/migraine-intake|1.2.3",
-  "resource": {
+  "kind": "form.fhir",
+  "questionnaireCanonical": "https://clinic.example.org/fhir/Questionnaire/migraine-intake|1.2.3",
+  "questionnaire": {
     "resourceType": "Questionnaire",
     "url": "https://clinic.example.org/fhir/Questionnaire/migraine-intake",
     "version": "1.2.3",
@@ -263,10 +263,10 @@ Canonical plus inline body:
 }
 ```
 
-When both `canonical` and `resource` are supplied, the canonical is the requested
-identity and the resource is the body to render. Material disagreement in URL,
-explicit version, or answer-changing item structure should be reported as
-`unsupported` before answers are collected.
+When both `questionnaireCanonical` and `questionnaire` are supplied, the canonical
+is the requested identity and the inline `questionnaire` is the body to render.
+Material disagreement in URL, explicit version, or answer-changing item structure
+should be reported as `unsupported` before answers are collected.
 
 ## 5. Canonical `|version` handling
 
@@ -462,7 +462,7 @@ export const exampleRequest: SmartHealthCheckinRequest = {
       summary: "Insurance coverage information you can share.",
       required: false,
       content: {
-        kind: "fhir.resources",
+        kind: "selection.fhir",
         profiles: [
           "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage"
         ]
@@ -475,7 +475,7 @@ export const exampleRequest: SmartHealthCheckinRequest = {
       summary: "US Core resources, including patient demographics, problems, medications, and allergies.",
       required: false,
       content: {
-        kind: "fhir.resources",
+        kind: "selection.fhir",
         profilesFrom: ["http://hl7.org/fhir/us/core"],
         profiles: [
           "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
@@ -491,9 +491,9 @@ export const exampleRequest: SmartHealthCheckinRequest = {
       title: "Migraine check-in",
       required: true,
       content: {
-        kind: "questionnaire",
-        canonical: "https://clinic.example.org/fhir/Questionnaire/migraine-intake|1.2.3",
-        resource: {
+        kind: "form.fhir",
+        questionnaireCanonical: "https://clinic.example.org/fhir/Questionnaire/migraine-intake|1.2.3",
+        questionnaire: {
           resourceType: "Questionnaire",
           url: "https://clinic.example.org/fhir/Questionnaire/migraine-intake",
           version: "1.2.3",

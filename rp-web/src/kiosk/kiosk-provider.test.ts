@@ -29,7 +29,7 @@ const SMART_REQUEST: SmartCheckinRequest = {
       summary: "Demographics for check-in",
       required: true,
       content: {
-        kind: "fhir.resources",
+        kind: "selection.fhir",
         profiles: ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"],
       },
       accept: ["application/fhir+json"],
@@ -39,8 +39,8 @@ const SMART_REQUEST: SmartCheckinRequest = {
       title: "Intake form",
       summary: "Migraine Check-in",
       content: {
-        kind: "questionnaire",
-        resource: {
+        kind: "form.fhir",
+        questionnaire: {
           resourceType: "Questionnaire",
           status: "active",
           title: "Migraine Check-in",

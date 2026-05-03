@@ -13,7 +13,7 @@
       "summary": "Member coverage and payer details.",
       "required": true,
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "profiles": [
           "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage"
         ]
@@ -28,7 +28,7 @@
       "summary": "Patient demographics and clinical summary.",
       "required": true,
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "profiles": [
           "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
         ]
@@ -43,7 +43,7 @@
       "summary": "Summary of Benefits and Coverage.",
       "required": false,
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "profiles": [
           "http://hl7.org/fhir/us/insurance-card/StructureDefinition/sbc-insurance-plan"
         ]
@@ -58,8 +58,8 @@
       "summary": "Migraine follow-up form.",
       "required": false,
       "content": {
-        "kind": "questionnaire",
-        "canonical": "https://smart-health-checkin.example.org/fhir/Questionnaire/chronic-migraine-followup"
+        "kind": "form.fhir",
+        "questionnaireCanonical": "https://smart-health-checkin.example.org/fhir/Questionnaire/chronic-migraine-followup"
       },
       "accept": [
         "application/fhir+json"

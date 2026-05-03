@@ -13,13 +13,13 @@
       "summary": "Demographics for check-in",
       "required": true,
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "profiles": [
-          "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
+          "http:\/\/hl7.org\/fhir\/us\/core\/StructureDefinition\/us-core-patient"
         ]
       },
       "accept": [
-        "application/fhir+json"
+        "application\/fhir+json"
       ]
     },
     {
@@ -28,13 +28,13 @@
       "summary": "Insurance card for billing",
       "required": true,
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "profiles": [
-          "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage"
+          "http:\/\/hl7.org\/fhir\/us\/insurance-card\/StructureDefinition\/C4DIC-Coverage"
         ]
       },
       "accept": [
-        "application/fhir+json"
+        "application\/fhir+json"
       ]
     },
     {
@@ -42,27 +42,27 @@
       "title": "US Core clinical resources",
       "summary": "US Core resources, including patient demographics, problems, medications, and allergies.",
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "profilesFrom": [
-          "http://hl7.org/fhir/us/core"
+          "http:\/\/hl7.org\/fhir\/us\/core"
         ],
         "profiles": [
-          "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
-          "http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns",
-          "http://hl7.org/fhir/us/core/StructureDefinition/us-core-allergyintolerance",
-          "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+          "http:\/\/hl7.org\/fhir\/us\/core\/StructureDefinition\/us-core-patient",
+          "http:\/\/hl7.org\/fhir\/us\/core\/StructureDefinition\/us-core-condition-problems-health-concerns",
+          "http:\/\/hl7.org\/fhir\/us\/core\/StructureDefinition\/us-core-allergyintolerance",
+          "http:\/\/hl7.org\/fhir\/us\/core\/StructureDefinition\/us-core-medicationrequest"
         ]
       },
       "accept": [
-        "application/fhir+json"
+        "application\/fhir+json"
       ]
     },
     {
       "id": "intake",
       "title": "Intake form",
       "content": {
-        "kind": "questionnaire",
-        "resource": {
+        "kind": "form.fhir",
+        "questionnaire": {
           "resourceType": "Questionnaire",
           "title": "Migraine Check-in",
           "status": "active",
@@ -83,11 +83,11 @@
               "type": "integer",
               "extension": [
                 {
-                  "url": "http://hl7.org/fhir/StructureDefinition/minValue",
+                  "url": "http:\/\/hl7.org\/fhir\/StructureDefinition\/minValue",
                   "valueInteger": 0
                 },
                 {
-                  "url": "http://hl7.org/fhir/StructureDefinition/maxValue",
+                  "url": "http:\/\/hl7.org\/fhir\/StructureDefinition\/maxValue",
                   "valueInteger": 10
                 }
               ]
@@ -101,7 +101,7 @@
         }
       },
       "accept": [
-        "application/fhir+json"
+        "application\/fhir+json"
       ]
     }
   ]

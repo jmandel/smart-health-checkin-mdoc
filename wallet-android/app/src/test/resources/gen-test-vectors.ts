@@ -78,7 +78,7 @@ const SMART_REQUESTS: Array<{
           summary: "Demographics for check-in",
           required: true,
           content: {
-            kind: "fhir.resources",
+            kind: "selection.fhir",
             profiles: ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"],
           },
           accept: ["application/fhir+json"],
@@ -101,7 +101,7 @@ const SMART_REQUESTS: Array<{
           title: "Patient demographics",
           required: true,
           content: {
-            kind: "fhir.resources",
+            kind: "selection.fhir",
             profiles: ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"],
           },
           accept: ["application/fhir+json"],
@@ -110,7 +110,7 @@ const SMART_REQUESTS: Array<{
           id: "coverage",
           title: "Coverage",
           content: {
-            kind: "fhir.resources",
+            kind: "selection.fhir",
             profiles: [
               "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage",
             ],
@@ -134,8 +134,8 @@ const SMART_REQUESTS: Array<{
           id: "intake",
           title: "Migraine Check-in",
           content: {
-            kind: "questionnaire",
-            resource: {
+            kind: "form.fhir",
+            questionnaire: {
               resourceType: "Questionnaire",
               title: "Migraine Check-in",
               status: "active",
@@ -164,7 +164,7 @@ const SMART_REQUESTS: Array<{
           title: "Patient demographics",
           required: true,
           content: {
-            kind: "fhir.resources",
+            kind: "selection.fhir",
             profiles: ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"],
           },
           accept: ["application/fhir+json"],
@@ -173,7 +173,7 @@ const SMART_REQUESTS: Array<{
           id: "coverage",
           title: "Coverage",
           content: {
-            kind: "fhir.resources",
+            kind: "selection.fhir",
             profiles: [
               "http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage",
             ],
@@ -185,7 +185,7 @@ const SMART_REQUESTS: Array<{
           title: "US Core clinical resources",
           summary: "US Core resources, including patient demographics, problems, medications, and allergies.",
           content: {
-            kind: "fhir.resources",
+            kind: "selection.fhir",
             profilesFrom: ["http://hl7.org/fhir/us/core"],
             profiles: [
               "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
@@ -200,8 +200,8 @@ const SMART_REQUESTS: Array<{
           id: "intake",
           title: "Migraine Check-in",
           content: {
-            kind: "questionnaire",
-            resource: {
+            kind: "form.fhir",
+            questionnaire: {
               resourceType: "Questionnaire",
               title: "Migraine Check-in",
               status: "active",

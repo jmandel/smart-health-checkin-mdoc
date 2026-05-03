@@ -303,14 +303,14 @@ function RequestTaskList({ request }: { request: SmartCheckinRequest }) {
 }
 
 function selectorKind(content: SmartCheckinRequest["items"][number]["content"]): string {
-  return content.kind === "questionnaire" ? "Questionnaire" : "FHIR resources";
+  return content.kind === "form.fhir" ? "Questionnaire" : "FHIR resources";
 }
 
 function selectorDescription(content: SmartCheckinRequest["items"][number]["content"]): string {
-  if (content.kind === "questionnaire") {
-    const resource = asRecord(content.resource);
+  if (content.kind === "form.fhir") {
+    const resource = asRecord(content.questionnaire);
     if (typeof resource?.title === "string") return resource.title;
-    if (typeof content.canonical === "string") return content.canonical;
+    if (typeof content.questionnaireCanonical === "string") return content.questionnaireCanonical;
     return "Form answers requested by the verifier.";
   }
   return content.profiles?.join(", ") ?? content.resourceTypes?.join(", ") ?? "FHIR resources";

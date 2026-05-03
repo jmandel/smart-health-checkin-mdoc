@@ -136,7 +136,7 @@ class DirectMdocProtocolTest {
 
     private companion object {
         const val PATIENT_REQUEST_JSON =
-            """{"type":"smart-health-checkin-request","version":"1","id":"test-patient-request","purpose":"Clinic check-in","fhirVersions":["4.0.1"],"items":[{"id":"patient","title":"Patient demographics","summary":"Demographics for check-in","required":true,"content":{"kind":"fhir.resources","profiles":["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"]},"accept":["application/fhir+json"]}]}"""
+            """{"type":"smart-health-checkin-request","version":"1","id":"test-patient-request","purpose":"Clinic check-in","fhirVersions":["4.0.1"],"items":[{"id":"patient","title":"Patient demographics","summary":"Demographics for check-in","required":true,"content":{"kind":"selection.fhir","profiles":["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"]},"accept":["application/fhir+json"]}]}"""
 
         val PATIENT_DEVICE_REQUEST: ByteArray by lazy {
             val raw = DirectMdocProtocolTest::class.java.classLoader!!

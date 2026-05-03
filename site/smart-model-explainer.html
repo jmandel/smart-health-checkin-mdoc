@@ -496,7 +496,7 @@
   "id": "patient",
   "title": "Patient demographics",
   "content": {
-    "kind": "fhir.resources",
+    "kind": "selection.fhir",
     "profiles": [
       "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
     ]
@@ -508,7 +508,7 @@
       <div class="example">
         <h3>Questionnaire</h3>
         <p>
-          Use <code>kind: "questionnaire"</code> when the wallet should render a
+          Use <code>kind: "form.fhir"</code> when the wallet should render a
           FHIR Questionnaire, accept user input, and return a
           QuestionnaireResponse.
         </p>
@@ -516,8 +516,8 @@
   "id": "intake",
   "title": "Migraine intake",
   "content": {
-    "kind": "questionnaire",
-    "resource": {
+    "kind": "form.fhir",
+    "questionnaire": {
       "resourceType": "Questionnaire",
       "title": "Migraine Check-in",
       "item": [
@@ -550,7 +550,7 @@
   "title": "US Core records",
   "summary": "Patient records your app can share that conform to US Core profiles.",
   "content": {
-    "kind": "fhir.resources",
+    "kind": "selection.fhir",
     "profilesFrom": ["http://hl7.org/fhir/us/core"]
   },
   "accept": ["application/fhir+json"]
@@ -561,7 +561,7 @@
   "id": "us-core-problems-meds-labs",
   "title": "Problems, medications, and labs",
   "content": {
-    "kind": "fhir.resources",
+    "kind": "selection.fhir",
     "profilesFrom": ["http://hl7.org/fhir/us/core"],
     "resourceTypes": ["Condition", "MedicationRequest", "Observation"]
   },
@@ -739,7 +739,7 @@
       "id": "us-core-records",
       "title": "US Core records",
       "content": {
-        "kind": "fhir.resources",
+        "kind": "selection.fhir",
         "profilesFrom": ["http://hl7.org/fhir/us/core"]
       },
       "accept": ["application/fhir+json"]
@@ -748,8 +748,8 @@
       "id": "intake",
       "title": "Migraine intake",
       "content": {
-        "kind": "questionnaire",
-        "resource": { "resourceType": "Questionnaire", "title": "Migraine Check-in" }
+        "kind": "form.fhir",
+        "questionnaire": { "resourceType": "Questionnaire", "title": "Migraine Check-in" }
       },
       "accept": ["application/fhir+json"]
     }

@@ -10,15 +10,15 @@ export type FhirProfileCollectionRef = FhirCanonical;
 
 export type SmartCheckinContentSelector =
   | {
-      kind: "fhir.resources";
+      kind: "selection.fhir";
       profiles?: ReadonlyArray<FhirCanonical>;
       profilesFrom?: ReadonlyArray<FhirProfileCollectionRef>;
       resourceTypes?: ReadonlyArray<FhirResourceType>;
     }
   | {
-      kind: "questionnaire";
-      canonical?: FhirCanonical;
-      resource?: unknown;
+      kind: "form.fhir";
+      questionnaireCanonical?: FhirCanonical;
+      questionnaire?: unknown;
     };
 
 export type SmartCheckinRequestItem = {
@@ -123,7 +123,7 @@ export function validateSmartCheckinRequest(v: unknown): ValidationResult<SmartC
 }
 
 function validateContentSelector(content: Record<string, unknown>, path: string): string | undefined {
-  if (content.kind === "fhir.resources") {
+  if (content.kind === "selection.fhir") {
     if (content.profiles !== undefined && !stringArray(content.profiles)) {
       return `${path}.profiles must be an array of strings`;
     }
@@ -135,25 +135,28 @@ function validateContentSelector(content: Record<string, unknown>, path: string)
     }
     return undefined;
   }
-  if (content.kind === "questionnaire") {
-    if ("questionnaire" in content) {
-      return `${path}.questionnaire is not a SMART Health Check-in 1.0 selector member; use canonical and resource directly`;
+  if (content.kind === "form.fhir") {
+    if ("canonical" in content) {
+      return `${path}.canonical is not a SMART Health Check-in 1.0 selector member; use questionnaireCanonical`;
     }
-    if (content.canonical === undefined && content.resource === undefined) {
-      return `${path} must include canonical or resource`;
+    if ("resource" in content) {
+      return `${path}.resource is not a SMART Health Check-in 1.0 selector member; use questionnaire`;
     }
-    if (content.canonical !== undefined && !nonEmptyString(content.canonical)) {
-      return `${path}.canonical must be a non-empty string`;
+    if (content.questionnaireCanonical === undefined && content.questionnaire === undefined) {
+      return `${path} must include questionnaireCanonical or questionnaire`;
     }
-    if (content.resource !== undefined) {
-      if (!isRecord(content.resource)) return `${path}.resource must be an object`;
-      if (content.resource.resourceType !== "Questionnaire") {
-        return `${path}.resource must be a Questionnaire (resourceType="Questionnaire")`;
+    if (content.questionnaireCanonical !== undefined && !nonEmptyString(content.questionnaireCanonical)) {
+      return `${path}.questionnaireCanonical must be a non-empty string`;
+    }
+    if (content.questionnaire !== undefined) {
+      if (!isRecord(content.questionnaire)) return `${path}.questionnaire must be an object`;
+      if (content.questionnaire.resourceType !== "Questionnaire") {
+        return `${path}.questionnaire must be a Questionnaire (resourceType="Questionnaire")`;
       }
     }
     return undefined;
   }
-  return `${path}.kind must be fhir.resources or questionnaire`;
+  return `${path}.kind must be selection.fhir or form.fhir`;
 }
 
 function validProfilesFrom(value: unknown): boolean {

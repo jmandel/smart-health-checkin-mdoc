@@ -14,11 +14,11 @@ class SmartRequestAdapterTest {
             "id missing",
         )
         assertFailsWithMessage(
-            """{"type":"smart-health-checkin-request","version":"1","id":"r1","items":[{"title":"Missing id","content":{"kind":"fhir.resources"},"accept":["application/fhir+json"]}]}""",
+            """{"type":"smart-health-checkin-request","version":"1","id":"r1","items":[{"title":"Missing id","content":{"kind":"selection.fhir"},"accept":["application/fhir+json"]}]}""",
             "items[0].id missing",
         )
         assertFailsWithMessage(
-            """{"type":"smart-health-checkin-request","version":"1","id":"r1","items":[{"id":"patient","title":"Patient","content":{"kind":"fhir.resources"},"accept":[]}]}""",
+            """{"type":"smart-health-checkin-request","version":"1","id":"r1","items":[{"id":"patient","title":"Patient","content":{"kind":"selection.fhir"},"accept":[]}]}""",
             "items[0].accept",
         )
     }
@@ -26,7 +26,7 @@ class SmartRequestAdapterTest {
     @Test
     fun supportsBroadFhirResourceRequests() {
         val request = parse(
-            """{"type":"smart-health-checkin-request","version":"1","id":"r1","items":[{"id":"anything","title":"Any FHIR resources","content":{"kind":"fhir.resources"},"accept":["application/fhir+json"]}]}""",
+            """{"type":"smart-health-checkin-request","version":"1","id":"r1","items":[{"id":"anything","title":"Any FHIR resources","content":{"kind":"selection.fhir"},"accept":["application/fhir+json"]}]}""",
         )
 
         assertEquals(RequestKind.Unknown, request.items.single().kind)
@@ -35,7 +35,7 @@ class SmartRequestAdapterTest {
     @Test
     fun routesByCanonicalProfilesInsteadOfKeywordSubstrings() {
         val request = parse(
-            """{"type":"smart-health-checkin-request","version":"1","id":"r1","items":[{"id":"insuranceplan","title":"Coverage","content":{"kind":"fhir.resources","profiles":["http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage|1.0.0"]},"accept":["application/fhir+json"]}]}""",
+            """{"type":"smart-health-checkin-request","version":"1","id":"r1","items":[{"id":"insuranceplan","title":"Coverage","content":{"kind":"selection.fhir","profiles":["http://hl7.org/fhir/us/insurance-card/StructureDefinition/C4DIC-Coverage|1.0.0"]},"accept":["application/fhir+json"]}]}""",
         )
 
         assertEquals(RequestKind.Coverage, request.items.single().kind)
@@ -44,7 +44,7 @@ class SmartRequestAdapterTest {
     @Test
     fun routesUsCoreProfileFamilyArraysAsClinical() {
         val request = parse(
-            """{"type":"smart-health-checkin-request","version":"1","id":"r1","items":[{"id":"clinical-history","title":"US Core clinical resources","summary":"US Core resources, including patient demographics, problems, medications, and allergies.","content":{"kind":"fhir.resources","profilesFrom":["http://hl7.org/fhir/us/core"],"profiles":["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient","http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"]},"accept":["application/fhir+json"]}]}""",
+            """{"type":"smart-health-checkin-request","version":"1","id":"r1","items":[{"id":"clinical-history","title":"US Core clinical resources","summary":"US Core resources, including patient demographics, problems, medications, and allergies.","content":{"kind":"selection.fhir","profilesFrom":["http://hl7.org/fhir/us/core"],"profiles":["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient","http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"]},"accept":["application/fhir+json"]}]}""",
         )
 
         val item = request.items.single()

@@ -42,7 +42,7 @@ const PATIENT_REQUEST: SmartCheckinRequest = {
       summary: "Demographics for check-in",
       required: true,
       content: {
-        kind: "fhir.resources",
+        kind: "selection.fhir",
         profiles: ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"],
       },
       accept: ["application/fhir+json"],
@@ -87,7 +87,7 @@ describe("fallback dynamic SMART Check-in element", () => {
           id: "clinical-history",
           title: "US Core clinical resources",
           content: {
-            kind: "fhir.resources",
+            kind: "selection.fhir",
             profilesFrom: ["http://hl7.org/fhir/us/core"],
             profiles: [
               "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
@@ -102,11 +102,11 @@ describe("fallback dynamic SMART Check-in element", () => {
     expect(validateSmartCheckinRequest(request).ok).toBe(true);
     expect(validateSmartCheckinRequest({
       ...request,
-      items: [{ ...request.items[0], content: { kind: "fhir.resources", profilesFrom: "http://hl7.org/fhir/us/core" } }],
+      items: [{ ...request.items[0], content: { kind: "selection.fhir", profilesFrom: "http://hl7.org/fhir/us/core" } }],
     }).ok).toBe(false);
     expect(validateSmartCheckinRequest({
       ...request,
-      items: [{ ...request.items[0], content: { kind: "fhir.resources", profilesFrom: { canonical: "http://hl7.org/fhir/us/core" } } }],
+      items: [{ ...request.items[0], content: { kind: "selection.fhir", profilesFrom: { canonical: "http://hl7.org/fhir/us/core" } } }],
     }).ok).toBe(false);
   });
 
@@ -232,7 +232,7 @@ describe("fallback dynamic SMART Check-in element", () => {
         {
           id: "intake",
           title: "Intake forms",
-          content: { kind: "questionnaire", canonical: "https://example.org/Q/intake" },
+          content: { kind: "form.fhir", questionnaireCanonical: "https://example.org/Q/intake" },
           accept: ["application/fhir+json"],
         },
       ],
@@ -322,14 +322,35 @@ describe("fallback dynamic SMART Check-in element", () => {
     }
   });
 
-  test("rejects questionnaire selectors that use the legacy nested shape", () => {
+  test("rejects form.fhir selectors that use the legacy canonical field name", () => {
     const result = validateSmartCheckinRequest({
       ...PATIENT_REQUEST,
       items: [
         {
           id: "intake",
           title: "Intake forms",
-          content: { kind: "questionnaire", questionnaire: "https://example.org/Q/intake" },
+          content: { kind: "form.fhir", canonical: "https://example.org/Q/intake" },
+          accept: ["application/fhir+json"],
+        },
+      ],
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain("not a SMART Health Check-in 1.0 selector member");
+    }
+  });
+
+  test("rejects form.fhir selectors that use the legacy resource field name", () => {
+    const result = validateSmartCheckinRequest({
+      ...PATIENT_REQUEST,
+      items: [
+        {
+          id: "intake",
+          title: "Intake forms",
+          content: {
+            kind: "form.fhir",
+            resource: { resourceType: "Questionnaire", status: "active" },
+          },
           accept: ["application/fhir+json"],
         },
       ],

@@ -32,8 +32,8 @@ request/response shape is not mdoc-specific.
 Requester/verifier
   SmartCheckinRequest
     items:
-      - fhir.resources: profiles, profilesFrom, or resourceTypes
-      - questionnaire: canonical URL or inline Questionnaire
+      - selection.fhir: profiles, profilesFrom, or resourceTypes
+      - form.fhir: questionnaireCanonical or inline questionnaire
 
 Responder/wallet
   SmartCheckinResponse
@@ -66,7 +66,7 @@ Main exports:
 | --- | --- |
 | `SmartCheckinRequest` | Request model sent by a verifier/requester. |
 | `SmartCheckinRequestItem` | One requested unit of information or questionnaire input. |
-| `SmartCheckinContentSelector` | `fhir.resources` or `questionnaire` selector. |
+| `SmartCheckinContentSelector` | `selection.fhir` or `form.fhir` selector. |
 | `SmartCheckinResponse` | Response model returned by a wallet/responder. |
 | `SmartArtifact` | One returned artifact, such as FHIR JSON or SMART Health Card. |
 | `validateSmartCheckinRequest(value)` | Runtime shape validation for untrusted request JSON. |
@@ -95,7 +95,7 @@ const request: SmartCheckinRequest = {
       summary: "Any resources matching US Core profiles that help with check-in.",
       required: true,
       content: {
-        kind: "fhir.resources",
+        kind: "selection.fhir",
         profilesFrom: ["http://hl7.org/fhir/us/core"],
         profiles: [
           "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
@@ -110,8 +110,8 @@ const request: SmartCheckinRequest = {
       id: "intake",
       title: "Headache intake form",
       content: {
-        kind: "questionnaire",
-        canonical: "https://example.org/fhir/Questionnaire/headache-intake|2026.04",
+        kind: "form.fhir",
+        questionnaireCanonical: "https://example.org/fhir/Questionnaire/headache-intake|2026.04",
       },
       accept: ["application/fhir+json"],
     },
@@ -131,7 +131,7 @@ Use `profiles` when the requester needs specific StructureDefinitions:
 
 ```json
 {
-  "kind": "fhir.resources",
+  "kind": "selection.fhir",
   "profiles": [
     "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
   ]
@@ -143,7 +143,7 @@ US Core profile":
 
 ```json
 {
-  "kind": "fhir.resources",
+  "kind": "selection.fhir",
   "profilesFrom": ["http://hl7.org/fhir/us/core"]
 }
 ```
