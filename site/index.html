@@ -540,7 +540,7 @@
             <div>
               <h3>Check in from a phone</h3>
               <p>
-                The patient is on their own phone. They tap a button, choose their health app,
+                The patient is on their phone. They tap a button, choose their health app,
                 approve the items, and the page renders the wallet's response in place.
               </p>
             </div>
@@ -556,8 +556,9 @@
             <div>
               <h3>Check in at a kiosk</h3>
               <p>
-                Staff starts check-in at the front desk. The patient scans a QR code on their phone,
-                shares from their wallet, and the kiosk screen updates when the response is ready.
+                Check-in can begin at the front desk, at a kiosk, or in a provider app. The patient
+                opens the request on their phone, shares from their wallet, and the check-in flow
+                updates when the response is ready.
               </p>
             </div>
             <span class="badge">In-person</span>
@@ -643,8 +644,8 @@
       <h2 id="layers-h">How it's wired</h2>
       <p class="section-lead">
         The experience has two reusable pieces: a clinical request/response model and a
-        browser-mediated wallet sharing flow. The kiosk demo adds a front-desk handoff that moves
-        sharing off the shared kiosk and onto the patient's own phone.
+        browser-mediated wallet sharing flow. The kiosk demo adds a clinic handoff so the
+        patient can finish sharing on their phone while the check-in flow waits for the result.
       </p>
       <div class="layers-grid">
         <article class="layer smart">
@@ -673,8 +674,8 @@
         <article class="layer kiosk">
           <h3>Kiosk handoff demo</h3>
           <p>
-            A front-desk workflow: staff starts a session, the QR moves sharing to the
-            patient's phone, and the completed response comes back to the kiosk screen.
+            A clinic handoff: check-in begins in the clinic, sharing continues on the
+            patient's phone, and the completed response comes back to the waiting session.
           </p>
           <div class="layer-links">
             <a href="./kiosk-flow-explainer.html">Kiosk flow explainer →</a>

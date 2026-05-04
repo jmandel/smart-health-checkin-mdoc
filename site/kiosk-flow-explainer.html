@@ -266,12 +266,13 @@
 <body>
   <main class="page">
     <header>
-      <p class="eyebrow">Front-desk check-in</p>
-      <h1>Start check-in at the front desk. Finish sharing on the patient's phone.</h1>
+      <p class="eyebrow">Clinic check-in handoff</p>
+      <h1>Check-in can begin in the clinic and continue on the patient's phone.</h1>
       <p class="lede">
-        Staff start check-in and show a QR code or link. The patient opens it
-        on their own phone, reviews the request in their wallet, chooses what to
-        share, and the kiosk updates when the response is ready.
+        A check-in can begin at the front desk, at a kiosk, or in a provider app.
+        The patient opens the request on their phone, reviews it in their wallet,
+        chooses what to share, and the check-in flow updates when the response is
+        ready.
       </p>
       <div class="actions" aria-label="Primary links">
         <a href="./index.html">Overview</a>
@@ -290,20 +291,20 @@
     <section id="mental-model">
       <h2>What staff and patients see</h2>
       <p>
-        The kiosk starts the visit, but the patient reviews and shares from
-        their own phone. That keeps private health information off the shared
-        kiosk screen while still letting staff see when check-in information has
-        arrived.
+        The clinic starts the visit, but the patient reviews and shares from
+        their phone. That keeps private health information off a shared clinic
+        screen while still letting staff see when check-in information has arrived.
       </p>
       <div class="callout">
-        <strong>The important idea:</strong> the front desk starts the request;
+        <strong>The important idea:</strong> the clinic starts the request;
         the patient's phone handles wallet review and approval; the completed
-        response returns to the waiting kiosk session.
+        response returns to the waiting check-in session.
       </div>
       <p>
         This is the same patient-approved wallet sharing flow used when a
-        patient checks in directly from their phone. The kiosk adds a front-desk
-        handoff so the patient can complete the private sharing step on their phone.
+        patient checks in directly from their phone. The clinic handoff lets the
+        patient complete the private sharing step on their phone while the
+        check-in flow waits for the result.
       </p>
 
       <div class="flow-grid">
@@ -316,11 +317,11 @@
           </p>
         </div>
         <div class="flow-card kiosk">
-          <h3>Front desk starts, patient finishes on phone</h3>
+          <h3>Check-in continues on the patient's phone</h3>
           <p>
-            Staff start the visit at the kiosk. The patient scans a QR code,
-            shares from their wallet on their phone, and the kiosk receives the
-            completed response.
+            The visit can begin at the front desk, at a kiosk, or in a provider
+            app. The patient opens the wallet request on their phone and shares
+            approved information back to the waiting check-in session.
           </p>
         </div>
       </div>
@@ -331,17 +332,17 @@
       <ol class="steps">
         <li>
           <div>
-            <strong>Staff start check-in.</strong>
-            The kiosk creates a check-in request for this visit and shows a QR
-            code or link.
+            <strong>The clinic starts check-in.</strong>
+            The check-in flow creates a request for this visit and gives the
+            patient a way to open it on their phone.
           </div>
         </li>
         <li>
           <div>
             <strong>The patient opens it on their phone.</strong>
-            The QR code connects the patient's phone to the same check-in visit,
-            without asking the patient to type private information into the
-            shared kiosk.
+            The handoff connects the patient's phone to the same check-in visit,
+            without asking the patient to type private information into a shared
+            clinic screen.
           </div>
         </li>
         <li>
@@ -360,10 +361,10 @@
         </li>
         <li>
           <div>
-            <strong>The front-desk screen updates.</strong>
-            The approved response returns to the waiting kiosk session. The kiosk
-            checks it against the original request and displays the result for
-            staff.
+            <strong>The check-in screen updates.</strong>
+            The approved response returns to the waiting session. The clinic
+            system checks it against the original request and displays the result
+            for staff.
           </div>
         </li>
       </ol>
@@ -381,7 +382,7 @@
       <div class="compact-flow" aria-label="Kiosk handoff steps">
         <div class="compact-step">
           <strong>1. Start</strong>
-          Staff create a visit-scoped check-in session.
+          The clinic creates a visit-scoped check-in session.
         </div>
         <div class="compact-step">
           <strong>2. Join</strong>
@@ -410,22 +411,22 @@
     </section>
 
     <section id="deployment">
-      <h2>Ways clinics can connect the kiosk and phone</h2>
+      <h2>The connection can vary</h2>
       <p>
-        A clinic can choose different ways to connect the front-desk session and
-        the patient's phone: QR codes, app links, staff-assisted lookup,
-        authenticated web sessions, polling, push, or a server relay. The user
+        A clinic can choose the handoff that fits its setting: a kiosk prompt,
+        a front-desk prompt, a provider app notification, or another
+        authenticated way to connect the visit and the patient's phone. The user
         experience can vary while the wallet sharing step stays the same.
       </p>
       <div class="callout warn">
         <strong>Technical note for implementers:</strong> SMART Health Check-in
         defines the request, the wallet sharing step, and the returned response.
-        The QR link, relay, polling, and completion screen are implementation
-        choices unless a specific deployment profile defines them.
+        The handoff mechanism and completion screen are implementation choices
+        unless a specific deployment profile defines them.
       </div>
       <p>
-        Across those choices, the kiosk starts the visit, the patient's phone
-        handles private wallet sharing, and the kiosk checks the returned
+        Across those choices, the clinic starts the visit, the patient's phone
+        handles private wallet sharing, and the check-in flow checks the returned
         response against the original request.
       </p>
     </section>
