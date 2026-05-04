@@ -89,6 +89,7 @@ class MainActivity : ComponentActivity() {
     @Suppress("unused")
     private var verifiedRequest: VerifiedRequest? = null
     private val selectedItems = mutableStateMapOf<String, Boolean>()
+    private val selectedCandidates = mutableStateMapOf<String, Set<String>>()
     private val questionnaireAnswers = mutableStateMapOf<String, Any>()
 
     private var registration: RegistrationState by mutableStateOf(RegistrationState.Idle)
@@ -131,10 +132,13 @@ class MainActivity : ComponentActivity() {
     private fun prepareConsent(request: VerifiedRequest) {
         verifiedRequest = request
         selectedItems.clear()
+        selectedCandidates.clear()
         questionnaireAnswers.clear()
 
+        val resolutions = request.items.map(::sampleResolutionForUi)
         request.items.forEach { item ->
             selectedItems[item.id] = true
+            selectedCandidates[item.id] = setOf("sample-${item.id}")
             val questionnaire = item.meta.optJSONObject("questionnaire")
             if (item.kind == RequestKind.Questionnaire && questionnaire != null) {
                 seedQuestionnaireAnswers(
@@ -145,7 +149,23 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        screenState = ScreenState.Consent(request)
+        screenState = ScreenState.Consent(request, resolutions)
+    }
+
+    private fun sampleResolutionForUi(item: RequestItem): RequestItemResolution {
+        return RequestItemResolution(
+            itemId = item.id,
+            availability = WalletItemAvailability.Available,
+            candidates = listOf(
+                WalletCandidate(
+                    id = "sample-${item.id}",
+                    label = item.title.ifBlank { "Sample data" },
+                    subtitle = item.subtitle.ifBlank { "Sample wallet record" },
+                    sourceName = "Sample data",
+                ),
+            ),
+            matchSummary = "1 sample record available",
+        )
     }
 
     private fun setQuestionnaireAnswer(key: String, value: Any?) {
@@ -585,8 +605,10 @@ private fun HomeScreen(
 fun DemoApp(
     state: ScreenState,
     selectedItems: SnapshotStateMap<String, Boolean>,
+    selectedCandidates: SnapshotStateMap<String, Set<String>>,
     questionnaireAnswers: SnapshotStateMap<String, Any>,
     onItemSelected: (String, Boolean) -> Unit,
+    onCandidateSelected: (String, String, Boolean) -> Unit,
     onAnswerChanged: (String, Any?) -> Unit,
     onShare: () -> Unit,
     onDecline: () -> Unit,
@@ -609,9 +631,12 @@ fun DemoApp(
             is ScreenState.Complete -> CompleteScreen(padding)
             is ScreenState.Consent -> ConsentScreen(
                 request = state.request,
+                resolutions = state.resolutions,
                 selectedItems = selectedItems,
+                selectedCandidates = selectedCandidates,
                 questionnaireAnswers = questionnaireAnswers,
                 onItemSelected = onItemSelected,
+                onCandidateSelected = onCandidateSelected,
                 onAnswerChanged = onAnswerChanged,
                 padding = padding,
             )
@@ -730,12 +755,16 @@ private fun CompleteScreen(padding: PaddingValues) {
 @Composable
 private fun ConsentScreen(
     request: VerifiedRequest,
+    resolutions: List<RequestItemResolution>,
     selectedItems: SnapshotStateMap<String, Boolean>,
+    selectedCandidates: SnapshotStateMap<String, Set<String>>,
     questionnaireAnswers: SnapshotStateMap<String, Any>,
     onItemSelected: (String, Boolean) -> Unit,
+    onCandidateSelected: (String, String, Boolean) -> Unit,
     onAnswerChanged: (String, Any?) -> Unit,
     padding: PaddingValues,
 ) {
+    val resolutionsByItem = remember(resolutions) { resolutions.associateBy { it.itemId } }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -752,14 +781,36 @@ private fun ConsentScreen(
             fontWeight = FontWeight.SemiBold,
             color = AppColors.Ink,
         )
+        Text(
+            text = "Review what this wallet found before deciding what to share.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = AppColors.Muted,
+        )
 
         request.items.forEach { item ->
+            val resolution = resolutionsByItem[item.id] ?: RequestItemResolution(
+                itemId = item.id,
+                availability = WalletItemAvailability.Error,
+                candidates = emptyList(),
+                matchSummary = "Could not prepare this item.",
+                statusIfShared = RequestItemStatusCode.Error,
+            )
             val selected = selectedItems[item.id] != false
             DataRequestCard(
                 item = item,
+                resolution = resolution,
                 selected = selected,
                 onSelectedChange = { onItemSelected(item.id, it) },
             )
+
+            if (selected && resolution.candidates.size > 1) {
+                CandidateSelectionCard(
+                    itemId = item.id,
+                    resolution = resolution,
+                    selectedCandidateIds = selectedCandidates[item.id].orEmpty(),
+                    onCandidateSelected = onCandidateSelected,
+                )
+            }
 
             if (selected && item.kind == RequestKind.Questionnaire) {
                 val questionnaire = item.meta.optJSONObject("questionnaire")
@@ -888,6 +939,7 @@ private fun VerifierStrip(verifierOrigin: String, readerAuth: ReaderAuthVerifica
 @Composable
 private fun DataRequestCard(
     item: RequestItem,
+    resolution: RequestItemResolution,
     selected: Boolean,
     onSelectedChange: (Boolean) -> Unit,
 ) {
@@ -920,6 +972,84 @@ private fun DataRequestCard(
                 ),
             )
         }
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatusChip(resolution.matchSummary, availabilityTone(resolution.availability))
+            if (resolution.candidates.size > 1) {
+                val selectedLabel = "${resolution.candidates.count { it.selectedByDefault }} selected by default"
+                StatusChip(selectedLabel, ChipTone.Neutral)
+            }
+        }
+        val detail = resolution.detail
+        if (!detail.isNullOrBlank()) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = detail,
+                style = MaterialTheme.typography.bodySmall,
+                color = AppColors.Muted,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CandidateSelectionCard(
+    itemId: String,
+    resolution: RequestItemResolution,
+    selectedCandidateIds: Set<String>,
+    onCandidateSelected: (String, String, Boolean) -> Unit,
+) {
+    ElevatedPanel {
+        Text(
+            text = "Matching records",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = AppColors.Ink,
+        )
+        Spacer(Modifier.height(8.dp))
+        resolution.candidates.forEach { candidate ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Checkbox(
+                    checked = candidate.id in selectedCandidateIds,
+                    onCheckedChange = { checked -> onCandidateSelected(itemId, candidate.id, checked) },
+                    colors = CheckboxDefaults.colors(checkedColor = AppColors.Primary),
+                )
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = candidate.label,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.Ink,
+                    )
+                    val source = candidate.sourceName
+                    val subtitle = if (source.isNullOrBlank()) {
+                        candidate.subtitle
+                    } else {
+                        "${candidate.subtitle} · $source"
+                    }
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.Muted,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun availabilityTone(availability: WalletItemAvailability): ChipTone {
+    return when (availability) {
+        WalletItemAvailability.Available -> ChipTone.Success
+        WalletItemAvailability.PartiallyAvailable -> ChipTone.Warning
+        WalletItemAvailability.Unavailable,
+        WalletItemAvailability.Unsupported,
+        WalletItemAvailability.Error -> ChipTone.Neutral
     }
 }
 
@@ -1681,7 +1811,10 @@ private fun jsonObjects(array: JSONArray?): List<JSONObject> {
 sealed interface ScreenState {
     data object Empty : ScreenState
     data class Loading(val title: String, val message: String) : ScreenState
-    data class Consent(val request: VerifiedRequest) : ScreenState
+    data class Consent(
+        val request: VerifiedRequest,
+        val resolutions: List<RequestItemResolution>,
+    ) : ScreenState
     data class Submitting(val title: String, val message: String) : ScreenState
     data class Error(val message: String) : ScreenState
     data object Complete : ScreenState

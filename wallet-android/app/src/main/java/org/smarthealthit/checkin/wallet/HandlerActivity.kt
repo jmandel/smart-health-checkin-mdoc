@@ -53,7 +53,9 @@ class HandlerActivity : ComponentActivity() {
     private var verifiedRequest: VerifiedRequest? = null
     private var directMdocRequest: DirectMdocRequest? = null
     private var providerRequest: ProviderGetCredentialRequest? = null
+    private var itemResolutions: List<RequestItemResolution> = emptyList()
     private val selectedItems = mutableStateMapOf<String, Boolean>()
+    private val selectedCandidates = mutableStateMapOf<String, Set<String>>()
     private val questionnaireAnswers = mutableStateMapOf<String, Any>()
     private val walletStore: SmartHealthWalletStore by lazy { DemoWalletStore.fromAssets(assets) }
     private var runId: String = "run-${Instant.now().toEpochMilli()}"
@@ -79,8 +81,10 @@ class HandlerActivity : ComponentActivity() {
                 DemoApp(
                     state = screenState,
                     selectedItems = selectedItems,
+                    selectedCandidates = selectedCandidates,
                     questionnaireAnswers = questionnaireAnswers,
                     onItemSelected = { id, selected -> selectedItems[id] = selected },
+                    onCandidateSelected = ::setCandidateSelected,
                     onAnswerChanged = ::setQuestionnaireAnswer,
                     onShare = { submit(declined = false) },
                     onDecline = { submit(declined = true) },
@@ -279,10 +283,21 @@ class HandlerActivity : ComponentActivity() {
                 return
             }
         verifiedRequest = request
+        itemResolutions = runCatching { walletStore.resolveItems(request.items) }
+            .onFailure { Log.e(TAG, "request item resolution failed", it) }
+            .getOrElse {
+                screenState = ScreenState.Error(it.message ?: it::class.java.simpleName)
+                return
+            }
         selectedItems.clear()
+        selectedCandidates.clear()
         questionnaireAnswers.clear()
-        request.items.forEach { item ->
-            selectedItems[item.id] = true
+        itemResolutions.forEach { resolution ->
+            selectedItems[resolution.itemId] = true
+            selectedCandidates[resolution.itemId] = resolution.candidates
+                .filter { it.selectedByDefault }
+                .map { it.id }
+                .toSet()
         }
         val prefills = runCatching { walletStore.prefillQuestionnaireAnswers(request.items) }
             .onFailure { Log.e(TAG, "questionnaire prefill failed", it) }
@@ -291,7 +306,12 @@ class HandlerActivity : ComponentActivity() {
                 return
             }
         questionnaireAnswers.putAll(prefills)
-        screenState = ScreenState.Consent(request)
+        screenState = ScreenState.Consent(request, itemResolutions)
+    }
+
+    private fun setCandidateSelected(itemId: String, candidateId: String, selected: Boolean) {
+        val current = selectedCandidates[itemId].orEmpty()
+        selectedCandidates[itemId] = if (selected) current + candidateId else current - candidateId
     }
 
     private fun setQuestionnaireAnswer(key: String, value: Any?) {
@@ -314,9 +334,12 @@ class HandlerActivity : ComponentActivity() {
         }
         val selectedSummary = JSONObject()
         selectedItems.forEach { (k, v) -> selectedSummary.put(k, v) }
+        val candidateSummary = JSONObject()
+        selectedCandidates.forEach { (itemId, candidates) -> candidateSummary.put(itemId, JSONArray(candidates.toList())) }
         val summary = JSONObject()
             .put("declined", declined)
             .put("selectedItems", selectedSummary)
+            .put("selectedCandidates", candidateSummary)
             .put("answerCount", questionnaireAnswers.size)
             .put("origin", req.verifierOrigin)
             .put("itemCount", req.items.size)
@@ -340,6 +363,8 @@ class HandlerActivity : ComponentActivity() {
                 selectedItems = selectedItems.toMap(),
                 questionnaireAnswers = questionnaireAnswers.toMap(),
                 walletStore = walletStore,
+                resolutions = itemResolutions,
+                selectedCandidates = selectedCandidates.toMap(),
             )
         }.onFailure { Log.e(TAG, "SMART response build failed", it) }
             .getOrElse {

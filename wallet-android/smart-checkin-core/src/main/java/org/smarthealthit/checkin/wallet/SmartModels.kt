@@ -49,8 +49,50 @@ enum class RequestKind {
     Unknown,
 }
 
+enum class RequestItemStatusCode(val wireValue: String) {
+    Fulfilled("fulfilled"),
+    Partial("partial"),
+    Unavailable("unavailable"),
+    Declined("declined"),
+    Unsupported("unsupported"),
+    Error("error"),
+}
+
+enum class WalletItemAvailability {
+    Available,
+    PartiallyAvailable,
+    Unavailable,
+    Unsupported,
+    Error,
+}
+
+data class WalletCandidate(
+    val id: String,
+    val label: String,
+    val subtitle: String,
+    val resourceType: String? = null,
+    val sourceName: String? = null,
+    val selectedByDefault: Boolean = true,
+    val value: JSONObject? = null,
+)
+
+data class RequestItemResolution(
+    val itemId: String,
+    val availability: WalletItemAvailability,
+    val candidates: List<WalletCandidate>,
+    val matchSummary: String,
+    val detail: String? = null,
+    val statusIfShared: RequestItemStatusCode = RequestItemStatusCode.Fulfilled,
+)
+
 interface SmartHealthWalletStore {
-    fun resolveArtifact(item: RequestItem, questionnaireAnswers: Map<String, Any>): SmartHealthWalletArtifact
+    fun resolveItems(items: List<RequestItem>): List<RequestItemResolution>
+
+    fun buildArtifact(
+        item: RequestItem,
+        selectedCandidates: List<WalletCandidate>,
+        questionnaireAnswers: Map<String, Any>,
+    ): SmartHealthWalletArtifact
 
     fun prefillQuestionnaireAnswers(items: List<RequestItem>): Map<String, Any>
 }

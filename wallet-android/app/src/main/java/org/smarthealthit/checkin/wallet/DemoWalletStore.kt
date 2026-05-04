@@ -48,11 +48,35 @@ internal class DemoWalletStore(
         readDemoJson(SMART_HEALTH_CARD_FIXTURE)
     }
 
-    override fun resolveArtifact(item: RequestItem, questionnaireAnswers: Map<String, Any>): SmartHealthWalletArtifact {
-        val mediaType = item.acceptedMediaTypes.firstOrNull { mediaType ->
-            mediaType == "application/fhir+json" ||
-                (mediaType == "application/smart-health-card" && item.kind == RequestKind.Clinical)
-        } ?: "application/fhir+json"
+    override fun resolveItems(items: List<RequestItem>): List<RequestItemResolution> {
+        return items.map { item ->
+            val mediaType = preferredMediaType(item)
+            if (mediaType == null) {
+                RequestItemResolution(
+                    itemId = item.id,
+                    availability = WalletItemAvailability.Unsupported,
+                    candidates = emptyList(),
+                    matchSummary = "This demo wallet cannot produce an accepted media type for this item.",
+                    statusIfShared = RequestItemStatusCode.Unsupported,
+                )
+            } else {
+                RequestItemResolution(
+                    itemId = item.id,
+                    availability = WalletItemAvailability.Available,
+                    candidates = listOf(demoCandidate(item, mediaType)),
+                    matchSummary = "1 demo record available",
+                    detail = "Matched from bundled demo data.",
+                )
+            }
+        }
+    }
+
+    override fun buildArtifact(
+        item: RequestItem,
+        selectedCandidates: List<WalletCandidate>,
+        questionnaireAnswers: Map<String, Any>,
+    ): SmartHealthWalletArtifact {
+        val mediaType = preferredMediaType(item) ?: "application/fhir+json"
 
         if (mediaType == "application/smart-health-card") {
             return SmartHealthWalletArtifact(
@@ -72,6 +96,60 @@ internal class DemoWalletStore(
                 .put("code", JSONObject().put("text", item.title))
         }
         return SmartHealthWalletArtifact(value = data)
+    }
+
+    private fun preferredMediaType(item: RequestItem): String? {
+        return item.acceptedMediaTypes.firstOrNull { mediaType ->
+            mediaType == "application/fhir+json" ||
+                (mediaType == "application/smart-health-card" && item.kind == RequestKind.Clinical)
+        }
+    }
+
+    private fun demoCandidate(item: RequestItem, mediaType: String): WalletCandidate {
+        return when {
+            mediaType == "application/smart-health-card" -> WalletCandidate(
+                id = "demo-${item.id}",
+                label = "Demo SMART Health Card",
+                subtitle = "Bundled verifiable credential",
+                resourceType = null,
+                sourceName = "Bundled demo data",
+            )
+            item.kind == RequestKind.Coverage -> WalletCandidate(
+                id = "demo-${item.id}",
+                label = "Demo insurance coverage",
+                subtitle = "Coverage resource",
+                resourceType = "Coverage",
+                sourceName = "Bundled demo data",
+            )
+            item.kind == RequestKind.Plan -> WalletCandidate(
+                id = "demo-${item.id}",
+                label = "Demo plan benefits summary",
+                subtitle = "InsurancePlan resource",
+                resourceType = "InsurancePlan",
+                sourceName = "Bundled demo data",
+            )
+            item.kind == RequestKind.Clinical -> WalletCandidate(
+                id = "demo-${item.id}",
+                label = "Demo clinical history",
+                subtitle = "FHIR Bundle",
+                resourceType = "Bundle",
+                sourceName = "Bundled demo data",
+            )
+            item.kind == RequestKind.Questionnaire -> WalletCandidate(
+                id = "demo-${item.id}",
+                label = "Form answers",
+                subtitle = "QuestionnaireResponse built from reviewed answers",
+                resourceType = "QuestionnaireResponse",
+                sourceName = "Bundled demo data",
+            )
+            else -> WalletCandidate(
+                id = "demo-${item.id}",
+                label = item.title.ifBlank { "Demo record" },
+                subtitle = "Basic resource",
+                resourceType = "Basic",
+                sourceName = "Bundled demo data",
+            )
+        }
     }
 
     override fun prefillQuestionnaireAnswers(items: List<RequestItem>): Map<String, Any> {

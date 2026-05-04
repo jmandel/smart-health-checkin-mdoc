@@ -96,6 +96,86 @@ class DemoWalletStoreTest {
     }
 
     @Test
+    fun demoStoreResolvesAvailabilityBeforeConsent() {
+        val request = verifiedRequestWithDemoQuestionnaire()
+
+        val resolutions = store.resolveItems(request.items)
+
+        assertEquals(request.items.map { it.id }, resolutions.map { it.itemId })
+        resolutions.forEach { resolution ->
+            assertEquals(WalletItemAvailability.Available, resolution.availability)
+            assertEquals("1 demo record available", resolution.matchSummary)
+            assertEquals(1, resolution.candidates.size)
+            assertTrue(resolution.candidates.single().selectedByDefault)
+        }
+        assertEquals("Demo insurance coverage", resolutions.first { it.itemId == "coverage" }.candidates.single().label)
+        assertEquals("Demo clinical history", resolutions.first { it.itemId == "clinical" }.candidates.single().label)
+    }
+
+    @Test
+    fun selectedCandidateSubsetProducesPartialStatus() {
+        val request = verifiedRequestWithSingleClinicalItem()
+        val candidateA = WalletCandidate(
+            id = "condition-a",
+            label = "Asthma",
+            subtitle = "Condition",
+            resourceType = "Condition",
+            value = JSONObject("""{"resourceType":"Condition","id":"a"}"""),
+        )
+        val candidateB = WalletCandidate(
+            id = "condition-b",
+            label = "Migraine",
+            subtitle = "Condition",
+            resourceType = "Condition",
+            value = JSONObject("""{"resourceType":"Condition","id":"b"}"""),
+        )
+        val resolution = RequestItemResolution(
+            itemId = "clinical",
+            availability = WalletItemAvailability.Available,
+            candidates = listOf(candidateA, candidateB),
+            matchSummary = "2 matching records available",
+        )
+        val candidateStore = object : SmartHealthWalletStore {
+            override fun resolveItems(items: List<RequestItem>): List<RequestItemResolution> = listOf(resolution)
+
+            override fun buildArtifact(
+                item: RequestItem,
+                selectedCandidates: List<WalletCandidate>,
+                questionnaireAnswers: Map<String, Any>,
+            ): SmartHealthWalletArtifact {
+                val bundle = org.json.JSONArray()
+                selectedCandidates.forEach { bundle.put(JSONObject(it.value.toString())) }
+                return SmartHealthWalletArtifact(
+                    value = JSONObject()
+                        .put("resourceType", "Bundle")
+                        .put("type", "collection")
+                        .put("entry", bundle),
+                )
+            }
+
+            override fun prefillQuestionnaireAnswers(items: List<RequestItem>): Map<String, Any> = emptyMap()
+        }
+
+        val response = SmartCheckinResponseFactory.build(
+            request = request,
+            selectedItems = mapOf("clinical" to true),
+            questionnaireAnswers = emptyMap(),
+            walletStore = candidateStore,
+            resolutions = listOf(resolution),
+            selectedCandidates = mapOf("clinical" to setOf("condition-a")),
+        )
+
+        val statuses = response.getJSONArray("requestStatus")
+        assertEquals("partial", statuses.getJSONObject(0).getString("status"))
+        val entries = response.getJSONArray("artifacts")
+            .getJSONObject(0)
+            .getJSONObject("value")
+            .getJSONArray("entry")
+        assertEquals(1, entries.length())
+        assertEquals("a", entries.getJSONObject(0).getString("id"))
+    }
+
+    @Test
     fun responseFactoryRejectsBlankRequestId() {
         val failure = runCatching {
             SmartCheckinResponseFactory.build(
