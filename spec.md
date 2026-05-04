@@ -1043,4 +1043,15 @@ A Verifier accepting a same-device response performs the §8.5 and §8.6 pipelin
 
 ### Companion material
 
-The final publication should identify companion material containing non-normative tutorials, fixtures, byte ladders, diagrams, reference code, demo applications, implementation notes, detailed FHIR mapping walkthroughs, and historical captures. Companion material may live in this repository or another maintained location and is subordinate to this specification.
+Companion material is non-normative and subordinate to this specification. At the time of this editor's draft, maintained companion material is available in the SMART Health Check-in GitHub repository:
+
+- [Public landing page and explainers](https://github.com/jmandel/smart-health-checkin-mdoc/tree/main/site): model explainer, kiosk handoff explainer, wire-protocol explainer, and browser byte inspector.
+- [Live verifier and demo applications](https://github.com/jmandel/smart-health-checkin-mdoc/tree/main/rp-web): same-device verifier, kiosk creator, phone submitter, and static web app source.
+- [TypeScript SDK and verifier helpers](https://github.com/jmandel/smart-health-checkin-mdoc/tree/main/rp-web/src/sdk): request/response validation, DC API verifier flow, kiosk-session helpers, and React bindings.
+- [Protocol builders and inspectors](https://github.com/jmandel/smart-health-checkin-mdoc/tree/main/rp-web/src/protocol): CBOR builders, HPKE/open helpers, request/response inspectors, and test vectors.
+- [Android wallet implementation](https://github.com/jmandel/smart-health-checkin-mdoc/tree/main/wallet-android): demo wallet app plus reusable core, direct-mdoc, Credential Manager, UI, and matcher modules.
+- [Fixtures and captured byte artifacts](https://github.com/jmandel/smart-health-checkin-mdoc/tree/main/fixtures): checked-in request, response, transcript, and capture fixtures used by the test suites and explainers.
+- [Developer tools](https://github.com/jmandel/smart-health-checkin-mdoc/tree/main/tools): capture scripts, fixture-generation utilities, and diagnostic tooling.
+- [Historical design notes and archived material](https://github.com/jmandel/smart-health-checkin-mdoc/tree/main/docs): provenance, earlier design notes, and archived drafts that are not current implementation guidance.
+
+These materials may include tutorials, fixture indexes, byte ladders, diagrams, reference code, demo applications, implementation notes, detailed FHIR mapping walkthroughs, and historical captures. They SHALL NOT redefine core fields, identifiers, algorithms, validation rules, selector semantics, status semantics, trust boundaries, or any other normative requirement in this specification.

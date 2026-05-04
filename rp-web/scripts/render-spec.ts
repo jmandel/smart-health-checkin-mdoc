@@ -98,8 +98,7 @@ const html = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${escapeHtml(docTitle)}</title>
 <meta name="description" content="${escapeHtml(docDescription)}" />
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/styles/github.min.css" media="(prefers-color-scheme: light)" />
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/styles/github-dark.min.css" media="(prefers-color-scheme: dark)" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/styles/github.min.css" />
 <style>
   :root {
     color-scheme: light;
@@ -113,8 +112,8 @@ const html = `<!doctype html>
     --blue-soft: #eef6ff;
     --green: #08795b;
     --amber: #92590a;
-    --code: #0e1726;
-    --code-fg: #e7eef9;
+    --code: #f7fafc;
+    --code-fg: #172033;
     --rule: #d9e2ec;
     --measure: 980px;
   }
@@ -302,6 +301,7 @@ const html = `<!doctype html>
   pre {
     background: var(--code);
     color: var(--code-fg);
+    border: 1px solid var(--line);
     padding: 14px 16px;
     border-radius: 6px;
     overflow-x: auto;
@@ -317,7 +317,7 @@ const html = `<!doctype html>
     border-radius: 0;
     font-size: inherit;
   }
-  /* Override hljs theme to fit the dark code block on light pages. */
+  /* Keep all code and text blocks visually light to match the rendered spec. */
   pre code.hljs { background: transparent !important; color: var(--code-fg); }
 
   .mermaid {
