@@ -1,14 +1,19 @@
 package org.smarthealthit.checkin.wallet
 
 import android.graphics.Color as AndroidColor
+import android.net.Uri
 import android.os.Bundle
+import android.provider.OpenableColumns
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -69,7 +74,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedReader
@@ -79,6 +86,10 @@ import java.nio.charset.StandardCharsets
 import java.time.Instant
 
 class MainActivity : ComponentActivity() {
+    companion object {
+        private const val TAG = "SHCMain"
+    }
+
     // State held here will be wired into the DC API HandlerActivity in Stage C.
     // For Stage B, MainActivity is just the home screen — registration status,
     // bundled demo-data summary, and a build stamp. The remaining state +
@@ -93,6 +104,13 @@ class MainActivity : ComponentActivity() {
     private val questionnaireAnswers = mutableStateMapOf<String, Any>()
 
     private var registration: RegistrationState by mutableStateOf(RegistrationState.Idle)
+    private var importedRecords: ImportedHealthRecords? by mutableStateOf(null)
+    private var importedSummary: ImportedHealthRecordsSummary? by mutableStateOf(null)
+    private var importState: ImportState by mutableStateOf(ImportState.Idle)
+
+    private val importLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) importHealthRecords(uri)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -100,16 +118,85 @@ class MainActivity : ComponentActivity() {
             statusBarStyle = SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT),
         )
+        importedRecords = runCatching { ImportedHealthRecordsRepository.load(filesDir) }
+            .onFailure { Log.w(TAG, "failed to load imported records", it) }
+            .getOrNull()
+        importedSummary = importedRecords?.summary()
 
         setContent {
             SampleHealthTheme {
                 HomeScreen(
                     registration = registration,
+                    importedRecords = importedRecords,
+                    importedSummary = importedSummary,
+                    importState = importState,
                     onRegister = ::registerWithCredentialManager,
+                    onImportRecords = ::openImportPicker,
+                    onClearImportedRecords = ::clearImportedRecords,
                     onClose = { finish() },
                 )
             }
         }
+        registerWithCredentialManager()
+    }
+
+    private fun openImportPicker() {
+        importLauncher.launch(
+            arrayOf(
+                "application/zip",
+                "application/json",
+                "application/octet-stream",
+                "*/*",
+            ),
+        )
+    }
+
+    private fun importHealthRecords(uri: Uri) {
+        if (importState is ImportState.Pending) return
+        importState = ImportState.Pending
+        lifecycleScope.launch {
+            val result = runCatching {
+                withContext(Dispatchers.IO) {
+                    val displayName = displayNameFor(uri)
+                    contentResolver.openInputStream(uri).use { input ->
+                        require(input != null) { "Could not open selected file." }
+                        ImportedHealthRecordsRepository.importFromStream(filesDir, displayName, input)
+                    }
+                }
+            }
+            result
+                .onSuccess { records ->
+                    importedRecords = records
+                    val summary = records.summary()
+                    importedSummary = summary
+                    importState = ImportState.Success(
+                        "Imported ${summary.totalResources} FHIR ${if (summary.totalResources == 1) "resource" else "resources"}.",
+                    )
+                }
+                .onFailure { error ->
+                    Log.e(TAG, "Health Skillz import failed", error)
+                    importState = ImportState.Failed(error.message ?: error::class.java.simpleName)
+                }
+        }
+    }
+
+    private fun clearImportedRecords() {
+        lifecycleScope.launch {
+            runCatching {
+                withContext(Dispatchers.IO) { ImportedHealthRecordsRepository.clear(filesDir) }
+            }.onFailure { Log.w(TAG, "failed to clear imported records", it) }
+            importedRecords = null
+            importedSummary = null
+            importState = ImportState.Idle
+        }
+    }
+
+    private fun displayNameFor(uri: Uri): String? {
+        return runCatching {
+            contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) cursor.getString(0) else null
+            }
+        }.getOrNull() ?: uri.lastPathSegment
     }
 
     private fun registerWithCredentialManager() {
@@ -504,22 +591,40 @@ internal sealed interface RegistrationState {
     data class Failed(val message: String) : RegistrationState
 }
 
+internal sealed interface ImportState {
+    data object Idle : ImportState
+    data object Pending : ImportState
+    data class Success(val message: String) : ImportState
+    data class Failed(val message: String) : ImportState
+}
+
 // HomeScreen is the MainActivity home: registration status, demo-data
 // summary, and a build stamp. The DC API HandlerActivity reuses DemoApp +
 // the Consent screens below.
 @Composable
 private fun HomeScreen(
     registration: RegistrationState,
+    importedRecords: ImportedHealthRecords?,
+    importedSummary: ImportedHealthRecordsSummary?,
+    importState: ImportState,
     onRegister: () -> Unit,
+    onImportRecords: () -> Unit,
+    onClearImportedRecords: () -> Unit,
     onClose: () -> Unit,
 ) {
     Scaffold(
         containerColor = AppColors.Page,
         contentWindowInsets = WindowInsets.safeDrawing,
     ) { padding ->
-        CenterPanel(padding) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+        ) {
             BrandMark()
-            Spacer(Modifier.height(24.dp))
             Text(
                 text = "SMART Health Check-in Wallet",
                 style = MaterialTheme.typography.headlineSmall,
@@ -528,48 +633,111 @@ private fun HomeScreen(
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Register with Credential Manager to receive SMART Health Check-in requests over the Digital Credentials API (org-iso-mdoc).",
+                text = "The wallet is available for SMART Health Check-in requests over the Digital Credentials API (org-iso-mdoc).",
                 style = MaterialTheme.typography.bodyLarge,
                 color = AppColors.Muted,
             )
 
-            Spacer(Modifier.height(24.dp))
             ElevatedPanel {
                 Text(
-                    text = "Credential Manager",
+                    text = "Wallet status",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = AppColors.Ink,
                 )
                 Spacer(Modifier.height(8.dp))
                 val statusLine = when (registration) {
-                    RegistrationState.Idle -> "Not yet registered."
-                    RegistrationState.Pending -> "Registering…"
+                    RegistrationState.Idle -> "Preparing Credential Manager registration."
+                    RegistrationState.Pending -> "Preparing Credential Manager registration..."
                     is RegistrationState.Registered ->
-                        "Registered ${registration.registeredTypes} (${registration.mode}; matcher: ${registration.matcherBytes} B, blob: ${registration.credentialsBytes} B)."
-                    is RegistrationState.Failed -> "Failed: ${registration.message}"
+                        "Ready for check-in requests (${registration.registeredTypes})."
+                    is RegistrationState.Failed -> "Credential Manager registration failed: ${registration.message}"
                 }
                 Text(
                     text = statusLine,
                     style = MaterialTheme.typography.bodyMedium,
                     color = AppColors.Muted,
                 )
-                Spacer(Modifier.height(12.dp))
-                Button(
-                    onClick = onRegister,
-                    enabled = registration !is RegistrationState.Pending,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(
-                        when (registration) {
-                            is RegistrationState.Registered -> "Re-register"
-                            else -> "Register with Credential Manager"
-                        },
-                    )
+                if (registration is RegistrationState.Failed) {
+                    Spacer(Modifier.height(8.dp))
+                    TextButton(onClick = onRegister) {
+                        Text("Retry")
+                    }
                 }
             }
 
-            Spacer(Modifier.height(24.dp))
+            ElevatedPanel {
+                Text(
+                    text = "Imported records",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppColors.Ink,
+                )
+                Spacer(Modifier.height(8.dp))
+                if (importedSummary == null) {
+                    Text(
+                        text = "No imported records. Check-in responses will use bundled demo data.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AppColors.Muted,
+                    )
+                } else {
+                    Text(
+                        text = "Active for wallet responses: ${importedSummary.providerCount} provider${if (importedSummary.providerCount == 1) "" else "s"} · ${importedSummary.totalResources} FHIR resources",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AppColors.Ink,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = importedSummary.patientSummary(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AppColors.Muted,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = importedSummary.resourceSummary(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.Muted,
+                    )
+                }
+                when (importState) {
+                    ImportState.Idle -> Unit
+                    ImportState.Pending -> {
+                        Spacer(Modifier.height(10.dp))
+                        Text("Importing…", style = MaterialTheme.typography.bodySmall, color = AppColors.Muted)
+                    }
+                    is ImportState.Success -> {
+                        Spacer(Modifier.height(10.dp))
+                        Text(importState.message, style = MaterialTheme.typography.bodySmall, color = AppColors.Success)
+                    }
+                    is ImportState.Failed -> {
+                        Spacer(Modifier.height(10.dp))
+                        Text("Import failed: ${importState.message}", style = MaterialTheme.typography.bodySmall, color = AppColors.Error)
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = onImportRecords,
+                    enabled = importState !is ImportState.Pending,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(if (importedSummary == null) "Load Health Skillz export" else "Replace imported records")
+                }
+                if (importedSummary != null) {
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = onClearImportedRecords,
+                        enabled = importState !is ImportState.Pending,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("Use bundled demo data")
+                    }
+                }
+            }
+
+            if (importedRecords != null) {
+                ImportedRecordsBrowser(importedRecords)
+            }
+
             ElevatedPanel {
                 Text(
                     text = "Bundled demo data",
@@ -593,12 +761,399 @@ private fun HomeScreen(
                 }
             }
 
-            Spacer(Modifier.height(24.dp))
             OutlinedButton(onClick = onClose, modifier = Modifier.fillMaxWidth()) {
                 Text("Close")
             }
+            Spacer(Modifier.height(12.dp))
         }
     }
+}
+
+@Composable
+private fun ImportedRecordsBrowser(records: ImportedHealthRecords) {
+    val expandedProviders = remember(records.importedAt) { mutableStateMapOf<String, Boolean>() }
+    val expandedGroups = remember(records.importedAt) { mutableStateMapOf<String, Boolean>() }
+    val showAllGroups = remember(records.importedAt) { mutableStateMapOf<String, Boolean>() }
+    val expandedJson = remember(records.importedAt) { mutableStateMapOf<String, Boolean>() }
+    ElevatedPanel {
+        Text(
+            text = "Browse wallet data",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = AppColors.Ink,
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "Imported records currently used to match check-in requests.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = AppColors.Muted,
+        )
+        Spacer(Modifier.height(12.dp))
+        records.providers.forEachIndexed { providerIndex, provider ->
+            val providerKey = "provider-$providerIndex"
+            val expanded = expandedProviders[providerKey] ?: (records.providers.size == 1)
+            ProviderRecordsCard(
+                providerIndex = providerIndex,
+                provider = provider,
+                expanded = expanded,
+                expandedGroups = expandedGroups,
+                showAllGroups = showAllGroups,
+                expandedJson = expandedJson,
+                onExpandedChange = { expandedProviders[providerKey] = it },
+            )
+            if (providerIndex < records.providers.lastIndex) Spacer(Modifier.height(12.dp))
+        }
+    }
+}
+
+@Composable
+private fun ProviderRecordsCard(
+    providerIndex: Int,
+    provider: ImportedProviderRecords,
+    expanded: Boolean,
+    expandedGroups: SnapshotStateMap<String, Boolean>,
+    showAllGroups: SnapshotStateMap<String, Boolean>,
+    expandedJson: SnapshotStateMap<String, Boolean>,
+    onExpandedChange: (Boolean) -> Unit,
+) {
+    val totalResources = provider.fhir.values.sumOf { it.size }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = AppColors.PanelAlt),
+        border = BorderStroke(1.dp, AppColors.Line),
+    ) {
+        Column(Modifier.padding(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = provider.provider,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.Ink,
+                    )
+                    Text(
+                        text = listOfNotNull(
+                            provider.patientDisplayName,
+                            provider.patientBirthDate?.let { "DOB $it" },
+                            provider.fetchedAt?.let { "Fetched $it" },
+                        ).joinToString(" · ").ifBlank { "Imported patient records" },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.Muted,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "$totalResources ${recordNoun(totalResources)} · ${providerResourceSummary(provider)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.Subtle,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                TextButton(onClick = { onExpandedChange(!expanded) }) {
+                    Text(if (expanded) "Hide" else "Browse")
+                }
+            }
+            if (expanded) {
+                Spacer(Modifier.height(12.dp))
+                provider.fhir.entries
+                    .filter { it.value.isNotEmpty() }
+                    .sortedWith(compareByDescending<Map.Entry<String, List<JSONObject>>> { it.value.size }.thenBy { it.key })
+                    .forEach { (resourceType, resources) ->
+                        ProviderResourceTypeCard(
+                            providerIndex = providerIndex,
+                            provider = provider,
+                            resourceType = resourceType,
+                            resources = resources,
+                            expandedGroups = expandedGroups,
+                            showAllGroups = showAllGroups,
+                            expandedJson = expandedJson,
+                        )
+                        Spacer(Modifier.height(10.dp))
+                    }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProviderResourceTypeCard(
+    providerIndex: Int,
+    provider: ImportedProviderRecords,
+    resourceType: String,
+    resources: List<JSONObject>,
+    expandedGroups: SnapshotStateMap<String, Boolean>,
+    showAllGroups: SnapshotStateMap<String, Boolean>,
+    expandedJson: SnapshotStateMap<String, Boolean>,
+) {
+    val groupKey = "provider-$providerIndex:$resourceType"
+    val expanded = expandedGroups[groupKey] == true
+    val showAll = showAllGroups[groupKey] == true
+    val visibleResources = if (showAll) resources else resources.take(BROWSER_GROUP_PREVIEW_LIMIT)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, AppColors.Line),
+    ) {
+        Column(Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = resourceTypeLabel(resourceType),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.Ink,
+                    )
+                    Text(
+                        text = "${resources.size} ${recordNoun(resources.size)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.Muted,
+                    )
+                    Text(
+                        text = resourcePreview(provider, resourceType, resources),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.Subtle,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                TextButton(onClick = { expandedGroups[groupKey] = !expanded }) {
+                    Text(if (expanded) "Hide" else "Open")
+                }
+            }
+            if (expanded) {
+                Spacer(Modifier.height(10.dp))
+                visibleResources.forEachIndexed { index, resource ->
+                    val originalIndex = resources.indexOf(resource)
+                    val candidate = browserCandidate(providerIndex, provider, resourceType, resource, originalIndex)
+                    BrowserResourceRow(
+                        candidate = candidate,
+                        jsonExpanded = expandedJson[candidate.id] == true,
+                        onJsonExpandedChange = { expandedJson[candidate.id] = it },
+                    )
+                    if (index < visibleResources.lastIndex) Spacer(Modifier.height(8.dp))
+                }
+                if (resources.size > BROWSER_GROUP_PREVIEW_LIMIT) {
+                    Spacer(Modifier.height(6.dp))
+                    TextButton(onClick = { showAllGroups[groupKey] = !showAll }) {
+                        Text(if (showAll) "Show fewer" else "Show all ${resources.size}")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BrowserResourceRow(
+    candidate: WalletCandidate,
+    jsonExpanded: Boolean,
+    onJsonExpandedChange: (Boolean) -> Unit,
+) {
+    val candidateJson = candidate.value
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(AppColors.PanelAlt)
+            .border(BorderStroke(1.dp, AppColors.Line), RoundedCornerShape(12.dp))
+            .padding(10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = candidate.label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppColors.Ink,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = candidateSubtitle(candidate),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.Muted,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                resourceDecisionDetails(candidate)?.let { details ->
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        text = details,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.Subtle,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            if (candidateJson != null) {
+                TextButton(onClick = { onJsonExpandedChange(!jsonExpanded) }) {
+                    Text(if (jsonExpanded) "Hide JSON" else "JSON")
+                }
+            }
+        }
+        if (jsonExpanded && candidateJson != null) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = candidateJson.toString(2),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.White)
+                    .padding(10.dp),
+                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                color = AppColors.Ink,
+            )
+        }
+    }
+}
+
+private const val BROWSER_GROUP_PREVIEW_LIMIT = 20
+
+private fun providerResourceSummary(provider: ImportedProviderRecords): String {
+    return provider.fhir.entries
+        .filter { it.value.isNotEmpty() }
+        .sortedWith(compareByDescending<Map.Entry<String, List<JSONObject>>> { it.value.size }.thenBy { it.key })
+        .take(5)
+        .joinToString { "${resourceTypeLabel(it.key)} ${it.value.size}" }
+}
+
+private fun resourcePreview(
+    provider: ImportedProviderRecords,
+    resourceType: String,
+    resources: List<JSONObject>,
+): String {
+    return resources
+        .take(3)
+        .mapIndexed { index, resource -> browserResourceLabel(provider, resourceType, resource, index) }
+        .joinToString(prefix = "Examples: ")
+}
+
+private fun browserCandidate(
+    providerIndex: Int,
+    provider: ImportedProviderRecords,
+    resourceType: String,
+    resource: JSONObject,
+    index: Int,
+): WalletCandidate {
+    val actualResourceType = resource.optString("resourceType").ifBlank { resourceType }
+    return WalletCandidate(
+        id = "browse:p$providerIndex:$actualResourceType:$index:${resource.optString("id")}",
+        label = browserResourceLabel(provider, actualResourceType, resource, index),
+        subtitle = browserResourceSubtitle(actualResourceType, resource),
+        resourceType = actualResourceType,
+        sourceName = provider.provider,
+        selectedByDefault = false,
+        value = JSONObject(resource.toString()),
+    )
+}
+
+private fun browserResourceLabel(
+    provider: ImportedProviderRecords,
+    resourceType: String,
+    resource: JSONObject,
+    index: Int,
+): String {
+    val typeSpecific = when (resourceType) {
+        "Coverage" -> listOf(
+            coverageClassSummary(resource, "plan"),
+            coverageClassSummary(resource, "group"),
+            codeTextForUi(resource.optJSONObject("type")),
+            referenceDisplay(resource.optJSONArray("payor")),
+        ).firstOrNull { !it.isNullOrBlank() }
+        "MedicationRequest",
+        "MedicationStatement",
+        "MedicationDispense" -> medicationLabelForUi(provider, resource)
+        "Immunization" -> codeTextForUi(resource.optJSONObject("vaccineCode"))
+        "DocumentReference" -> codeTextForUi(resource.optJSONObject("type"))
+        "Encounter" -> firstCodeTextForUi(resource.optJSONArray("type")) ?: classTextForUi(resource.optJSONObject("class"))
+        "CarePlan",
+        "CareTeam" -> firstCodeTextForUi(resource.optJSONArray("category"))
+        "Goal" -> codeTextForUi(resource.optJSONObject("description"))
+        "Specimen" -> codeTextForUi(resource.optJSONObject("type"))
+        "Location",
+        "Organization" -> resource.optString("name").ifBlank { null }
+        else -> codeTextForUi(resource.optJSONObject("code"))
+    }
+    return listOf(
+        firstHumanNameForUi(resource.optJSONArray("name")),
+        typeSpecific,
+        resource.optString("title").ifBlank { null },
+        resource.optString("description").ifBlank { null },
+        resource.optString("id").ifBlank { null },
+    ).firstOrNull { !it.isNullOrBlank() } ?: "$resourceType ${index + 1}"
+}
+
+private fun browserResourceSubtitle(resourceType: String, resource: JSONObject): String {
+    val parts = mutableListOf(resourceType)
+    resource.optString("status").takeIf(String::isNotBlank)?.let(parts::add)
+    codeTextForUi(resource.optJSONObject("clinicalStatus"))?.let(parts::add)
+    resource.optString("recordedDate").takeIf(String::isNotBlank)?.let(parts::add)
+    resource.optString("effectiveDateTime").takeIf(String::isNotBlank)?.let(parts::add)
+    resource.optString("issued").takeIf(String::isNotBlank)?.let(parts::add)
+    resource.optString("authoredOn").takeIf(String::isNotBlank)?.let(parts::add)
+    resource.optString("occurrenceDateTime").takeIf(String::isNotBlank)?.let(parts::add)
+    resource.optString("performedDateTime").takeIf(String::isNotBlank)?.let(parts::add)
+    resource.optString("date").takeIf(String::isNotBlank)?.let(parts::add)
+    return parts.distinct().joinToString(" · ")
+}
+
+private fun medicationLabelForUi(provider: ImportedProviderRecords, resource: JSONObject): String? {
+    codeTextForUi(resource.optJSONObject("medicationCodeableConcept"))?.let { return it }
+    val medicationReference = resource.optJSONObject("medicationReference")
+    medicationReference?.optString("display")?.takeIf(String::isNotBlank)?.let { return it }
+    val medication = referencedResourceForUi(provider, medicationReference)
+    return medication?.let { codeTextForUi(it.optJSONObject("code")) }
+}
+
+private fun referencedResourceForUi(provider: ImportedProviderRecords, reference: JSONObject?): JSONObject? {
+    val ref = reference?.optString("reference")?.takeIf(String::isNotBlank) ?: return null
+    val parts = ref.split('/')
+    if (parts.size < 2) return null
+    val resourceType = parts[parts.size - 2]
+    val id = parts.last()
+    return provider.fhir[resourceType].orEmpty().firstOrNull { it.optString("id") == id }
+}
+
+private fun firstHumanNameForUi(names: JSONArray?): String? {
+    val first = names?.optJSONObject(0) ?: return null
+    first.optString("text").takeIf(String::isNotBlank)?.let { return it }
+    val given = stringValuesForUi(first.opt("given")).joinToString(" ")
+    val family = first.optString("family")
+    return "$given $family".trim().ifBlank { null }
+}
+
+private fun stringValuesForUi(value: Any?): List<String> {
+    return when (value) {
+        is String -> listOf(value).filter { it.isNotBlank() }
+        is JSONArray -> {
+            val out = mutableListOf<String>()
+            for (index in 0 until value.length()) out += stringValuesForUi(value.opt(index))
+            out
+        }
+        else -> emptyList()
+    }
+}
+
+private fun firstCodeTextForUi(codes: JSONArray?): String? {
+    return jsonObjects(codes).firstNotNullOfOrNull(::codeTextForUi)
+}
+
+private fun codeTextForUi(code: JSONObject?): String? {
+    if (code == null) return null
+    code.optString("text").takeIf(String::isNotBlank)?.let { return it }
+    return jsonObjects(code.optJSONArray("coding")).firstNotNullOfOrNull { coding ->
+        coding.optString("display").takeIf(String::isNotBlank)
+            ?: coding.optString("code").takeIf(String::isNotBlank)
+    }
+}
+
+private fun classTextForUi(code: JSONObject?): String? {
+    if (code == null) return null
+    return code.optString("display").takeIf(String::isNotBlank)
+        ?: code.optString("code").takeIf(String::isNotBlank)
 }
 
 @Composable
@@ -999,48 +1554,581 @@ private fun CandidateSelectionCard(
     selectedCandidateIds: Set<String>,
     onCandidateSelected: (String, String, Boolean) -> Unit,
 ) {
+    val candidateIds = remember(resolution.candidates) { resolution.candidates.map { it.id } }
+    val expandedGroups = remember(itemId, candidateIds) { mutableStateMapOf<String, Boolean>() }
+    val showAllInGroups = remember(itemId, candidateIds) { mutableStateMapOf<String, Boolean>() }
+    val expandedJson = remember(itemId, candidateIds) { mutableStateMapOf<String, Boolean>() }
+    val groups = remember(resolution.candidates) { candidateGroups(resolution.candidates) }
+    val groupMode = shouldGroupCandidates(groups, resolution.candidates.size)
+    val selectedCount = resolution.candidates.count { it.id in selectedCandidateIds }
+    fun setCandidates(candidates: List<WalletCandidate>, selected: Boolean) {
+        candidates.forEach { candidate -> onCandidateSelected(itemId, candidate.id, selected) }
+    }
+
     ElevatedPanel {
-        Text(
-            text = "Matching records",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = AppColors.Ink,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = "Matching records",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppColors.Ink,
+                )
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    text = "$selectedCount of ${resolution.candidates.size} selected",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.Muted,
+                )
+            }
+            TextButton(onClick = { setCandidates(resolution.candidates, true) }) {
+                Text("All")
+            }
+            TextButton(onClick = { setCandidates(resolution.candidates, false) }) {
+                Text("None")
+            }
+        }
+
         Spacer(Modifier.height(8.dp))
-        resolution.candidates.forEach { candidate ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+        if (groupMode) {
+            groups.forEach { group ->
+                val expanded = expandedGroups[group.key] == true
+                val showAll = showAllInGroups[group.key] == true
+                ResourceTypeGroupCard(
+                    group = group,
+                    selectedCandidateIds = selectedCandidateIds,
+                    expanded = expanded,
+                    showAll = showAll,
+                    expandedJson = expandedJson,
+                    onExpandedChange = { expandedGroups[group.key] = it },
+                    onShowAllChange = { showAllInGroups[group.key] = it },
+                    onCandidatesSelected = ::setCandidates,
+                    onCandidateSelected = { candidate, selected ->
+                        onCandidateSelected(itemId, candidate.id, selected)
+                    },
+                )
+                Spacer(Modifier.height(10.dp))
+            }
+        } else {
+            resolution.candidates.forEach { candidate ->
+                ResourceCandidateRow(
+                    candidate = candidate,
+                    selected = candidate.id in selectedCandidateIds,
+                    jsonExpanded = expandedJson[candidate.id] == true,
+                    onSelectedChange = { checked -> onCandidateSelected(itemId, candidate.id, checked) },
+                    onJsonExpandedChange = { expandedJson[candidate.id] = it },
+                )
+                Spacer(Modifier.height(8.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ResourceTypeGroupCard(
+    group: CandidateGroup,
+    selectedCandidateIds: Set<String>,
+    expanded: Boolean,
+    showAll: Boolean,
+    expandedJson: SnapshotStateMap<String, Boolean>,
+    onExpandedChange: (Boolean) -> Unit,
+    onShowAllChange: (Boolean) -> Unit,
+    onCandidatesSelected: (List<WalletCandidate>, Boolean) -> Unit,
+    onCandidateSelected: (WalletCandidate, Boolean) -> Unit,
+) {
+    val selectedCount = group.candidates.count { it.id in selectedCandidateIds }
+    val visibleCandidates = if (showAll) group.candidates else group.candidates.take(CANDIDATE_GROUP_PREVIEW_LIMIT)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = AppColors.PanelAlt),
+        border = BorderStroke(1.dp, AppColors.Line),
+    ) {
+        Column(Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(
-                    checked = candidate.id in selectedCandidateIds,
-                    onCheckedChange = { checked -> onCandidateSelected(itemId, candidate.id, checked) },
+                    checked = selectedCount == group.candidates.size,
+                    onCheckedChange = { checked -> onCandidatesSelected(group.candidates, checked) },
                     colors = CheckboxDefaults.colors(checkedColor = AppColors.Primary),
                 )
                 Column(Modifier.weight(1f)) {
                     Text(
-                        text = candidate.label,
+                        text = group.label,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = AppColors.Ink,
                     )
-                    val source = candidate.sourceName
-                    val subtitle = if (source.isNullOrBlank()) {
-                        candidate.subtitle
-                    } else {
-                        "${candidate.subtitle} · $source"
-                    }
                     Text(
-                        text = subtitle,
+                        text = "${group.candidates.size} ${recordNoun(group.candidates.size)} · $selectedCount selected",
                         style = MaterialTheme.typography.bodySmall,
                         color = AppColors.Muted,
                     )
+                    group.previewLabels.takeIf(String::isNotBlank)?.let { preview ->
+                        Text(
+                            text = preview,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AppColors.Subtle,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+                TextButton(onClick = { onCandidatesSelected(group.candidates, true) }) {
+                    Text("All")
+                }
+                TextButton(onClick = { onCandidatesSelected(group.candidates, false) }) {
+                    Text("None")
+                }
+            }
+            TextButton(onClick = { onExpandedChange(!expanded) }) {
+                Text(if (expanded) "Hide records" else "Review records")
+            }
+            if (expanded) {
+                visibleCandidates.forEach { candidate ->
+                    ResourceCandidateRow(
+                        candidate = candidate,
+                        selected = candidate.id in selectedCandidateIds,
+                        jsonExpanded = expandedJson[candidate.id] == true,
+                        onSelectedChange = { selected -> onCandidateSelected(candidate, selected) },
+                        onJsonExpandedChange = { expandedJson[candidate.id] = it },
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
+                if (group.candidates.size > CANDIDATE_GROUP_PREVIEW_LIMIT) {
+                    TextButton(onClick = { onShowAllChange(!showAll) }) {
+                        Text(if (showAll) "Show fewer" else "Show all ${group.candidates.size}")
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun ResourceCandidateRow(
+    candidate: WalletCandidate,
+    selected: Boolean,
+    jsonExpanded: Boolean,
+    onSelectedChange: (Boolean) -> Unit,
+    onJsonExpandedChange: (Boolean) -> Unit,
+) {
+    val candidateJson = candidate.value
+    val shape = RoundedCornerShape(14.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(Color.White)
+            .border(BorderStroke(1.dp, if (selected) AppColors.Primary else AppColors.Line), shape)
+            .clickable { onSelectedChange(!selected) }
+            .padding(10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(
+                checked = selected,
+                onCheckedChange = onSelectedChange,
+                colors = CheckboxDefaults.colors(checkedColor = AppColors.Primary),
+            )
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = candidate.label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppColors.Ink,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = candidateSubtitle(candidate),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.Muted,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                resourceDecisionDetails(candidate)?.let { details ->
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        text = details,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.Subtle,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            if (candidateJson != null) {
+                TextButton(onClick = { onJsonExpandedChange(!jsonExpanded) }) {
+                    Text(if (jsonExpanded) "Hide JSON" else "JSON")
+                }
+            }
+        }
+        if (jsonExpanded && candidateJson != null) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = candidateJson.toString(2),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(AppColors.PanelAlt)
+                    .padding(10.dp),
+                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                color = AppColors.Ink,
+            )
+        }
+    }
+}
+
+private data class CandidateGroup(
+    val key: String,
+    val label: String,
+    val candidates: List<WalletCandidate>,
+) {
+    val previewLabels: String = candidates
+        .map { it.label }
+        .distinct()
+        .take(3)
+        .joinToString(prefix = "Examples: ")
+}
+
+private const val CANDIDATE_GROUP_PREVIEW_LIMIT = 25
+
+private fun candidateGroups(candidates: List<WalletCandidate>): List<CandidateGroup> {
+    return candidates
+        .groupBy { candidateResourceType(it) }
+        .map { (resourceType, groupCandidates) ->
+            CandidateGroup(
+                key = resourceType,
+                label = resourceTypeLabel(resourceType),
+                candidates = groupCandidates,
+            )
+        }
+        .sortedWith(compareByDescending<CandidateGroup> { it.candidates.size }.thenBy { it.label })
+}
+
+private fun shouldGroupCandidates(groups: List<CandidateGroup>, candidateCount: Int): Boolean {
+    return candidateCount > 8 || groups.size > 2
+}
+
+private fun candidateResourceType(candidate: WalletCandidate): String {
+    return candidate.resourceType
+        ?: candidate.value?.optString("resourceType")?.takeIf(String::isNotBlank)
+        ?: "FHIR resource"
+}
+
+private fun resourceTypeLabel(resourceType: String): String {
+    return when (resourceType) {
+        "AllergyIntolerance" -> "Allergies"
+        "CarePlan" -> "Care plans"
+        "CareTeam" -> "Care teams"
+        "DiagnosticReport" -> "Diagnostic reports"
+        "DocumentReference" -> "Documents"
+        "MedicationRequest" -> "Medication requests"
+        "MedicationStatement" -> "Medication statements"
+        "ServiceRequest" -> "Service requests"
+        "Coverage" -> "Coverage"
+        else -> splitCamelCase(resourceType).replaceFirstChar { it.uppercase() } + "s"
+    }
+}
+
+private fun splitCamelCase(value: String): String {
+    return value.replace(Regex("(?<=[a-z])(?=[A-Z])"), " ").lowercase()
+}
+
+private fun recordNoun(count: Int): String = if (count == 1) "record" else "records"
+
+private fun candidateSubtitle(candidate: WalletCandidate): String {
+    val source = candidate.sourceName
+    return if (source.isNullOrBlank()) {
+        candidate.subtitle
+    } else {
+        "${candidate.subtitle} · $source"
+    }
+}
+
+private fun resourceDecisionDetails(candidate: WalletCandidate): String? {
+    val resource = candidate.value ?: return null
+    val details = when (candidateResourceType(candidate)) {
+        "Coverage" -> listOfNotNull(
+            referenceDisplay(resource.optJSONArray("payor"))?.let { "Payor $it" },
+            resource.optString("subscriberId").takeIf(String::isNotBlank)?.let { "Subscriber $it" },
+            coverageClassSummary(resource, "group")?.let { "Group $it" },
+            coverageClassSummary(resource, "plan")?.let { "Plan $it" },
+            periodSummaryForUi(resource.optJSONObject("period")),
+        )
+        "Condition" -> listOfNotNull(
+            codeTextForUi(resource.optJSONObject("verificationStatus"))?.let { "Verification $it" },
+            codeListSummary(resource.optJSONArray("category"))?.let { "Category $it" },
+            resource.optString("onsetDateTime").takeIf(String::isNotBlank)?.let { "Onset $it" },
+            resource.optString("abatementDateTime").takeIf(String::isNotBlank)?.let { "Abated $it" },
+        )
+        "AllergyIntolerance" -> listOfNotNull(
+            resource.optString("criticality").takeIf(String::isNotBlank)?.let { "Criticality $it" },
+            stringListSummary(resource.opt("category"))?.let { "Category $it" },
+            reactionSummary(resource),
+            resource.optString("onsetDateTime").takeIf(String::isNotBlank)?.let { "Onset $it" },
+        )
+        "Observation" -> listOfNotNull(valueSummaryForUi(resource), resource.optString("issued").takeIf(String::isNotBlank))
+        "DiagnosticReport" -> listOfNotNull(
+            resource.optString("effectiveDateTime").takeIf(String::isNotBlank),
+            resource.optString("issued").takeIf(String::isNotBlank)?.let { "Issued $it" },
+            referenceSummary(resource.optJSONArray("performer"), "Performer"),
+            jsonArrayCount(resource.optJSONArray("result"), "result"),
+        )
+        "DocumentReference" -> listOfNotNull(
+            codeTextForUi(resource.optJSONObject("category")) ?: codeListSummary(resource.optJSONArray("category"))?.let { "Category $it" },
+            resource.optString("date").takeIf(String::isNotBlank),
+            referenceSummary(resource.optJSONArray("author"), "Author"),
+            documentContentSummary(resource),
+        )
+        "MedicationRequest",
+        "MedicationStatement",
+        "MedicationDispense" -> listOfNotNull(
+            resource.optString("authoredOn").takeIf(String::isNotBlank),
+            resource.optJSONObject("requester")?.optString("display")?.takeIf(String::isNotBlank)?.let { "Requester $it" },
+            quantitySummary(resource.optJSONObject("quantity")),
+            dosageSummary(resource.optJSONArray("dosageInstruction")),
+        )
+        "Medication" -> listOfNotNull(
+            codeTextForUi(resource.optJSONObject("form"))?.let { "Form $it" },
+            jsonArrayCount(resource.optJSONArray("ingredient"), "ingredient"),
+        )
+        "Immunization" -> listOfNotNull(
+            resource.optString("occurrenceDateTime").takeIf(String::isNotBlank),
+            codeTextForUi(resource.optJSONObject("route"))?.let { "Route $it" },
+            codeTextForUi(resource.optJSONObject("site"))?.let { "Site $it" },
+            booleanSummary(resource, "primarySource", "Primary source"),
+        )
+        "Encounter" -> listOfNotNull(periodSummaryForUi(resource.optJSONObject("period")))
+        "Procedure" -> listOfNotNull(
+            resource.optString("performedDateTime").takeIf(String::isNotBlank),
+            codeListSummary(resource.optJSONArray("reasonCode"))?.let { "Reason $it" },
+            referenceDisplay(resource.optJSONObject("asserter"))?.let { "Asserter $it" },
+        )
+        "CarePlan" -> listOfNotNull(
+            resource.optString("intent").takeIf(String::isNotBlank)?.let { "Intent $it" },
+            codeListSummary(resource.optJSONArray("category"))?.let { "Category $it" },
+            noteSummary(resource.optJSONArray("note")),
+            jsonArrayCount(resource.optJSONArray("activity"), "activity"),
+        )
+        "CareTeam" -> listOfNotNull(
+            codeListSummary(resource.optJSONArray("category"))?.let { "Category $it" },
+            jsonArrayCount(resource.optJSONArray("participant"), "participant"),
+        )
+        "Goal" -> listOfNotNull(
+            resource.optString("lifecycleStatus").takeIf(String::isNotBlank),
+            resource.optString("startDate").takeIf(String::isNotBlank)?.let { "Started $it" },
+            referenceDisplay(resource.optJSONObject("expressedBy"))?.let { "By $it" },
+        )
+        "ServiceRequest" -> listOfNotNull(
+            resource.optString("intent").takeIf(String::isNotBlank)?.let { "Intent $it" },
+            codeListSummary(resource.optJSONArray("category"))?.let { "Category $it" },
+            periodSummaryForUi(resource.optJSONObject("occurrencePeriod")),
+            quantitySummary(resource.optJSONObject("quantityQuantity")),
+        )
+        "Patient" -> listOfNotNull(
+            resource.optString("gender").takeIf(String::isNotBlank),
+            resource.optString("birthDate").takeIf(String::isNotBlank)?.let { "DOB $it" },
+            jsonArrayCount(resource.optJSONArray("telecom"), "contact"),
+        )
+        "RelatedPerson" -> listOfNotNull(
+            stringListSummary(resource.opt("relationship"))?.let { "Relationship $it" },
+            jsonArrayCount(resource.optJSONArray("telecom"), "contact"),
+        )
+        "Practitioner" -> listOfNotNull(
+            resource.optString("gender").takeIf(String::isNotBlank),
+            booleanSummary(resource, "active", "Active"),
+            jsonArrayCount(resource.optJSONArray("identifier"), "identifier"),
+        )
+        "Organization" -> listOfNotNull(
+            booleanSummary(resource, "active", "Active"),
+            addressSummary(resource.optJSONArray("address")),
+            jsonArrayCount(resource.optJSONArray("telecom"), "contact"),
+        )
+        "Location" -> listOfNotNull(
+            resource.optString("mode").takeIf(String::isNotBlank)?.let { "Mode $it" },
+            addressSummary(resource.optJSONArray("address")),
+        )
+        "Specimen" -> listOfNotNull(
+            resource.optString("receivedTime").takeIf(String::isNotBlank)?.let { "Received $it" },
+            specimenCollectionSummary(resource.optJSONObject("collection")),
+        )
+        "Device" -> listOfNotNull(
+            resource.optString("manufacturer").takeIf(String::isNotBlank),
+            resource.optString("modelNumber").takeIf(String::isNotBlank)?.let { "Model $it" },
+            codeTextForUi(resource.optJSONObject("type")),
+        )
+        else -> emptyList()
+    }
+    return details.distinct().joinToString(" · ").ifBlank { null }
+}
+
+private fun codeListSummary(codes: JSONArray?, limit: Int = 2): String? {
+    val values = jsonObjects(codes).mapNotNull(::codeTextForUi).distinct()
+    return values.take(limit).joinToString().ifBlank { null }?.let { summary ->
+        if (values.size > limit) "$summary +${values.size - limit}" else summary
+    }
+}
+
+private fun stringListSummary(value: Any?, limit: Int = 2): String? {
+    val values = when (value) {
+        is String -> listOf(value).filter { it.isNotBlank() }
+        is JSONObject -> listOfNotNull(
+            codeTextForUi(value) ?: value.optString("display").takeIf(String::isNotBlank),
+        )
+        is JSONArray -> {
+            val out = mutableListOf<String>()
+            for (index in 0 until value.length()) {
+                out += stringListSummary(value.opt(index), limit = Int.MAX_VALUE)
+                    ?.split(", ")
+                    .orEmpty()
+            }
+            out
+        }
+        else -> emptyList()
+    }.distinct()
+    return values.take(limit).joinToString().ifBlank { null }?.let { summary ->
+        if (values.size > limit) "$summary +${values.size - limit}" else summary
+    }
+}
+
+private fun referenceSummary(references: JSONArray?, label: String, limit: Int = 2): String? {
+    val values = jsonObjects(references).mapNotNull(::referenceDisplay).distinct()
+    return values.take(limit).joinToString().ifBlank { null }?.let { summary ->
+        val suffix = if (values.size > limit) " +${values.size - limit}" else ""
+        "$label $summary$suffix"
+    }
+}
+
+private fun reactionSummary(resource: JSONObject): String? {
+    val reactions = jsonObjects(resource.optJSONArray("reaction"))
+    if (reactions.isEmpty()) return null
+    val manifestations = reactions
+        .flatMap { reaction -> jsonObjects(reaction.optJSONArray("manifestation")) }
+        .mapNotNull(::codeTextForUi)
+        .distinct()
+    val manifestationSummary = manifestations.take(2).joinToString()
+    return when {
+        manifestationSummary.isNotBlank() && manifestations.size > 2 ->
+            "Reactions $manifestationSummary +${manifestations.size - 2}"
+        manifestationSummary.isNotBlank() -> "Reactions $manifestationSummary"
+        else -> "${reactions.size} ${if (reactions.size == 1) "reaction" else "reactions"}"
+    }
+}
+
+private fun documentContentSummary(resource: JSONObject): String? {
+    val firstAttachment = jsonObjects(resource.optJSONArray("content"))
+        .firstOrNull()
+        ?.optJSONObject("attachment")
+        ?: return jsonArrayCount(resource.optJSONArray("content"), "content")
+    val title = firstAttachment.optString("title").takeIf(String::isNotBlank)
+    val contentType = firstAttachment.optString("contentType").takeIf(String::isNotBlank)
+    return listOfNotNull(title, contentType).joinToString(" · ").ifBlank { null }
+}
+
+private fun quantitySummary(quantity: JSONObject?): String? {
+    if (quantity == null) return null
+    val value = quantity.opt("value")?.toString()?.takeIf(String::isNotBlank)
+    val unit = quantity.optString("unit").ifBlank { quantity.optString("code") }.ifBlank { null }
+    return listOfNotNull(value, unit).joinToString(" ").ifBlank { null }
+}
+
+private fun dosageSummary(dosage: JSONArray?): String? {
+    val items = jsonObjects(dosage)
+    val firstText = items.firstNotNullOfOrNull { it.optString("text").takeIf(String::isNotBlank) }
+    return firstText ?: jsonArrayCount(dosage, "dosage")
+}
+
+private fun noteSummary(notes: JSONArray?): String? {
+    val items = jsonObjects(notes)
+    val firstText = items.firstNotNullOfOrNull { it.optString("text").takeIf(String::isNotBlank) }
+    return firstText ?: jsonArrayCount(notes, "note")
+}
+
+private fun addressSummary(addresses: JSONArray?): String? {
+    val address = jsonObjects(addresses).firstOrNull() ?: return null
+    val line = stringListSummary(address.optJSONArray("line"), limit = 1)
+    val city = address.optString("city").takeIf(String::isNotBlank)
+    val state = address.optString("state").takeIf(String::isNotBlank)
+    return listOfNotNull(line, city, state).joinToString(", ").ifBlank { null }
+}
+
+private fun specimenCollectionSummary(collection: JSONObject?): String? {
+    if (collection == null) return null
+    return listOfNotNull(
+        collection.optString("collectedDateTime").takeIf(String::isNotBlank)?.let { "Collected $it" },
+        quantitySummary(collection.optJSONObject("quantity"))?.let { "Quantity $it" },
+        codeTextForUi(collection.optJSONObject("method"))?.let { "Method $it" },
+        codeTextForUi(collection.optJSONObject("bodySite"))?.let { "Site $it" },
+    ).joinToString(" · ").ifBlank { null }
+}
+
+private fun booleanSummary(resource: JSONObject, key: String, label: String): String? {
+    return if (resource.has(key)) "$label ${resource.optBoolean(key)}" else null
+}
+
+private fun jsonArrayCount(array: JSONArray?, noun: String): String? {
+    val count = array?.length() ?: 0
+    if (count == 0) return null
+    val plural = when {
+        count == 1 -> noun
+        noun.endsWith("y") -> noun.dropLast(1) + "ies"
+        noun.endsWith("s") -> noun
+        else -> noun + "s"
+    }
+    return "$count $plural"
+}
+
+private fun coverageClassSummary(resource: JSONObject, code: String): String? {
+    return jsonObjects(resource.optJSONArray("class"))
+        .firstOrNull { coverageClassCodeForUi(it.optJSONObject("type")) == code }
+        ?.let { item ->
+            listOf(
+                item.optString("name").ifBlank { null },
+                item.optString("value").ifBlank { null },
+            ).filterNotNull().joinToString(" ").ifBlank { null }
+        }
+}
+
+private fun coverageClassCodeForUi(type: JSONObject?): String? {
+    return jsonObjects(type?.optJSONArray("coding"))
+        .firstNotNullOfOrNull { it.optString("code").lowercase().ifBlank { null } }
+}
+
+private fun referenceDisplay(references: JSONArray?): String? {
+    return jsonObjects(references).firstNotNullOfOrNull { reference ->
+        referenceDisplay(reference)
+    }
+}
+
+private fun referenceDisplay(reference: JSONObject?): String? {
+    if (reference == null) return null
+    return reference.optString("display").ifBlank {
+        reference.optString("reference").substringAfterLast('/').ifBlank { null }
+    }
+}
+
+private fun periodSummaryForUi(period: JSONObject?): String? {
+    if (period == null) return null
+    val start = period.optString("start").ifBlank { null }
+    val end = period.optString("end").ifBlank { null }
+    return when {
+        start != null && end != null -> "$start to $end"
+        start != null -> "Since $start"
+        end != null -> "Until $end"
+        else -> null
+    }
+}
+
+private fun valueSummaryForUi(resource: JSONObject): String? {
+    resource.optJSONObject("valueQuantity")?.let { quantity ->
+        val value = quantity.opt("value")?.toString()?.takeIf(String::isNotBlank)
+        val unit = quantity.optString("unit").ifBlank { quantity.optString("code") }
+        return listOf(value, unit.ifBlank { null }).filterNotNull().joinToString(" ").ifBlank { null }
+    }
+    resource.optString("valueString").takeIf(String::isNotBlank)?.let { return it }
+    val components = resource.optJSONArray("component")
+    if (components != null && components.length() > 0) return "${components.length()} component values"
+    return null
 }
 
 private fun availabilityTone(availability: WalletItemAvailability): ChipTone {

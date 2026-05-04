@@ -57,7 +57,13 @@ class HandlerActivity : ComponentActivity() {
     private val selectedItems = mutableStateMapOf<String, Boolean>()
     private val selectedCandidates = mutableStateMapOf<String, Set<String>>()
     private val questionnaireAnswers = mutableStateMapOf<String, Any>()
-    private val walletStore: SmartHealthWalletStore by lazy { DemoWalletStore.fromAssets(assets) }
+    private val walletStoreMode: String by lazy {
+        if (ImportedHealthRecordsRepository.load(filesDir) != null) "imported-health-skillz" else "bundled-demo"
+    }
+    private val walletStore: SmartHealthWalletStore by lazy {
+        ImportedHealthRecordsRepository.load(filesDir)?.let(::ImportedFhirWalletStore)
+            ?: DemoWalletStore.fromAssets(assets)
+    }
     private var runId: String = "run-${Instant.now().toEpochMilli()}"
 
     private data class OriginResolution(
@@ -289,6 +295,7 @@ class HandlerActivity : ComponentActivity() {
                 screenState = ScreenState.Error(it.message ?: it::class.java.simpleName)
                 return
             }
+        Log.i(TAG, "wallet store mode=$walletStoreMode resolvedItems=${itemResolutions.size}")
         selectedItems.clear()
         selectedCandidates.clear()
         questionnaireAnswers.clear()
@@ -343,6 +350,7 @@ class HandlerActivity : ComponentActivity() {
             .put("answerCount", questionnaireAnswers.size)
             .put("origin", req.verifierOrigin)
             .put("itemCount", req.items.size)
+            .put("walletStoreMode", walletStoreMode)
         appendToDebugBundle("submit.json", summary.toString(2))
 
         if (declined) {
