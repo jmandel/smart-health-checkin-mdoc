@@ -41,13 +41,23 @@ data class SmartRequestCarrierDebug(
     val companionElementLength: Int = 0,
     val companionElementPreview: String = "",
 ) {
+    fun sourceLabel(): String = when (source) {
+        "requestInfo" -> "requestInfo"
+        "companion" -> "fallback element"
+        else -> source
+    }
+
     fun label(): String {
         val found = listOfNotNull(
             if (requestInfoPresent) "requestInfo" else null,
-            if (companionPresent) "companion" else null,
+            if (companionPresent) "fallback element" else null,
         ).ifEmpty { listOf("none") }.joinToString(" + ")
-        val match = if (requestInfoPresent && companionPresent) " ($matchStatus)" else ""
-        return "$found$match; using $source"
+        val match = if (requestInfoPresent && companionPresent) {
+            if (matchStatus == "matched") " · same JSON" else " · $matchStatus"
+        } else {
+            ""
+        }
+        return "$found$match; using ${sourceLabel()}"
     }
 }
 

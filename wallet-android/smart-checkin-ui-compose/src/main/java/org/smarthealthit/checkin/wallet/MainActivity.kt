@@ -1448,7 +1448,7 @@ private fun HeaderCard(request: VerifiedRequest) {
             }
             StatusChip(readerAuthLabel, readerAuthTone)
             StatusChip("${request.items.size} item${if (request.items.size == 1) "" else "s"}", ChipTone.Neutral)
-            StatusChip("req: ${request.requestCarrierDebug.source}", carrierTone(request.requestCarrierDebug))
+            StatusChip("request JSON: ${request.requestCarrierDebug.sourceLabel()}", carrierTone(request.requestCarrierDebug))
         }
 
         Spacer(Modifier.height(18.dp))
@@ -1463,33 +1463,29 @@ private fun RequestCarrierCheckCard(debug: SmartRequestCarrierDebug) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    text = "Request carrier check",
+                    text = "SMART request JSON",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = AppColors.Ink,
                 )
                 Text(
-                    text = "Compares the canonical requestInfo field with the temporary companion claim.",
+                    text = "Shows whether the request was visible in requestInfo and the fallback element.",
                     style = MaterialTheme.typography.bodySmall,
                     color = AppColors.Muted,
                 )
             }
-            StatusChip("using ${debug.source}", carrierTone(debug))
+            StatusChip("using ${debug.sourceLabel()}", carrierTone(debug))
         }
         Spacer(Modifier.height(12.dp))
-        DebugLine("status", debug.label())
-        DebugLine("requestInfo", if (debug.requestInfoPresent) "present" else "absent")
+        DebugLine("found", debug.label())
+        DebugLine("requestInfo", if (debug.requestInfoPresent) "yes" else "no")
         DebugLine(
-            "companion claim",
-            if (debug.companionPresent) {
-                "present (${debug.companionElementLength} chars)"
-            } else {
-                "absent"
-            },
+            "fallback element",
+            fallbackElementPresenceLabel(debug),
         )
-        DebugLine("agreement", carrierAgreementLabel(debug))
+        DebugLine("same JSON", carrierJsonMatchLabel(debug))
         if (debug.companionElementPreview.isNotBlank()) {
-            DebugLine("claim preview", debug.companionElementPreview)
+            DebugLine("element preview", debug.companionElementPreview)
         }
     }
 }
@@ -2668,18 +2664,15 @@ private fun TechnicalSummary(request: VerifiedRequest) {
                 color = AppColors.Muted,
             )
             Spacer(Modifier.height(6.dp))
-            DebugLine("status", request.requestCarrierDebug.label())
-            DebugLine("requestInfo", if (request.requestCarrierDebug.requestInfoPresent) "present" else "absent")
+            DebugLine("found", request.requestCarrierDebug.label())
+            DebugLine("requestInfo", if (request.requestCarrierDebug.requestInfoPresent) "yes" else "no")
             DebugLine(
-                "companion",
-                if (request.requestCarrierDebug.companionPresent) {
-                    "present (${request.requestCarrierDebug.companionElementLength} chars)"
-                } else {
-                    "absent"
-                },
+                "fallback element",
+                fallbackElementPresenceLabel(request.requestCarrierDebug),
             )
+            DebugLine("same JSON", carrierJsonMatchLabel(request.requestCarrierDebug))
             if (request.requestCarrierDebug.companionElementPreview.isNotBlank()) {
-                DebugLine("companion preview", request.requestCarrierDebug.companionElementPreview)
+                DebugLine("element preview", request.requestCarrierDebug.companionElementPreview)
             }
             Spacer(Modifier.height(16.dp))
             Text(
@@ -2917,11 +2910,16 @@ private fun carrierTone(debug: SmartRequestCarrierDebug): ChipTone = when {
     else -> ChipTone.Warning
 }
 
-private fun carrierAgreementLabel(debug: SmartRequestCarrierDebug): String = when {
-    debug.requestInfoPresent && debug.companionPresent -> debug.matchStatus
-    debug.requestInfoPresent -> "only requestInfo found"
-    debug.companionPresent -> "only companion claim found"
-    else -> "no SMART request carrier found"
+private fun carrierJsonMatchLabel(debug: SmartRequestCarrierDebug): String = when {
+    debug.requestInfoPresent && debug.companionPresent ->
+        if (debug.matchStatus == "matched") "yes" else "no (${debug.matchStatus})"
+    debug.requestInfoPresent || debug.companionPresent -> "not checked (one copy)"
+    else -> "not checked (missing)"
+}
+
+private fun fallbackElementPresenceLabel(debug: SmartRequestCarrierDebug): String {
+    if (!debug.companionPresent) return "no"
+    return "yes (${debug.companionElementLength} chars)"
 }
 
 private fun compareForUi(actual: Any?, condition: JSONObject): Boolean {

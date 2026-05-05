@@ -248,7 +248,7 @@ function renderReview(review: Extract<WalletState, { phase: "review" }>): string
       <div class="chip-row">
         <span class="chip chip--neutral">${escape(readerAuthLabel)}</span>
         <span class="chip chip--neutral">${review.smartRequest.items.length} item${review.smartRequest.items.length === 1 ? "" : "s"}</span>
-        <span class="chip ${carrierChipClass(review.requestCarrier)}">request: ${escape(review.requestCarrier.source)}</span>
+        <span class="chip ${carrierChipClass(review.requestCarrier)}">request JSON: ${escape(carrierSourceLabel(review.requestCarrier))}</span>
         <span class="chip ${review.recordsSource === "imported" ? "chip--success" : "chip--warning"}">${escape(sourceLabel)}</span>
       </div>
       <div class="verifier-strip">
@@ -256,12 +256,12 @@ function renderReview(review: Extract<WalletState, { phase: "review" }>): string
         <div class="verifier-origin">${escape(review.verifierOrigin)}</div>
       </div>
       <div class="carrier-strip">
-        <div class="label">Request carrier check</div>
+        <div class="label">SMART request JSON</div>
         <div class="carrier-status">${escape(requestCarrierLabel(review.requestCarrier))}</div>
         <div class="carrier-grid">
-          <div><span class="carrier-key">requestInfo</span> ${review.requestCarrier.requestInfoPresent ? "present" : "absent"}</div>
-          <div><span class="carrier-key">companion</span> ${review.requestCarrier.companionPresent ? `present (${escape(companionElementLabel(review.requestCarrier.companionElementIdentifier ?? ""))})` : "absent"}</div>
-          <div><span class="carrier-key">agreement</span> ${escape(carrierAgreementLabel(review.requestCarrier))}</div>
+          <div><span class="carrier-key">requestInfo</span> ${review.requestCarrier.requestInfoPresent ? "yes" : "no"}</div>
+          <div><span class="carrier-key">fallback element</span> ${escape(fallbackElementPresenceLabel(review.requestCarrier))}</div>
+          <div><span class="carrier-key">same JSON</span> ${escape(carrierJsonMatchLabel(review.requestCarrier))}</div>
         </div>
       </div>
     </section>
@@ -279,8 +279,8 @@ function renderReview(review: Extract<WalletState, { phase: "review" }>): string
         <div class="muted small">docType <code>${escape(review.docType)}</code></div>
         <div class="muted small">element <code>${escape(review.requestedElement)}</code></div>
         <div class="muted small">requestId <code>${escape(review.requestId)}</code></div>
-        <div class="muted small">request carriers <code>${escape(requestCarrierLabel(review.requestCarrier))}</code></div>
-        ${review.requestCarrier.companionElementIdentifier ? `<div class="muted small">companion element <code>${escape(companionElementLabel(review.requestCarrier.companionElementIdentifier))}</code></div>` : ""}
+        <div class="muted small">request JSON <code>${escape(requestCarrierLabel(review.requestCarrier))}</code></div>
+        ${review.requestCarrier.companionElementIdentifier ? `<div class="muted small">fallback element <code>${escape(companionElementLabel(review.requestCarrier.companionElementIdentifier))}</code></div>` : ""}
         <div class="muted small">data source <code>${escape(sourceLabel)}</code></div>
       </div>
     </details>
@@ -295,12 +295,13 @@ function renderReview(review: Extract<WalletState, { phase: "review" }>): string
 function requestCarrierLabel(carrier: SmartRequestCarrierResolution): string {
   const found = [
     carrier.requestInfoPresent ? "requestInfo" : undefined,
-    carrier.companionPresent ? "companion" : undefined,
+    carrier.companionPresent ? "fallback element" : undefined,
   ].filter(Boolean);
   const foundLabel = found.length ? found.join(" + ") : "none";
-  const matchLabel =
-    carrier.requestInfoPresent && carrier.companionPresent ? " (matched)" : "";
-  return `${foundLabel}${matchLabel}; using ${carrier.source}`;
+  const matchLabel = carrier.requestInfoPresent && carrier.companionPresent
+    ? ` · ${carrierJsonMatchLabel(carrier)}`
+    : "";
+  return `${foundLabel}${matchLabel}; using ${carrierSourceLabel(carrier)}`;
 }
 
 function carrierChipClass(carrier: SmartRequestCarrierResolution): string {
@@ -309,13 +310,22 @@ function carrierChipClass(carrier: SmartRequestCarrierResolution): string {
   return "chip--warning";
 }
 
-function carrierAgreementLabel(carrier: SmartRequestCarrierResolution): string {
+function carrierJsonMatchLabel(carrier: SmartRequestCarrierResolution): string {
   if (carrier.requestInfoPresent && carrier.companionPresent) {
-    return "same request in both carriers";
+    return "same JSON";
   }
-  if (carrier.requestInfoPresent) return "only requestInfo was found";
-  if (carrier.companionPresent) return "only companion was found";
-  return "no SMART request carrier found";
+  if (carrier.requestInfoPresent || carrier.companionPresent) return "not checked (one copy)";
+  return "not checked (missing)";
+}
+
+function carrierSourceLabel(carrier: SmartRequestCarrierResolution): string {
+  if (carrier.source === "companion") return "fallback element";
+  return carrier.source;
+}
+
+function fallbackElementPresenceLabel(carrier: SmartRequestCarrierResolution): string {
+  if (!carrier.companionPresent) return "no";
+  return `yes (${companionElementLabel(carrier.companionElementIdentifier ?? "")})`;
 }
 
 function companionElementLabel(elementIdentifier: string): string {
