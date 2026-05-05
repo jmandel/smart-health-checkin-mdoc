@@ -18,9 +18,9 @@ scripts/serve-pages.sh
 ```
 
 That command runs the same `scripts/build-pages.sh` used by the Pages workflow
-and serves the generated `_site` artifact at `http://localhost:3015/`. The
-verifier and kiosk pages are therefore available under `/verifier/`, matching
-the deployed site layout.
+and serves the generated `_site` artifact at `http://localhost:3015/`. Page
+links are relative so the artifact works at either a domain root or a Pages
+subpath.
 
 Or via npm-style scripts:
 
@@ -110,7 +110,7 @@ The active protocol helper builds direct `org-iso-mdoc` requests with
 can compose with the app-owned Platform Wallet path. It does not patch
 `navigator.credentials.get` and is not re-exported from `src/sdk/index.ts`.
 
-The reference `/wallet/` app opens in a script-created tab/window, imports
+The reference wallet app opens in a script-created tab/window, imports
 Health Skillz ZIP/JSON exports into IndexedDB, and mirrors the Android demo
 wallet's record-oriented consent model: imported resources are matched against
 the SMART request, inline `form.fhir` Questionnaires are rendered as

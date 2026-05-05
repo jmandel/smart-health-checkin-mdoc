@@ -10,7 +10,7 @@
 //
 //   const authority = createBrowserLocalVerifierAuthority({ origin: location.origin });
 //   const getCredential = createWebWalletCredentialGetter({
-//     walletUrl: new URL("/wallet/", location.href),
+//     walletUrl: new URL("../wallet/", location.href),
 //   });
 //   await requestCredentialWithAuthority({ authority, request, getCredential });
 //

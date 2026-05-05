@@ -24,8 +24,8 @@ cd rp-web && bun install && cd ..
 scripts/serve-pages.sh         # builds _site, serves http://localhost:3015/
 ```
 
-The preview serves the same `_site` artifact GitHub Pages deploys, so verifier
-and demo handoff URLs live under `/verifier/` exactly as in production.
+The preview serves the same `_site` artifact GitHub Pages deploys. Page links
+are relative so the artifact works at either a domain root or a Pages subpath.
 
 ## Where to start
 
@@ -101,22 +101,24 @@ The repo deploys as one static site via
 [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml) on
 pushes to `main` and on manual workflow dispatch.
 
-| Path | Page |
+Paths are relative to the deployed Pages base path.
+
+| Relative path | Page |
 | --- | --- |
-| `/` | Landing page (`site/index.html`) |
-| `/verifier/` | Same-device verifier |
-| `/verifier/creator.html` | Kiosk handoff demo creator (desktop) |
-| `/verifier/submit.html` | Kiosk handoff demo submitter (phone) |
-| `/verifier/wallet-choice.html` | Verifier demo with configured Platform/Web Wallet choice |
-| `/wallet/` | Reference web wallet app used by the web-wallet verifier choice |
-| `/web-wallet-protocol.html` | Rendered web-wallet listen/respond integration sketch |
-| `/smart-model-explainer.html` | SMART Health Check-in model explainer |
-| `/kiosk-flow-explainer.html` | Kiosk handoff demo explainer |
-| `/wire-protocol-explainer.html` | Byte-level wire-protocol explainer |
-| `/spec.html` | SMART Health Check-in 1.0 draft spec — rendered HTML with TOC, syntax highlighting, and Mermaid diagrams |
-| `/spec.md` | SMART Health Check-in 1.0 draft spec — raw Markdown source |
-| `/llms.txt` | Generated LLM-friendly docs bundle |
-| `/fixtures/` | Checked-in test fixtures |
+| `./` | Landing page (`site/index.html`) |
+| `./verifier/` | Same-device verifier |
+| `./verifier/creator.html` | Kiosk handoff demo creator (desktop) |
+| `./verifier/submit.html` | Kiosk handoff demo submitter (phone) |
+| `./verifier/wallet-choice.html` | Verifier demo with configured Platform/Web Wallet choice |
+| `./wallet/` | Reference web wallet app used by the web-wallet verifier choice |
+| `./web-wallet-protocol.html` | Rendered web-wallet listen/respond integration sketch |
+| `./smart-model-explainer.html` | SMART Health Check-in model explainer |
+| `./kiosk-flow-explainer.html` | Kiosk handoff demo explainer |
+| `./wire-protocol-explainer.html` | Byte-level wire-protocol explainer |
+| `./spec.html` | SMART Health Check-in 1.0 draft spec — rendered HTML with TOC, syntax highlighting, and Mermaid diagrams |
+| `./spec.md` | SMART Health Check-in 1.0 draft spec — raw Markdown source |
+| `./llms.txt` | Generated LLM-friendly docs bundle |
+| `./fixtures/` | Checked-in test fixtures |
 
 Local artifact build (no preview server):
 

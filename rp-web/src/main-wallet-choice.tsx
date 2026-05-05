@@ -8,20 +8,14 @@ import "./app/styles.css";
 const root = document.getElementById("root");
 if (!root) throw new Error("missing #root");
 
-const demoWalletUrl = new URL("/wallet/", location.href);
+const demoWalletUrl = new URL("../wallet/", location.href);
 const webWallets = configureWebWallets({
   wallets: [
     {
       id: "smart-demo",
       label: "SMART Demo Web Wallet",
       walletUrl: demoWalletUrl,
-      description: `Same-origin demo wallet (${demoWalletUrl.origin})`,
-    },
-    {
-      id: "smart-demo-training",
-      label: "SMART Training Web Wallet",
-      walletUrl: demoWalletUrl,
-      description: "Second configured entry using the same demo wallet app.",
+      description: `Reference web wallet at ${demoWalletUrl.pathname}`,
     },
   ],
 });

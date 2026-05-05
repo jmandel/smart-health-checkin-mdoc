@@ -23,6 +23,9 @@ const REPO_ROOT = new URL("../..", import.meta.url).pathname;
 const SITE_DIR = join(REPO_ROOT, "_site");
 const CHROMIUM = process.env.CHROMIUM_PATH ?? "/usr/bin/chromium";
 const HEADLESS = process.env.HEADLESS !== "0";
+const SITE_BASE_PATH = normalizeBasePath(
+  process.env.SMOKE_SITE_BASE_PATH ?? "/smart-health-checkin-mdoc",
+);
 
 if (
   !existsSync(SITE_DIR) ||
@@ -48,7 +51,10 @@ const server = serve({
   hostname: "127.0.0.1",
   async fetch(request) {
     const url = new URL(request.url);
-    let path = url.pathname;
+    let path = stripSiteBasePath(url.pathname);
+    if (path == null) {
+      return new Response("not found", { status: 404 });
+    }
     if (path.endsWith("/")) path += "index.html";
     const file = Bun.file(join(SITE_DIR, path));
     if (await file.exists()) {
@@ -59,7 +65,7 @@ const server = serve({
 });
 
 const baseUrl = `http://127.0.0.1:${server.port}`;
-console.log(`[smoke] serving _site at ${baseUrl}`);
+console.log(`[smoke] serving _site at ${baseUrl}${SITE_BASE_PATH || "/"}`);
 
 const browser = await puppeteer.launch({
   executablePath: CHROMIUM,
@@ -74,7 +80,7 @@ const browser = await puppeteer.launch({
 
 let exitCode = 0;
 try {
-  const configuredUrl = `${baseUrl}/verifier/wallet-choice.html`;
+  const configuredUrl = siteUrl("/verifier/wallet-choice.html");
   console.log(`[smoke] opening ${configuredUrl}`);
   const configured = await browser.newPage();
   configured.on("pageerror", (err) => console.error("[configured pageerror]", err));
@@ -88,7 +94,8 @@ try {
 
   const configuredPopupTargetPromise = browser.waitForTarget((t) => {
     const u = t.url();
-    return u.includes("/wallet/") && t.type() === "page";
+    if (!u || t.type() !== "page") return false;
+    return safePathname(u)?.startsWith(`${SITE_BASE_PATH}/wallet/`) === true;
   }, { timeout: 10_000 });
 
   await configured.evaluate(() => {
@@ -103,6 +110,10 @@ try {
   const configuredPopupTarget = await configuredPopupTargetPromise;
   const configuredPopup = await configuredPopupTarget.page();
   if (!configuredPopup) throw new Error("[smoke] configured popup target had no page");
+  const configuredPopupPath = new URL(configuredPopup.url()).pathname;
+  if (!configuredPopupPath.startsWith(`${SITE_BASE_PATH}/wallet/`)) {
+    throw new Error(`[smoke] wallet popup escaped Pages base path: ${configuredPopup.url()}`);
+  }
   configuredPopup.on("pageerror", (err) => console.error("[configured popup pageerror]", err));
   configuredPopup.on("console", (msg) => {
     if (msg.type() === "error") console.error("[configured popup console]", msg.text());
@@ -175,3 +186,31 @@ try {
 }
 
 process.exit(exitCode);
+
+function siteUrl(path: string): string {
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${baseUrl}${SITE_BASE_PATH}${cleanPath}`;
+}
+
+function normalizeBasePath(path: string): string {
+  const trimmed = path.trim();
+  if (!trimmed || trimmed === "/") return "";
+  return `/${trimmed.replace(/^\/+|\/+$/g, "")}`;
+}
+
+function stripSiteBasePath(pathname: string): string | null {
+  if (!SITE_BASE_PATH) return pathname;
+  if (pathname === SITE_BASE_PATH) return "/";
+  if (pathname.startsWith(`${SITE_BASE_PATH}/`)) {
+    return pathname.slice(SITE_BASE_PATH.length);
+  }
+  return null;
+}
+
+function safePathname(url: string): string | null {
+  try {
+    return new URL(url).pathname;
+  } catch {
+    return null;
+  }
+}

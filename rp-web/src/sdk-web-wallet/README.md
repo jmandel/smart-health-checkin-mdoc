@@ -62,7 +62,7 @@ const [demoWallet] = configureWebWallets({
     {
       id: "smart-demo",
       label: "SMART Demo Web Wallet",
-      walletUrl: new URL("/wallet/", location.href),
+      walletUrl: new URL("../wallet/", location.href),
     },
   ],
 });
@@ -125,14 +125,14 @@ sequenceDiagram
     participant U as User
     participant V as Verifier page
     participant G as createWebWalletCredentialGetter
-    participant W as Wallet tab/window<br/>(/wallet/)
+    participant W as Wallet tab/window<br/>(../wallet/)
 
     U->>V: click "Open web wallet"
     Note over V: synchronous inside click handler
     V->>W: window.open("about:blank")
     V->>V: requestCredentialWithAuthority(...)
     V->>G: getCredential({ deviceRequest, encryptionInfo })
-    G->>W: navigate tab/window to /wallet/
+    G->>W: navigate tab/window to ../wallet/
     W-->>V: postMessage { type: "ready" } with targetOrigin "*"
     Note over W: no request session yet;<br/>ready carries no sensitive data
     Note over G: origin === walletUrl.origin ✓
@@ -154,7 +154,7 @@ Error paths follow the same skeleton but settle with `outcome: "declined"
 
 ## Reference wallet data model
 
-The `/wallet/` reference app mirrors the Android demo wallet's record-oriented
+The reference wallet app mirrors the Android demo wallet's record-oriented
 model. It can import Health Skillz ZIP/JSON exports into IndexedDB, normalize
 providers and FHIR resources, match imported records against additive
 `profiles` / `profilesFrom` / resource-type selectors, render inline
