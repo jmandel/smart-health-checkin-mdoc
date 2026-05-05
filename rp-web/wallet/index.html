@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SMART Web Wallet (demo)</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --page: #f6f8fb;
+        --panel: #ffffff;
+        --panel-alt: #f1f5f9;
+        --line: #e2e8f0;
+        --line-strong: #cbd5e1;
+        --ink: #102033;
+        --muted: #526173;
+        --subtle: #7a8898;
+        --primary: #1d5fd1;
+        --blue-soft: #e8f0ff;
+        --teal: #0f766e;
+        --teal-soft: #e2f7f4;
+        --violet: #6d4aff;
+        --violet-soft: #f0edff;
+        --amber: #9a5b00;
+        --amber-soft: #fff3d6;
+        --success: #087443;
+        --success-soft: #e5f6ec;
+        --error: #b42318;
+        --error-soft: #ffe7e5;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        min-height: 100%;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+          sans-serif;
+        background: var(--page);
+        color: var(--ink);
+      }
+      body {
+        padding: 0;
+      }
+      #wallet-root {
+        width: 100%;
+      }
+      .wallet-shell {
+        width: min(100%, 760px);
+        margin: 0 auto;
+        padding: 18px 20px 28px;
+        display: grid;
+        gap: 16px;
+      }
+      .panel,
+      .center-panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        padding: 18px;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+      }
+      .center-panel {
+        margin: min(18vh, 120px) auto 0;
+        width: min(100%, 520px);
+        padding: 24px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 1.5rem;
+        line-height: 1.15;
+        font-weight: 800;
+      }
+      h2 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 700;
+      }
+      p { margin: 0.5rem 0 0; }
+      code {
+        background: var(--panel-alt);
+        padding: 0 0.25rem;
+        border-radius: 4px;
+        font-size: 0.86em;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+      .small { font-size: 0.82rem; }
+      .section-title {
+        margin-top: 2px;
+        font-weight: 800;
+        color: var(--ink);
+      }
+      .brand-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .brand-mark {
+        width: 48px;
+        height: 48px;
+        border-radius: 16px;
+        background: var(--primary);
+        color: #fff;
+        display: grid;
+        place-items: center;
+        font-weight: 800;
+      }
+      .brand-subtitle {
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+      .header-copy {
+        margin-top: 22px;
+      }
+      .header-copy p {
+        color: var(--muted);
+        font-size: 1rem;
+        line-height: 1.45;
+      }
+      .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 16px;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 7px 12px;
+        font-size: 0.78rem;
+        font-weight: 800;
+      }
+      .chip--success {
+        background: var(--success-soft);
+        color: var(--success);
+      }
+      .chip--warning {
+        background: var(--amber-soft);
+        color: var(--amber);
+      }
+      .chip--neutral {
+        background: var(--panel-alt);
+        color: var(--muted);
+      }
+      .verifier-strip {
+        margin-top: 18px;
+        background: var(--panel-alt);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 14px;
+      }
+      .label {
+        color: var(--muted);
+        font-size: 0.82rem;
+        font-weight: 800;
+      }
+      .verifier-origin {
+        margin-top: 4px;
+        color: var(--ink);
+        overflow-wrap: anywhere;
+      }
+      .request-intro {
+        display: grid;
+        gap: 4px;
+      }
+      .request-card,
+      .record-card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        padding: 18px;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+      }
+      .request-card__top {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .glyph {
+        flex: 0 0 auto;
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        font-size: 0.8rem;
+        font-weight: 900;
+      }
+      .glyph--coverage { background: var(--blue-soft); color: var(--primary); }
+      .glyph--plan { background: var(--teal-soft); color: var(--teal); }
+      .glyph--clinical { background: var(--violet-soft); color: var(--violet); }
+      .glyph--questionnaire { background: var(--amber-soft); color: var(--amber); }
+      .glyph--default { background: var(--panel-alt); color: var(--muted); }
+      .request-card__body {
+        min-width: 0;
+        flex: 1;
+      }
+      .request-card__title,
+      .record-card__title {
+        font-weight: 800;
+      }
+      .request-card__subtitle,
+      .record-card__subtitle {
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+      .match-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .records {
+        display: grid;
+        gap: 10px;
+      }
+      .record-card {
+        background: var(--panel-alt);
+        border-radius: 16px;
+        padding: 12px;
+        box-shadow: none;
+      }
+      .record-card__types {
+        color: var(--subtle);
+        margin-top: 3px;
+        font-size: 0.82rem;
+      }
+      .questionnaire-card {
+        margin-top: 14px;
+        background: var(--panel-alt);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 14px;
+      }
+      .questionnaire-card h3,
+      .questionnaire-group h4 {
+        margin: 0;
+        font-size: 0.95rem;
+      }
+      .questionnaire-items {
+        display: grid;
+        gap: 14px;
+        margin-top: 14px;
+      }
+      .questionnaire-group {
+        display: grid;
+        gap: 12px;
+        padding-left: calc(var(--depth) * 8px);
+      }
+      .questionnaire-display {
+        margin-left: calc(var(--depth) * 8px);
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 12px 14px;
+        color: var(--muted);
+      }
+      .questionnaire-field {
+        display: grid;
+        gap: 8px;
+        margin-left: calc(var(--depth) * 8px);
+        color: var(--ink);
+        font-weight: 700;
+      }
+      .questionnaire-field input[type="text"],
+      .questionnaire-field input[type="number"],
+      .questionnaire-field input[type="date"],
+      .questionnaire-field input[type="datetime-local"],
+      .questionnaire-field input[type="time"],
+      .date-answer input,
+      .date-answer select,
+      .date-picker__precision select,
+      .questionnaire-field textarea {
+        width: 100%;
+        border: 1px solid var(--line-strong);
+        border-radius: 14px;
+        padding: 0.7rem 0.8rem;
+        color: var(--ink);
+        background: var(--panel);
+        font: inherit;
+        font-weight: 500;
+      }
+      .questionnaire-field textarea {
+        resize: vertical;
+      }
+      .questionnaire-hint {
+        color: var(--subtle);
+        font-size: 0.78rem;
+        font-weight: 600;
+      }
+      .segmented,
+      .choice-list {
+        display: grid;
+        gap: 8px;
+      }
+      .segmented {
+        grid-template-columns: 1fr 1fr;
+      }
+      .choice-option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 10px;
+        color: var(--ink);
+        font-weight: 600;
+      }
+      .range-answer {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 10px 12px;
+      }
+      .date-picker {
+        display: grid;
+        gap: 8px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 10px;
+      }
+      .date-picker__precision,
+      .date-answer label {
+        display: grid;
+        gap: 4px;
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 800;
+      }
+      .date-answer {
+        display: grid;
+        gap: 6px;
+      }
+      .date-answer--year { grid-template-columns: 1fr; }
+      .date-answer--month { grid-template-columns: 1.3fr 1fr; }
+      .date-answer--day { grid-template-columns: 1.3fr 1fr 1fr; }
+      .date-answer input {
+        text-align: left;
+      }
+      .range-answer > div {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+      .range-answer strong {
+        color: var(--ink);
+        font-size: 1rem;
+      }
+      .range-answer input {
+        width: 100%;
+      }
+      .technical {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        padding: 18px;
+      }
+      .technical summary {
+        cursor: pointer;
+        font-weight: 800;
+      }
+      .technical-grid {
+        display: grid;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .actions {
+        position: sticky;
+        bottom: 0;
+        display: grid;
+        gap: 10px;
+        background: rgba(255, 255, 255, 0.96);
+        border-top: 1px solid var(--line);
+        box-shadow: 0 -10px 24px rgba(15, 23, 42, 0.10);
+        margin: 10px -20px -28px;
+        padding: 14px 20px max(14px, env(safe-area-inset-bottom));
+      }
+      .status-dot {
+        width: 54px;
+        height: 54px;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        margin-bottom: 20px;
+      }
+      button {
+        width: 100%;
+        padding: 0.8rem 1rem;
+        font-size: 0.95rem;
+        border-radius: 14px;
+        border: 1px solid var(--line-strong);
+        background: var(--panel);
+        color: var(--ink);
+        cursor: pointer;
+        font-weight: 800;
+      }
+      button.primary {
+        background: var(--primary);
+        color: #fff;
+        border-color: var(--primary);
+      }
+      button.secondary {
+        background: var(--panel);
+        color: var(--primary);
+      }
+      button:hover { filter: brightness(1.05); }
+      pre.error {
+        background: var(--error-soft);
+        color: var(--error);
+        padding: 0.8rem;
+        border-radius: 14px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-size: 0.85rem;
+      }
+      @media (max-width: 520px) {
+        .wallet-shell { padding: 14px 14px 24px; }
+        .actions { margin-left: -14px; margin-right: -14px; padding-left: 14px; padding-right: 14px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="wallet-root"></div>
+    <script type="module" src="../src/wallet-app/wallet.ts"></script>
+  </body>
+</html>

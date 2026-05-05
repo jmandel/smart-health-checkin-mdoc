@@ -4,10 +4,12 @@
   "type": "module",
   "scripts": {
     "dev": "bun index.html",
-    "build": "bun build ./index.html ./creator.html ./submit.html --env=BUN_PUBLIC_* --outdir=./dist",
+    "build": "bun build ./index.html ./creator.html ./submit.html ./web-wallet-demo.html ./wallet-choice.html --env=BUN_PUBLIC_* --outdir=./dist",
+    "build:wallet": "bun build ./wallet/index.html --env=BUN_PUBLIC_* --outdir=./dist-wallet",
     "dev:kiosk": "bun ./index.html ./creator.html ./submit.html",
     "inspect:mdoc": "bun scripts/inspect-mdoc-request.ts",
     "inspect:response": "bun scripts/inspect-mdoc-response.ts",
+    "smoke:web-wallet": "bun scripts/smoke-web-wallet.ts",
     "test": "bun test"
   },
   "dependencies": {
@@ -16,6 +18,7 @@
     "@instantdb/react": "^1.0.22",
     "@types/dompurify": "^3.2.0",
     "dompurify": "^3.4.2",
+    "jszip": "^3.10.1",
     "marked": "^18.0.3",
     "qrcode": "^1.5.4",
     "react": "^19.0.0",
@@ -28,6 +31,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "instant-cli": "^1.0.22",
+    "puppeteer-core": "^24.42.0",
     "typescript": "^5.7.0"
   }
 }

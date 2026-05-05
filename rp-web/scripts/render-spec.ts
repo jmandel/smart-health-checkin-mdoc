@@ -9,6 +9,10 @@ const ROOT = resolve(HERE, "..", "..");
 
 const inputArg = process.argv[2] ?? resolve(ROOT, "spec.md");
 const outputArg = process.argv[3] ?? resolve(ROOT, "_site", "spec.html");
+const titleArg = process.argv[4];
+const descriptionArg = process.argv[5];
+const rawHrefArg = process.argv[6];
+const heroTitleArg = process.argv[7];
 
 const inputPath = resolve(inputArg);
 const outputPath = resolve(outputArg);
@@ -80,9 +84,12 @@ renderer.code = function ({ text, lang }) {
 const marked = new Marked({ gfm: true, breaks: false });
 const body = await marked.parse(md, { renderer });
 
-const docTitle = "SMART Health Check-in 1.0 — Draft Spec";
+const docTitle = titleArg ?? "SMART Health Check-in 1.0 — Draft Spec";
 const docDescription =
+  descriptionArg ??
   "SMART Health Check-in 1.0 draft: TypeScript/JSDoc clinical model, trust rules and layer separation, same-device org-iso-mdoc flow, and Appendix A diagnostic bridge.";
+const rawHref = rawHrefArg ?? "./spec.md";
+const heroTitle = heroTitleArg ?? "Draft Specification 1.0";
 
 const tocItems = headings
   .map(
@@ -336,12 +343,12 @@ const html = `<!doctype html>
 <body>
 <div class="topbar">
   <div class="topbar-inner">
-    <span class="topbar-title">SMART Health Check-in 1.0 — Draft Spec</span>
+    <span class="topbar-title">${escapeHtml(docTitle)}</span>
     <a href="./index.html">Overview</a>
     <a href="./smart-model-explainer.html">Model explainer</a>
     <a href="./wire-protocol-explainer.html">Wire protocol</a>
     <a href="./verifier/">Verifier demo</a>
-    <a href="./spec.md">View raw .md</a>
+    <a href="${escapeHtml(rawHref)}">View raw .md</a>
     <a href="https://github.com/jmandel/smart-health-checkin-mdoc" target="_blank" rel="noopener">GitHub</a>
   </div>
 </div>
@@ -357,7 +364,7 @@ ${tocItems}
   <main>
     <section class="hero">
       <div class="eyebrow">SMART Health Check-in</div>
-      <h1>Draft Specification 1.0</h1>
+      <h1>${escapeHtml(heroTitle)}</h1>
       <p>${escapeHtml(docDescription)}</p>
     </section>
 

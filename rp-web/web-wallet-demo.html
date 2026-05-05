@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Web-wallet demo — SMART Health Check-in</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f7f7fb;
+        --fg: #1a1a23;
+        --muted: #5f6373;
+        --card: #ffffff;
+        --border: #d8dae5;
+        --primary: #1f6feb;
+        --primary-fg: #ffffff;
+        --ok-bg: #e7f6ec;
+        --ok-fg: #0e6e2c;
+        --fail-bg: #fef3f2;
+        --fail-fg: #b42318;
+        --error: #b42318;
+        --error-bg: #fef3f2;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #14141a;
+          --fg: #f1f1f6;
+          --muted: #9da0b0;
+          --card: #1e1f29;
+          --border: #2e2f3c;
+          --primary: #3b82f6;
+          --ok-bg: #142a1c;
+          --ok-fg: #4ade80;
+          --fail-bg: #2a1414;
+          --fail-fg: #ff6f6f;
+          --error: #ff6f6f;
+          --error-bg: #2a1414;
+        }
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0; padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+          sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+      }
+      main {
+        max-width: 720px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.25rem;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      }
+      h1 { margin: 0 0 0.5rem; font-size: 1.4rem; }
+      h2 {
+        margin: 0 0 0.5rem;
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--muted);
+      }
+      .muted { color: var(--muted); }
+      .small { font-size: 0.85rem; }
+      code {
+        background: rgba(127, 127, 127, 0.15);
+        padding: 0 0.25rem;
+        border-radius: 3px;
+        font-size: 0.85em;
+      }
+      button.primary {
+        background: var(--primary);
+        color: var(--primary-fg);
+        border: 1px solid var(--primary);
+        padding: 0.6rem 1rem;
+        font-size: 0.95rem;
+        font-weight: 500;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      button.primary:hover { filter: brightness(1.05); }
+      ul { padding-left: 1.25rem; }
+      ul li { margin: 0.2rem 0; }
+      .badges {
+        display: flex; flex-wrap: wrap;
+        gap: 0.4rem;
+        margin: 0.4rem 0 0.8rem;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.55rem;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        font-weight: 500;
+      }
+      .badge.ok { background: var(--ok-bg); color: var(--ok-fg); }
+      .badge.fail { background: var(--fail-bg); color: var(--fail-fg); }
+      pre.error {
+        background: var(--error-bg); color: var(--error);
+        padding: 0.5rem; border-radius: 6px;
+        white-space: pre-wrap; word-break: break-word; font-size: 0.85rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="verifier-root"></main>
+    <script type="module" src="./src/web-wallet-demo.ts"></script>
+  </body>
+</html>

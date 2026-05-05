@@ -362,6 +362,13 @@
     }
 
     .demo-card.kiosk .badge { background: var(--green-soft); color: var(--green); }
+    .demo-card.experimental {
+      grid-column: 1 / -1;
+      border-color: #f3d399;
+      background: #fffaf0;
+    }
+    .demo-card.experimental .badge { background: #fff1d6; color: var(--amber); }
+    .demo-card.experimental .btn { background: #9a5f0f; }
 
     .demo-card .actions {
       display: flex;
@@ -566,6 +573,24 @@
           <div class="actions">
             <a class="btn" href="./verifier/creator.html" target="_blank" rel="noopener">Try it</a>
             <a class="secondary" href="./kiosk-flow-explainer.html">How it works →</a>
+          </div>
+        </article>
+        <article class="demo-card experimental">
+          <div class="demo-head">
+            <div>
+              <h3>Try an experimental web wallet</h3>
+              <p>
+                Use the same SMART Health Check-in request flow with a web-app wallet instead
+                of a platform wallet. This side-surface demo still returns an
+                <code>org-iso-mdoc</code> credential for the verifier to open.
+              </p>
+            </div>
+            <span class="badge">Experimental</span>
+          </div>
+          <div class="actions">
+            <a class="btn" href="./verifier/wallet-choice.html" target="_blank" rel="noopener">Try verifier + web wallet</a>
+            <a class="secondary" href="./web-wallet-protocol.html">Read the protocol sketch →</a>
+            <a class="secondary" href="./verifier/web-wallet-demo.html" target="_blank" rel="noopener">Open standalone demo →</a>
           </div>
         </article>
         <div class="no-device">

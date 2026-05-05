@@ -23,6 +23,11 @@ import {
   createDcapiVerifier,
   credentialToDebugJson,
 } from "./sdk/dcapi-verifier.ts";
+import {
+  createCredentialSources,
+  type CredentialSource,
+} from "./app/credential-sources.ts";
+import type { WebWalletHandle } from "./sdk-web-wallet/index.ts";
 
 type TaskView = {
   id: string;
@@ -34,7 +39,12 @@ type TaskView = {
 
 const SMART_LOGO_URL = "https://smarthealthit.org/wp-content/themes/SMART/images/logo.svg";
 
-export function App() {
+export type AppProps = {
+  webWallets?: ReadonlyArray<WebWalletHandle>;
+  platformWallet?: boolean;
+};
+
+export function App(props: AppProps = {}) {
   const presetId = useStore((s) => s.presetId);
   const requestText = useStore((s) => s.requestText);
   const validation = useStore((s) => s.validation);
@@ -45,24 +55,51 @@ export function App() {
   const resetRunId = useStore((s) => s.resetRunId);
   const events = useDebugEvents();
   const [loading, setLoading] = useState(false);
+  const [sourceMenuOpen, setSourceMenuOpen] = useState(false);
 
   const request = useMemo(() => parseRequest(requestText), [requestText]);
+  const credentialSources = useMemo(
+    () =>
+      createCredentialSources({
+        platformWallet: props.platformWallet,
+        platformAvailable: dcApi.state === "supported",
+        platformUnavailableReason:
+          dcApi.state === "unsupported" ? dcApi.reason : undefined,
+        webWallets: props.webWallets,
+      }),
+    [dcApi, props.platformWallet, props.webWallets],
+  );
+  const availableCredentialSources = credentialSources.filter((s) => s.available);
+  const primaryCredentialSource = availableCredentialSources[0];
   const opened = latestEvent(events, "DCAPI_RESPONSE_OPENED");
   const openError = latestEvent(events, "RESPONSE_OPEN_ERROR");
   const answers = responseAnswers(opened);
   const tasks = request ? request.items.map((item) => taskFromItem(item, answers)) : [];
   const complete = tasks.length > 0 && tasks.every((task) => task.done);
 
-  const startCheckin = async () => {
-    if (!request || !validation.ok || loading) return;
+  const startCheckin = async (source: CredentialSource) => {
+    if (!request || !validation.ok || loading || !source.available) return;
     setLoading(true);
+    setSourceMenuOpen(false);
+    let cleanup: (() => void) | undefined;
     try {
       const validated = validateSmartCheckinRequest(request);
       if (!validated.ok) {
         emit("ERROR", { where: "validate", error: validated.error });
         return;
       }
-      const verifier = createDcapiVerifier({ origin: location.origin });
+      const activation = source.activate();
+      cleanup = activation.cleanup;
+      emit("CREDENTIAL_SOURCE", {
+        id: source.id,
+        label: source.label,
+        kind: source.kind,
+        origin: source.origin,
+      });
+      const verifier = createDcapiVerifier({
+        origin: location.origin,
+        getCredential: activation.getCredential,
+      });
       const context = await verifier.prepareCredentialRequest(validated.value);
       const arg = context.navigatorArgument;
       emit("SMART_REQUEST_INFO", {
@@ -101,10 +138,11 @@ export function App() {
       }
     } catch (e) {
       emit("ERROR", {
-        where: "navigator.credentials.get",
+        where: "credential source",
         error: e instanceof Error ? e.message : String(e),
       });
     } finally {
+      cleanup?.();
       setLoading(false);
     }
   };
@@ -160,25 +198,16 @@ export function App() {
             </div>
           ) : null}
 
-          <button
-            className={complete ? "checkin-button checkin-button--complete" : "checkin-button"}
-            type="button"
-            disabled={dcApi.state !== "supported" || !validation.ok || loading}
-            onClick={startCheckin}
-          >
-            <span className="checkin-button__mark">
-              <img src={SMART_LOGO_URL} alt="SMART" />
-            </span>
-            <span className="checkin-button__text">
-              <span className="checkin-button__primary">
-                {loading
-                  ? "Opening health app..."
-                  : complete
-                    ? "Check-in information received"
-                    : "Share check-in information"}
-              </span>
-            </span>
-          </button>
+          <CredentialSourceButton
+            complete={complete}
+            loading={loading}
+            disabled={!primaryCredentialSource || !validation.ok || loading}
+            sources={credentialSources}
+            primarySource={primaryCredentialSource}
+            menuOpen={sourceMenuOpen}
+            onMenuOpenChange={setSourceMenuOpen}
+            onStart={startCheckin}
+          />
 
           <DcApiStatus />
         </section>
@@ -211,6 +240,118 @@ export function App() {
         </section>
       </main>
     </>
+  );
+}
+
+function CredentialSourceButton(props: {
+  complete: boolean;
+  loading: boolean;
+  disabled: boolean;
+  sources: ReadonlyArray<CredentialSource>;
+  primarySource: CredentialSource | undefined;
+  menuOpen: boolean;
+  onMenuOpenChange: (open: boolean) => void;
+  onStart: (source: CredentialSource) => void;
+}) {
+  const {
+    complete,
+    loading,
+    disabled,
+    sources,
+    primarySource,
+    menuOpen,
+    onMenuOpenChange,
+    onStart,
+  } = props;
+  const buttonClass = complete
+    ? "checkin-button checkin-button--complete"
+    : "checkin-button";
+  const primaryText = loading
+    ? "Opening wallet..."
+    : complete
+      ? "Check-in information received"
+      : "Share check-in information";
+  const showChoice = sources.filter((source) => source.available).length > 1;
+  const sourceHint =
+    primarySource && (showChoice || primarySource.kind === "web-wallet")
+      ? primarySource.label
+      : undefined;
+
+  const buttonContent = (
+    <>
+      <span className="checkin-button__mark">
+        <img src={SMART_LOGO_URL} alt="SMART" />
+      </span>
+      <span className="checkin-button__text">
+        <span className="checkin-button__primary">{primaryText}</span>
+        {sourceHint ? (
+          <span className="checkin-button__secondary">via {sourceHint}</span>
+        ) : null}
+      </span>
+    </>
+  );
+
+  if (!showChoice) {
+    return (
+      <button
+        className={buttonClass}
+        type="button"
+        disabled={disabled}
+        onClick={() => primarySource && onStart(primarySource)}
+      >
+        {buttonContent}
+      </button>
+    );
+  }
+
+  return (
+    <div className="checkin-source-control">
+      <button
+        className={`${buttonClass} checkin-button--split-primary`}
+        type="button"
+        disabled={disabled}
+        onClick={() => primarySource && onStart(primarySource)}
+      >
+        {buttonContent}
+      </button>
+      <button
+        className="checkin-source-toggle"
+        type="button"
+        disabled={loading}
+        aria-label="Choose wallet"
+        aria-expanded={menuOpen}
+        onClick={() => onMenuOpenChange(!menuOpen)}
+      >
+        ▾
+      </button>
+      {menuOpen ? (
+        <div className="checkin-source-menu" role="menu">
+          {sources.map((source) => (
+            <button
+              key={source.id}
+              className="checkin-source-option"
+              type="button"
+              role="menuitem"
+              disabled={!source.available || loading}
+              onClick={() => {
+                onMenuOpenChange(false);
+                onStart(source);
+              }}
+            >
+              <span className="checkin-source-option__label">
+                {source.id === primarySource?.id ? "✓ " : ""}
+                {source.label}
+              </span>
+              <span className="checkin-source-option__description">
+                {source.available
+                  ? source.description ?? source.origin
+                  : source.unavailableReason}
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

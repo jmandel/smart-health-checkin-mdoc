@@ -27,7 +27,9 @@ Or via npm-style scripts:
 ```sh
 bun run dev           # bun index.html
 bun run dev:kiosk     # bun creator.html
-bun run build         # build index.html, creator.html, and submit.html into dist/
+bun run build         # build verifier, kiosk, web-wallet demo, and wallet-choice entries into dist/
+bun run build:wallet  # build wallet/index.html into dist-wallet/ (separate output for /wallet/ route)
+bun run smoke:web-wallet  # one-shot real-Chromium smoke test of the web-wallet shim demo (dev-only)
 bun run inspect:mdoc  # decode a direct mdoc navigator arg or fixture dir
 bun run inspect:response # decode a direct mdoc response wrapper or plaintext DeviceResponse
 bun test              # protocol/unit tests
@@ -40,6 +42,9 @@ rp-web/
   index.html              # same-device verifier entry
   creator.html            # kiosk/desktop QR creator entry
   submit.html             # phone submission entry
+  web-wallet-demo.html    # web-wallet shim demo entry (side surface)
+  wallet-choice.html      # verifier entry with configured web-wallet choices
+  wallet/index.html       # reference web wallet app (separate /wallet/ route)
   src/
     main.tsx              # React root
     App.tsx               # Top-level UI
@@ -49,6 +54,13 @@ rp-web/
     sdk/                  # Library-shaped SMART Check-in SDK modules
       README.md           # Non-React TypeScript SDK guide
       react.README.md     # Optional React bindings guide
+    sdk-web-wallet/       # Side surface: web-wallet shim (tab/window-mediated)
+      README.md           # Side-surface README; not in the SDK barrel
+      index.ts
+      wallet-core.ts      # Wallet-side mdoc packaging (verifier-openable)
+      popup-credential-getter.ts # Drop-in CredentialGetter for the existing seam
+      configure-web-wallets.ts # Web-wallet-only handle configuration
+    wallet-app/           # Reference web-wallet app (uses sdk-web-wallet/)
     debug/
       events.ts           # @@SHC@@<KIND>@@<json> emitter + ring buffer
     protocol/             # direct mdoc request/response helpers
@@ -92,6 +104,19 @@ The page shows:
 
 The active protocol helper builds direct `org-iso-mdoc` requests with
 `data.deviceRequest` and `data.encryptionInfo`.
+
+## Web-wallet side surface
+
+`src/sdk-web-wallet/` exposes explicit web-wallet handles that the verifier app
+can compose with the app-owned Platform Wallet path. It does not patch
+`navigator.credentials.get` and is not re-exported from `src/sdk/index.ts`.
+
+The reference `/wallet/` app opens in a script-created tab/window, imports
+Health Skillz ZIP/JSON exports into IndexedDB, and mirrors the Android demo
+wallet's record-oriented consent model: imported resources are matched against
+the SMART request, inline `form.fhir` Questionnaires are rendered as
+QuestionnaireResponse artifacts, selected records are bundled into the response,
+and bundled demo records are used when nothing has been imported.
 
 ## Kiosk check-in demo
 

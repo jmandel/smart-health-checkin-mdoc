@@ -74,6 +74,17 @@ Research notes and archive material under `docs/research/` and
   Health Check-in payloads, including the Rust WASM matcher
   ([`wallet-android/app/matcher-rs/README.md`](wallet-android/app/matcher-rs/README.md)).
 
+- **Web-wallet shim (side surface, demo).** A second mediator path that uses
+  explicit web-wallet credential handles backed by a script-opened wallet
+  tab/window, while
+  keeping the wire format identical to the platform DC API flow. It does not
+  patch `navigator.credentials.get`; verifier UI can compose these handles with
+  the app-owned Platform Wallet path when configured.
+  Lives in [`rp-web/src/sdk-web-wallet/`](rp-web/src/sdk-web-wallet/README.md)
+  with a reference wallet app under `rp-web/src/wallet-app/`. Not part of the
+  v1.0 SMART Health Check-in protocol; not re-exported from the SDK
+  barrel.
+
 - **Public site.** Landing page and HTML explainers in
   [`site/`](site/index.html): the SMART model explainer, the kiosk handoff demo
   explainer, and a byte-level wire-protocol inspector that fetches the same
@@ -96,6 +107,10 @@ pushes to `main` and on manual workflow dispatch.
 | `/verifier/` | Same-device verifier |
 | `/verifier/creator.html` | Kiosk handoff demo creator (desktop) |
 | `/verifier/submit.html` | Kiosk handoff demo submitter (phone) |
+| `/verifier/web-wallet-demo.html` | Web-wallet shim demo (side surface, not v1.0 protocol) |
+| `/verifier/wallet-choice.html` | Verifier demo with configured Platform/Web Wallet choice |
+| `/wallet/` | Reference web wallet app used by the web-wallet shim demo |
+| `/web-wallet-protocol.html` | Rendered web-wallet listen/respond integration sketch |
 | `/smart-model-explainer.html` | SMART Health Check-in model explainer |
 | `/kiosk-flow-explainer.html` | Kiosk handoff demo explainer |
 | `/wire-protocol-explainer.html` | Byte-level wire-protocol explainer |
