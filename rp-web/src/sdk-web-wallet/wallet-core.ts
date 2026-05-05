@@ -22,6 +22,8 @@ import {
   MDOC_DOC_TYPE,
   MDOC_NAMESPACE,
   PROTOCOL_ID,
+  resolveSmartRequestJsonFromMdocCarriers,
+  SMART_REQUEST_INFO_KEY,
   SMART_RESPONSE_ELEMENT_ID,
   type DcapiMdocResponse,
 } from "../protocol/index.ts";
@@ -253,29 +255,32 @@ function parseDeviceRequest(bytes: Uint8Array): ParsedDeviceRequest {
     throw new Error("itemsRequest missing docType");
   }
   const nameSpaces = mapGet(itemsRequest, "nameSpaces");
-  let responseElementIdentifier: string | undefined;
+  const elementIdentifiers: string[] = [];
   if (nameSpaces instanceof Map) {
     const elements = nameSpaces.get(MDOC_NAMESPACE);
     if (elements instanceof Map) {
       for (const key of elements.keys()) {
         if (typeof key === "string") {
-          responseElementIdentifier = key;
-          break;
+          elementIdentifiers.push(key);
         }
       }
     }
   }
-  if (!responseElementIdentifier) {
-    throw new Error(`itemsRequest does not request any element under ${MDOC_NAMESPACE}`);
+  if (!elementIdentifiers.includes(SMART_RESPONSE_ELEMENT_ID)) {
+    throw new Error(
+      `itemsRequest does not request ${MDOC_NAMESPACE}.${SMART_RESPONSE_ELEMENT_ID}`,
+    );
   }
   const requestInfo = mapGet(itemsRequest, "requestInfo");
-  const smartRequestJson = mapGet(requestInfo, "org.smarthealthit.checkin.request");
+  const carrier = resolveSmartRequestJsonFromMdocCarriers({
+    requestInfoValue: mapGet(requestInfo, SMART_REQUEST_INFO_KEY),
+    elementIdentifiers,
+  });
 
   return {
     docType,
-    responseElementIdentifier,
-    smartRequestJson:
-      typeof smartRequestJson === "string" ? smartRequestJson : undefined,
+    responseElementIdentifier: SMART_RESPONSE_ELEMENT_ID,
+    smartRequestJson: carrier.json,
   };
 }
 

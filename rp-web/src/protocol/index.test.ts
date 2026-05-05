@@ -7,7 +7,9 @@ import {
   buildEncryptionInfoBytes,
   buildOrgIsoMdocRequest,
   buildReaderAuthenticationBytes,
+  buildSmartRequestCompanionElementIdentifier,
   cborDecode,
+  decodeSmartRequestCompanionElementIdentifier,
   hex,
   hpkeSealDirectMdoc,
   inspectDcapiMdocResponse,
@@ -16,6 +18,8 @@ import {
   MDOC_DOC_TYPE,
   MDOC_NAMESPACE,
   PROTOCOL_ID,
+  resolveSmartRequestJsonFromMdocCarriers,
+  SMART_REQUEST_COMPANION_ELEMENT_PREFIX,
   SMART_RESPONSE_ELEMENT_ID,
   SMART_REQUEST_INFO_KEY,
   openWalletResponse,
@@ -352,6 +356,7 @@ describe("SMART Check-in request validation", () => {
     expect(MDOC_NAMESPACE).toBe("org.smarthealthit.checkin");
     expect(SMART_REQUEST_INFO_KEY).toBe("org.smarthealthit.checkin.request");
     expect(SMART_RESPONSE_ELEMENT_ID).toBe("smart_health_checkin_response");
+    expect(SMART_REQUEST_COMPANION_ELEMENT_PREFIX).toBe("smart_request_b64u.");
   });
 });
 
@@ -366,12 +371,48 @@ describe("org-iso-mdoc request vectors", () => {
     const itemsRequest = cborDecode(itemsRequestTag.value) as Map<string, unknown>;
     const requestInfo = itemsRequest.get("requestInfo") as Map<string, unknown>;
     const namespaces = itemsRequest.get("nameSpaces") as Map<string, Map<string, boolean>>;
+    const companionElement = buildSmartRequestCompanionElementIdentifier(PATIENT_REQUEST_JSON);
 
     expect(decoded.get("version")).toBe("1.0");
     expect(itemsRequest.get("docType")).toBe(MDOC_DOC_TYPE);
     expect(requestInfo.get(SMART_REQUEST_INFO_KEY)).toBe(PATIENT_REQUEST_JSON);
     expect(namespaces.get(MDOC_NAMESPACE)?.get(SMART_RESPONSE_ELEMENT_ID)).toBe(true);
+    expect(namespaces.get(MDOC_NAMESPACE)?.get(companionElement)).toBe(false);
+    expect(decodeSmartRequestCompanionElementIdentifier(companionElement)).toBe(
+      PATIENT_REQUEST_JSON,
+    );
     expect(hex(deviceRequest).length).toBeGreaterThan(100);
+  });
+
+  test("resolves and cross-checks SMART request carriers", () => {
+    const companionElement = buildSmartRequestCompanionElementIdentifier(PATIENT_REQUEST_JSON);
+    expect(resolveSmartRequestJsonFromMdocCarriers({
+      requestInfoValue: PATIENT_REQUEST_JSON,
+      elementIdentifiers: [SMART_RESPONSE_ELEMENT_ID, companionElement],
+    })).toMatchObject({
+      json: PATIENT_REQUEST_JSON,
+      source: "requestInfo",
+      requestInfoPresent: true,
+      companionPresent: true,
+      companionElementIdentifier: companionElement,
+    });
+
+    expect(resolveSmartRequestJsonFromMdocCarriers({
+      requestInfoValue: undefined,
+      elementIdentifiers: [SMART_RESPONSE_ELEMENT_ID, companionElement],
+    })).toMatchObject({
+      json: PATIENT_REQUEST_JSON,
+      source: "companion",
+      requestInfoPresent: false,
+      companionPresent: true,
+    });
+
+    expect(() =>
+      resolveSmartRequestJsonFromMdocCarriers({
+        requestInfoValue: JSON.stringify({ ...PATIENT_REQUEST, id: "other" }),
+        elementIdentifiers: [SMART_RESPONSE_ELEMENT_ID, companionElement],
+      }),
+    ).toThrow(/does not match requestInfo/);
   });
 
   test("builds deterministic dcapi encryptionInfo", () => {
@@ -428,13 +469,22 @@ describe("org-iso-mdoc request vectors", () => {
     const items = inspection.deviceRequest.docRequests[0]!;
 
     expect(items.docType).toBe(MDOC_DOC_TYPE);
-    expect(items.requestedElements).toEqual([
-      {
-        namespace: MDOC_NAMESPACE,
-        elementIdentifier: SMART_RESPONSE_ELEMENT_ID,
-        intentToRetain: true,
-      },
-    ]);
+    expect(items.requestedElements).toHaveLength(2);
+    expect(items.requestedElements).toContainEqual({
+      namespace: MDOC_NAMESPACE,
+      elementIdentifier: SMART_RESPONSE_ELEMENT_ID,
+      intentToRetain: true,
+    });
+    const companion = items.requestedElements.find((x) =>
+      x.elementIdentifier.startsWith(SMART_REQUEST_COMPANION_ELEMENT_PREFIX),
+    );
+    expect(companion).toMatchObject({
+      namespace: MDOC_NAMESPACE,
+      intentToRetain: false,
+    });
+    expect(decodeSmartRequestCompanionElementIdentifier(
+      companion?.elementIdentifier ?? "",
+    )).toBe(PATIENT_REQUEST_JSON);
     expect(items.smartHealthCheckin).toEqual({
       present: true,
       json: PATIENT_REQUEST_JSON,

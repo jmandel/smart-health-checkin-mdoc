@@ -145,11 +145,15 @@ class HandlerActivity : ComponentActivity() {
         }
         directMdocRequest = parsed
 
+        Log.i(
+            TAG,
+            "SMART request carriers ${parsed.itemsRequest.requestCarrierDebug.label()} " +
+                "companionElementLength=${parsed.itemsRequest.requestCarrierDebug.companionElementLength}",
+        )
         val smartJson = parsed.itemsRequest.smartRequestJson
         if (smartJson == null) {
             screenState = ScreenState.Error(
-                "ItemsRequest.requestInfo[\"org.smarthealthit.checkin.request\"] is absent. " +
-                    "SMART Health Check-in 1.0 requires the request JSON in this carrier."
+                "No SMART request JSON found in requestInfo or smart_request_b64u companion element."
             )
             return
         }
@@ -170,6 +174,7 @@ class HandlerActivity : ComponentActivity() {
             itemsRequestTag24Bytes = parsed.itemsRequest.itemsRequestTag24Bytes,
             readerAuthBytes = parsed.itemsRequest.readerAuthBytes,
             readerAuth = parsed.readerAuth,
+            requestCarrierDebug = parsed.itemsRequest.requestCarrierDebug,
         )
 
         screenState = ScreenState.Loading("Loading request forms", "Fetching any questionnaires referenced by the verifier.")
@@ -182,7 +187,7 @@ class HandlerActivity : ComponentActivity() {
                     return@launch
                 }
             appendToDebugBundle("smart-request.hydrated.json", hydratedSmartJson.toString(2))
-            prepareConsent(origin, hydratedSmartJson, parsed.readerAuth)
+            prepareConsent(origin, hydratedSmartJson, parsed.readerAuth, parsed.itemsRequest.requestCarrierDebug)
         }
     }
 
@@ -275,6 +280,7 @@ class HandlerActivity : ComponentActivity() {
         origin: String,
         smartJson: JSONObject,
         readerAuth: ReaderAuthVerification,
+        requestCarrierDebug: SmartRequestCarrierDebug,
     ) {
         val request = runCatching {
             SmartRequestAdapter.build(
@@ -282,6 +288,7 @@ class HandlerActivity : ComponentActivity() {
                 nonce = "", // TODO: pull from EncryptionInfo when wired
                 smartRequest = smartJson,
                 readerAuth = readerAuth,
+                requestCarrierDebug = requestCarrierDebug,
             )
         }.onFailure { Log.e(TAG, "SMART request validation failed", it) }
             .getOrElse {
@@ -442,6 +449,7 @@ class HandlerActivity : ComponentActivity() {
         itemsRequestTag24Bytes: ByteArray,
         readerAuthBytes: ByteArray?,
         readerAuth: ReaderAuthVerification,
+        requestCarrierDebug: SmartRequestCarrierDebug,
     ) {
         val dir = debugRunDir()
         val manifest = JSONObject()
@@ -463,6 +471,12 @@ class HandlerActivity : ComponentActivity() {
             .put("readerAuthPresent", readerAuth.present)
             .put("readerAuthSignatureValid", if (readerAuth.present) readerAuth.signatureValid else JSONObject.NULL)
             .put("readerAuthCertificateSubject", readerAuth.certificateSubject ?: JSONObject.NULL)
+            .put("requestCarrierSource", requestCarrierDebug.source)
+            .put("requestInfoPresent", requestCarrierDebug.requestInfoPresent)
+            .put("companionPresent", requestCarrierDebug.companionPresent)
+            .put("requestCarrierMatchStatus", requestCarrierDebug.matchStatus)
+            .put("companionElementLength", requestCarrierDebug.companionElementLength)
+            .put("companionElementPreview", requestCarrierDebug.companionElementPreview)
         if (originResolution.allowlistJson != null) {
             manifest.put("originAllowlist", JSONObject(originResolution.allowlistJson))
         }

@@ -27,9 +27,9 @@ Or via npm-style scripts:
 ```sh
 bun run dev           # bun index.html
 bun run dev:kiosk     # bun creator.html
-bun run build         # build verifier, kiosk, web-wallet demo, and wallet-choice entries into dist/
+bun run build         # build verifier, kiosk, and wallet-choice entries into dist/
 bun run build:wallet  # build wallet/index.html into dist-wallet/ (separate output for /wallet/ route)
-bun run smoke:web-wallet  # one-shot real-Chromium smoke test of the web-wallet shim demo (dev-only)
+bun run smoke:web-wallet  # one-shot real-Chromium smoke test of the web-wallet choice flow (dev-only)
 bun run inspect:mdoc  # decode a direct mdoc navigator arg or fixture dir
 bun run inspect:response # decode a direct mdoc response wrapper or plaintext DeviceResponse
 bun test              # protocol/unit tests
@@ -42,7 +42,6 @@ rp-web/
   index.html              # same-device verifier entry
   creator.html            # kiosk/desktop QR creator entry
   submit.html             # phone submission entry
-  web-wallet-demo.html    # web-wallet shim demo entry (side surface)
   wallet-choice.html      # verifier entry with configured web-wallet choices
   wallet/index.html       # reference web wallet app (separate /wallet/ route)
   src/

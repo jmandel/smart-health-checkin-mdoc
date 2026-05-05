@@ -204,6 +204,7 @@ data class DecodedItemsRequest(
     val docType: String,
     val namespaces: Map<String, Map<String, Boolean>>,
     val smartRequestJson: JSONObject?,
+    val requestCarrierDebug: SmartRequestCarrierDebug,
     val itemsRequestTag24Bytes: ByteArray,
     val readerAuthBytes: ByteArray?,
 )
@@ -212,6 +213,7 @@ object DeviceRequestParser {
     private const val EXPECTED_DOC_TYPE = "org.smarthealthit.checkin.1"
     private const val EXPECTED_NAMESPACE = "org.smarthealthit.checkin"
     private const val SMART_REQUEST_INFO_KEY = "org.smarthealthit.checkin.request"
+    private const val SMART_REQUEST_COMPANION_ELEMENT_PREFIX = "smart_request_b64u."
 
     /**
      * Decode a base64url-no-padding `deviceRequest` string into our
@@ -240,22 +242,57 @@ object DeviceRequestParser {
                 } ?: emptyMap()
                 nsName to elements
             }
-            // SMART payload: ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]
-            // is a tstr containing UTF-8 SMART request JSON.
+            // SMART payload normally comes from
+            // ItemsRequest.requestInfo["org.smarthealthit.checkin.request"].
+            // A companion requested element can also carry the same JSON for
+            // platforms that expose element identifiers before raw request bytes.
             val requestInfo = inner["requestInfo"] as? Map<*, *>
-            val smartTstr = requestInfo?.get(SMART_REQUEST_INFO_KEY) as? String ?: continue
+            val requestInfoValue = requestInfo?.get(SMART_REQUEST_INFO_KEY)
+            if (requestInfoValue != null && requestInfoValue !is String) {
+                error("requestInfo[$SMART_REQUEST_INFO_KEY] is not a string")
+            }
+            val elements = namespaces[EXPECTED_NAMESPACE].orEmpty()
+            val companionElements = elements.keys.filter {
+                it.startsWith(SMART_REQUEST_COMPANION_ELEMENT_PREFIX)
+            }
+            if (companionElements.size > 1) {
+                error("multiple SMART request companion elements found")
+            }
+            val companionElement = companionElements.singleOrNull()
+            val companionTstr = companionElement?.let(::decodeCompanionElement)
+            if (requestInfoValue != null && companionTstr != null && requestInfoValue != companionTstr) {
+                error("SMART request companion element does not match requestInfo")
+            }
+            val smartTstr = (requestInfoValue as? String) ?: companionTstr ?: continue
+            val carrierDebug = SmartRequestCarrierDebug(
+                source = if (requestInfoValue is String) "requestInfo" else "companion",
+                requestInfoPresent = requestInfoValue is String,
+                companionPresent = companionTstr != null,
+                matchStatus = if (requestInfoValue is String && companionTstr != null) "matched" else "not-applicable",
+                companionElementLength = companionElement?.length ?: 0,
+                companionElementPreview = companionElement?.let {
+                    if (it.length <= 96) it else it.take(96) + "..."
+                }.orEmpty(),
+            )
             val smartJson = runCatching { JSONObject(smartTstr) }.getOrElse {
-                error("requestInfo[$SMART_REQUEST_INFO_KEY] is not valid JSON: ${it.message}")
+                error("SMART request JSON is not valid JSON: ${it.message}")
             }
             return DecodedItemsRequest(
                 docType = docType,
                 namespaces = namespaces,
                 smartRequestJson = smartJson,
+                requestCarrierDebug = carrierDebug,
                 itemsRequestTag24Bytes = MdocCbor.encode(itemsRequestTag),
                 readerAuthBytes = docMap["readerAuth"]?.let { MdocCbor.encode(it) },
             )
         }
         return null
+    }
+
+    private fun decodeCompanionElement(elementIdentifier: String): String {
+        val encoded = elementIdentifier.removePrefix(SMART_REQUEST_COMPANION_ELEMENT_PREFIX)
+        require(encoded.isNotBlank()) { "SMART request companion element has an empty payload" }
+        return String(SmartMdocBase64.decodeUrl(encoded), StandardCharsets.UTF_8)
     }
 
 }

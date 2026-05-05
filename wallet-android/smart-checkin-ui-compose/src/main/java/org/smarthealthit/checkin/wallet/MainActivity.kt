@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -1329,6 +1330,7 @@ private fun ConsentScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         HeaderCard(request)
+        RequestCarrierCheckCard(request.requestCarrierDebug)
 
         Text(
             text = "Choose what to share",
@@ -1446,11 +1448,49 @@ private fun HeaderCard(request: VerifiedRequest) {
             }
             StatusChip(readerAuthLabel, readerAuthTone)
             StatusChip("${request.items.size} item${if (request.items.size == 1) "" else "s"}", ChipTone.Neutral)
+            StatusChip("req: ${request.requestCarrierDebug.source}", carrierTone(request.requestCarrierDebug))
         }
 
         Spacer(Modifier.height(18.dp))
 
         VerifierStrip(request.verifierOrigin, request.readerAuth)
+    }
+}
+
+@Composable
+private fun RequestCarrierCheckCard(debug: SmartRequestCarrierDebug) {
+    ElevatedPanel {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = "Request carrier check",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppColors.Ink,
+                )
+                Text(
+                    text = "Compares the canonical requestInfo field with the temporary companion claim.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.Muted,
+                )
+            }
+            StatusChip("using ${debug.source}", carrierTone(debug))
+        }
+        Spacer(Modifier.height(12.dp))
+        DebugLine("status", debug.label())
+        DebugLine("requestInfo", if (debug.requestInfoPresent) "present" else "absent")
+        DebugLine(
+            "companion claim",
+            if (debug.companionPresent) {
+                "present (${debug.companionElementLength} chars)"
+            } else {
+                "absent"
+            },
+        )
+        DebugLine("agreement", carrierAgreementLabel(debug))
+        if (debug.companionElementPreview.isNotBlank()) {
+            DebugLine("claim preview", debug.companionElementPreview)
+        }
     }
 }
 
@@ -2622,6 +2662,27 @@ private fun TechnicalSummary(request: VerifiedRequest) {
         if (expanded) {
             Spacer(Modifier.height(12.dp))
             Text(
+                text = "Request carriers",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.Muted,
+            )
+            Spacer(Modifier.height(6.dp))
+            DebugLine("status", request.requestCarrierDebug.label())
+            DebugLine("requestInfo", if (request.requestCarrierDebug.requestInfoPresent) "present" else "absent")
+            DebugLine(
+                "companion",
+                if (request.requestCarrierDebug.companionPresent) {
+                    "present (${request.requestCarrierDebug.companionElementLength} chars)"
+                } else {
+                    "absent"
+                },
+            )
+            if (request.requestCarrierDebug.companionElementPreview.isNotBlank()) {
+                DebugLine("companion preview", request.requestCarrierDebug.companionElementPreview)
+            }
+            Spacer(Modifier.height(16.dp))
+            Text(
                 text = "SMART request JSON",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
@@ -2639,6 +2700,28 @@ private fun TechnicalSummary(request: VerifiedRequest) {
                 color = AppColors.Ink,
             )
         }
+    }
+}
+
+@Composable
+private fun DebugLine(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.widthIn(min = 112.dp),
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.SemiBold,
+            color = AppColors.Muted,
+        )
+        Text(
+            text = value,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+            color = AppColors.Ink,
+        )
     }
 }
 
@@ -2826,6 +2909,19 @@ private fun isEnabledForUi(item: JSONObject, values: JSONObject): Boolean {
     }
 
     return aggregate
+}
+
+private fun carrierTone(debug: SmartRequestCarrierDebug): ChipTone = when {
+    debug.requestInfoPresent && debug.companionPresent && debug.matchStatus == "matched" -> ChipTone.Success
+    debug.requestInfoPresent || debug.companionPresent -> ChipTone.Neutral
+    else -> ChipTone.Warning
+}
+
+private fun carrierAgreementLabel(debug: SmartRequestCarrierDebug): String = when {
+    debug.requestInfoPresent && debug.companionPresent -> debug.matchStatus
+    debug.requestInfoPresent -> "only requestInfo found"
+    debug.companionPresent -> "only companion claim found"
+    else -> "no SMART request carrier found"
 }
 
 private fun compareForUi(actual: Any?, condition: JSONObject): Boolean {

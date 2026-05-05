@@ -20,7 +20,6 @@ Local URLs:
   http://localhost:$PORT/verifier/creator.html
   http://localhost:$PORT/verifier/submit.html
   http://localhost:$PORT/verifier/wallet-choice.html
-  http://localhost:$PORT/verifier/web-wallet-demo.html
   http://localhost:$PORT/wallet/
   http://localhost:$PORT/web-wallet-protocol.html
 EOF

@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "bun index.html",
-    "build": "bun build ./index.html ./creator.html ./submit.html ./web-wallet-demo.html ./wallet-choice.html --env=BUN_PUBLIC_* --outdir=./dist",
+    "build": "bun build ./index.html ./creator.html ./submit.html ./wallet-choice.html --env=BUN_PUBLIC_* --outdir=./dist",
     "build:wallet": "bun build ./wallet/index.html --env=BUN_PUBLIC_* --outdir=./dist-wallet",
     "dev:kiosk": "bun ./index.html ./creator.html ./submit.html",
     "inspect:mdoc": "bun scripts/inspect-mdoc-request.ts",

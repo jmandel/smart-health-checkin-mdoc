@@ -107,9 +107,8 @@ pushes to `main` and on manual workflow dispatch.
 | `/verifier/` | Same-device verifier |
 | `/verifier/creator.html` | Kiosk handoff demo creator (desktop) |
 | `/verifier/submit.html` | Kiosk handoff demo submitter (phone) |
-| `/verifier/web-wallet-demo.html` | Web-wallet shim demo (side surface, not v1.0 protocol) |
 | `/verifier/wallet-choice.html` | Verifier demo with configured Platform/Web Wallet choice |
-| `/wallet/` | Reference web wallet app used by the web-wallet shim demo |
+| `/wallet/` | Reference web wallet app used by the web-wallet verifier choice |
 | `/web-wallet-protocol.html` | Rendered web-wallet listen/respond integration sketch |
 | `/smart-model-explainer.html` | SMART Health Check-in model explainer |
 | `/kiosk-flow-explainer.html` | Kiosk handoff demo explainer |

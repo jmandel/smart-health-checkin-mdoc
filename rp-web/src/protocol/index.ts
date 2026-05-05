@@ -3,6 +3,7 @@
 // Active mapping:
 //   Digital Credentials API protocol: "org-iso-mdoc"
 //   SMART request carrier: ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]
+//   Compatibility preview carrier: requested element "smart_request_b64u.<base64url-json>"
 //   Requested mdoc element: smart_health_checkin_response
 
 import {
@@ -40,6 +41,7 @@ export const MDOC_DOC_TYPE = "org.smarthealthit.checkin.1" as const;
 export const MDOC_NAMESPACE = "org.smarthealthit.checkin" as const;
 export const SMART_REQUEST_INFO_KEY = "org.smarthealthit.checkin.request" as const;
 export const SMART_RESPONSE_ELEMENT_ID = "smart_health_checkin_response" as const;
+export const SMART_REQUEST_COMPANION_ELEMENT_PREFIX = "smart_request_b64u." as const;
 
 export type OrgIsoMdocNavigatorArgument = {
   mediation: "required";
@@ -138,6 +140,14 @@ export type ItemsRequestInspection = {
     unprotectedHeaders?: JsonValue;
     signatureHex?: string;
   };
+};
+
+export type SmartRequestCarrierResolution = {
+  json?: string;
+  source: "requestInfo" | "companion" | "none";
+  requestInfoPresent: boolean;
+  companionPresent: boolean;
+  companionElementIdentifier?: string;
 };
 
 export type DeviceRequestInspection = {
@@ -339,11 +349,15 @@ export function buildItemsRequestTag24Bytes(input: {
 }): Uint8Array {
   const responseElementIdentifier =
     input.responseElementIdentifier ?? SMART_RESPONSE_ELEMENT_ID;
+  const companionElementIdentifier = buildSmartRequestCompanionElementIdentifier(
+    input.smartRequestJson,
+  );
   const itemsRequest: Record<string, unknown> = {
     docType: MDOC_DOC_TYPE,
     nameSpaces: {
       [MDOC_NAMESPACE]: {
         [responseElementIdentifier]: true,
+        [companionElementIdentifier]: false,
       },
     },
     requestInfo: {
@@ -1013,6 +1027,71 @@ export function base64UrlEncodeUtf8(s: string): string {
 
 export function base64UrlDecodeUtf8(s: string): string {
   return new TextDecoder().decode(base64UrlDecodeBytes(s));
+}
+
+export function buildSmartRequestCompanionElementIdentifier(
+  smartRequestJson: string,
+): string {
+  return `${SMART_REQUEST_COMPANION_ELEMENT_PREFIX}${base64UrlEncodeUtf8(smartRequestJson)}`;
+}
+
+export function decodeSmartRequestCompanionElementIdentifier(
+  elementIdentifier: string,
+): string | undefined {
+  if (!elementIdentifier.startsWith(SMART_REQUEST_COMPANION_ELEMENT_PREFIX)) {
+    return undefined;
+  }
+  const encoded = elementIdentifier.slice(SMART_REQUEST_COMPANION_ELEMENT_PREFIX.length);
+  if (!encoded) {
+    throw new Error("SMART request companion element has an empty payload");
+  }
+  return base64UrlDecodeUtf8(encoded);
+}
+
+export function resolveSmartRequestJsonFromMdocCarriers(input: {
+  requestInfoValue: unknown;
+  elementIdentifiers: Iterable<string>;
+}): SmartRequestCarrierResolution {
+  let requestInfoJson: string | undefined;
+  if (input.requestInfoValue !== undefined) {
+    if (typeof input.requestInfoValue !== "string") {
+      throw new Error(`requestInfo["${SMART_REQUEST_INFO_KEY}"] is not a string`);
+    }
+    requestInfoJson = input.requestInfoValue;
+  }
+
+  let companionJson: string | undefined;
+  let companionElementIdentifier: string | undefined;
+  for (const elementIdentifier of input.elementIdentifiers) {
+    const decoded = decodeSmartRequestCompanionElementIdentifier(elementIdentifier);
+    if (decoded === undefined) continue;
+    if (companionJson !== undefined) {
+      throw new Error("multiple SMART request companion elements found");
+    }
+    companionJson = decoded;
+    companionElementIdentifier = elementIdentifier;
+  }
+
+  if (
+    requestInfoJson !== undefined &&
+    companionJson !== undefined &&
+    requestInfoJson !== companionJson
+  ) {
+    throw new Error("SMART request companion element does not match requestInfo");
+  }
+
+  return {
+    json: requestInfoJson ?? companionJson,
+    source:
+      requestInfoJson !== undefined
+        ? "requestInfo"
+        : companionJson !== undefined
+          ? "companion"
+          : "none",
+    requestInfoPresent: requestInfoJson !== undefined,
+    companionPresent: companionJson !== undefined,
+    companionElementIdentifier,
+  };
 }
 
 export function base64UrlEncodeBytes(bytes: Uint8Array): string {

@@ -29,8 +29,27 @@ data class VerifiedRequest(
     val dcqlQuery: JSONObject,
     val rawSmartRequestJson: String = "",
     val readerAuth: ReaderAuthVerification = ReaderAuthVerification.ABSENT,
+    val requestCarrierDebug: SmartRequestCarrierDebug = SmartRequestCarrierDebug(),
     val items: List<RequestItem>,
 )
+
+data class SmartRequestCarrierDebug(
+    val source: String = "none",
+    val requestInfoPresent: Boolean = false,
+    val companionPresent: Boolean = false,
+    val matchStatus: String = "not-applicable",
+    val companionElementLength: Int = 0,
+    val companionElementPreview: String = "",
+) {
+    fun label(): String {
+        val found = listOfNotNull(
+            if (requestInfoPresent) "requestInfo" else null,
+            if (companionPresent) "companion" else null,
+        ).ifEmpty { listOf("none") }.joinToString(" + ")
+        val match = if (requestInfoPresent && companionPresent) " ($matchStatus)" else ""
+        return "$found$match; using $source"
+    }
+}
 
 data class RequestItem(
     val id: String,

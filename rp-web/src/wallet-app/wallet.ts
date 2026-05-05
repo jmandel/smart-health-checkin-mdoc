@@ -9,6 +9,8 @@ import {
   cborDecode,
   MDOC_DOC_TYPE,
   MDOC_NAMESPACE,
+  resolveSmartRequestJsonFromMdocCarriers,
+  type SmartRequestCarrierResolution,
   SMART_REQUEST_INFO_KEY,
   SMART_RESPONSE_ELEMENT_ID,
 } from "../protocol/index.ts";
@@ -58,6 +60,7 @@ type WalletState =
       smartRequest: SmartCheckinRequest;
       docType: string;
       requestedElement: string;
+      requestCarrier: SmartRequestCarrierResolution;
       recordsSource: "imported" | "bundled-demo";
       recordsSummary: ImportedHealthRecordsSummary;
       resolutions: RequestItemResolution[];
@@ -245,11 +248,21 @@ function renderReview(review: Extract<WalletState, { phase: "review" }>): string
       <div class="chip-row">
         <span class="chip chip--neutral">${escape(readerAuthLabel)}</span>
         <span class="chip chip--neutral">${review.smartRequest.items.length} item${review.smartRequest.items.length === 1 ? "" : "s"}</span>
+        <span class="chip ${carrierChipClass(review.requestCarrier)}">request: ${escape(review.requestCarrier.source)}</span>
         <span class="chip ${review.recordsSource === "imported" ? "chip--success" : "chip--warning"}">${escape(sourceLabel)}</span>
       </div>
       <div class="verifier-strip">
         <div class="label">Verifier</div>
         <div class="verifier-origin">${escape(review.verifierOrigin)}</div>
+      </div>
+      <div class="carrier-strip">
+        <div class="label">Request carrier check</div>
+        <div class="carrier-status">${escape(requestCarrierLabel(review.requestCarrier))}</div>
+        <div class="carrier-grid">
+          <div><span class="carrier-key">requestInfo</span> ${review.requestCarrier.requestInfoPresent ? "present" : "absent"}</div>
+          <div><span class="carrier-key">companion</span> ${review.requestCarrier.companionPresent ? `present (${escape(companionElementLabel(review.requestCarrier.companionElementIdentifier ?? ""))})` : "absent"}</div>
+          <div><span class="carrier-key">agreement</span> ${escape(carrierAgreementLabel(review.requestCarrier))}</div>
+        </div>
       </div>
     </section>
 
@@ -266,6 +279,8 @@ function renderReview(review: Extract<WalletState, { phase: "review" }>): string
         <div class="muted small">docType <code>${escape(review.docType)}</code></div>
         <div class="muted small">element <code>${escape(review.requestedElement)}</code></div>
         <div class="muted small">requestId <code>${escape(review.requestId)}</code></div>
+        <div class="muted small">request carriers <code>${escape(requestCarrierLabel(review.requestCarrier))}</code></div>
+        ${review.requestCarrier.companionElementIdentifier ? `<div class="muted small">companion element <code>${escape(companionElementLabel(review.requestCarrier.companionElementIdentifier))}</code></div>` : ""}
         <div class="muted small">data source <code>${escape(sourceLabel)}</code></div>
       </div>
     </details>
@@ -275,6 +290,36 @@ function renderReview(review: Extract<WalletState, { phase: "review" }>): string
       <button id="decline" class="secondary" type="button">Decline</button>
     </div>
   `;
+}
+
+function requestCarrierLabel(carrier: SmartRequestCarrierResolution): string {
+  const found = [
+    carrier.requestInfoPresent ? "requestInfo" : undefined,
+    carrier.companionPresent ? "companion" : undefined,
+  ].filter(Boolean);
+  const foundLabel = found.length ? found.join(" + ") : "none";
+  const matchLabel =
+    carrier.requestInfoPresent && carrier.companionPresent ? " (matched)" : "";
+  return `${foundLabel}${matchLabel}; using ${carrier.source}`;
+}
+
+function carrierChipClass(carrier: SmartRequestCarrierResolution): string {
+  if (carrier.requestInfoPresent && carrier.companionPresent) return "chip--success";
+  if (carrier.requestInfoPresent || carrier.companionPresent) return "chip--neutral";
+  return "chip--warning";
+}
+
+function carrierAgreementLabel(carrier: SmartRequestCarrierResolution): string {
+  if (carrier.requestInfoPresent && carrier.companionPresent) {
+    return "same request in both carriers";
+  }
+  if (carrier.requestInfoPresent) return "only requestInfo was found";
+  if (carrier.companionPresent) return "only companion was found";
+  return "no SMART request carrier found";
+}
+
+function companionElementLabel(elementIdentifier: string): string {
+  return elementIdentifier ? `${elementIdentifier.length.toLocaleString()} chars` : "0 chars";
 }
 
 function renderRequestCard(
@@ -1102,6 +1147,7 @@ async function onMessage(ev: MessageEvent): Promise<void> {
       smartRequest,
       docType: decoded.docType,
       requestedElement: decoded.requestedElement,
+      requestCarrier: decoded.requestCarrier,
       recordsSource: records.source,
       recordsSummary: summarizeImportedRecords(records.records),
       resolutions,
@@ -1138,6 +1184,7 @@ function decodeRequest(input: {
 }): {
   docType: string;
   requestedElement: string;
+  requestCarrier: SmartRequestCarrierResolution;
   smartRequest: SmartCheckinRequest | undefined;
 } {
   // Light validation of encryptionInfo up front so a malformed request fails
@@ -1172,19 +1219,28 @@ function decodeRequest(input: {
   const docType = mapGet(itemsRequest, "docType");
   const nameSpaces = mapGet(itemsRequest, "nameSpaces");
   let requestedElement: string | undefined;
+  const elementIdentifiers: string[] = [];
   if (nameSpaces instanceof Map) {
     const elements = nameSpaces.get(MDOC_NAMESPACE);
     if (elements instanceof Map) {
       for (const k of elements.keys()) {
         if (typeof k === "string") {
-          requestedElement = k;
-          break;
+          elementIdentifiers.push(k);
+          if (k === SMART_RESPONSE_ELEMENT_ID) {
+            requestedElement = k;
+          } else {
+            requestedElement ??= k;
+          }
         }
       }
     }
   }
   const requestInfo = mapGet(itemsRequest, "requestInfo");
-  const smartRequestJson = mapGet(requestInfo, SMART_REQUEST_INFO_KEY);
+  const requestCarrier = resolveSmartRequestJsonFromMdocCarriers({
+    requestInfoValue: mapGet(requestInfo, SMART_REQUEST_INFO_KEY),
+    elementIdentifiers,
+  });
+  const smartRequestJson = requestCarrier.json;
   let smartRequest: SmartCheckinRequest | undefined;
   if (typeof smartRequestJson === "string") {
     try {
@@ -1196,6 +1252,7 @@ function decodeRequest(input: {
   return {
     docType: typeof docType === "string" ? docType : "(unknown)",
     requestedElement: requestedElement ?? SMART_RESPONSE_ELEMENT_ID,
+    requestCarrier,
     smartRequest,
   };
 }

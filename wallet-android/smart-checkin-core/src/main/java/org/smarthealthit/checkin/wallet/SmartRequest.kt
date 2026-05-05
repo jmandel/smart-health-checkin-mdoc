@@ -14,6 +14,10 @@ object SmartRequestAdapter {
         nonce: String,
         smartRequest: JSONObject,
         readerAuth: ReaderAuthVerification = ReaderAuthVerification.ABSENT,
+        requestCarrierDebug: SmartRequestCarrierDebug = SmartRequestCarrierDebug(
+            source = "requestInfo",
+            requestInfoPresent = true,
+        ),
     ): VerifiedRequest {
         require(smartRequest.optString("type") == "smart-health-checkin-request") {
             "type must be \"smart-health-checkin-request\""
@@ -33,6 +37,7 @@ object SmartRequestAdapter {
             dcqlQuery = JSONObject(),
             rawSmartRequestJson = smartRequest.toString(2),
             readerAuth = readerAuth,
+            requestCarrierDebug = requestCarrierDebug,
             items = parseItems(smartRequest.optJSONArray("items")),
         )
     }

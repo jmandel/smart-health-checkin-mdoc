@@ -713,13 +713,15 @@ sequenceDiagram
 | Element | `smart_health_checkin_response` |
 | Request carrier | `ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]` |
 
-Verifier SHALL use the protocol, `docType`, namespace, element, and request-carrier identifiers in this table exactly. Verifier SHALL carry the SMART request only as a JSON string in the request carrier. Wallet/Responder SHALL NOT treat dynamic element names, wrappers, archived experiments, or other locations as v1.0 request carriers. Wallet/Responder SHALL carry the SMART response as `elementValue` of an issuer-signed item in namespace `org.smarthealthit.checkin` with element identifier `smart_health_checkin_response`.
+Verifier SHALL use the protocol, `docType`, namespace, element, and request-carrier identifiers in this table exactly. Except for the temporary platform-mediation compatibility duplicate in §8.2, Verifier SHALL carry the SMART request only as a JSON string in the request carrier. Wallet/Responder SHALL NOT treat other dynamic element names, wrappers, archived experiments, or other locations as v1.0 request carriers. Wallet/Responder SHALL carry the SMART response as `elementValue` of an issuer-signed item in namespace `org.smarthealthit.checkin` with element identifier `smart_health_checkin_response`.
 
 Baseline algorithm support is separate from fixed protocol identifiers. Implementations claiming same-device support SHALL support ES256 / COSE `alg` `-7`, SHA-256 MSO value digests, and HPKE DHKEM(P-256, HKDF-SHA256), HKDF-SHA256, AES-128-GCM. A deployment profile MAY allow other COSE, digest, or HPKE algorithms when both parties support them through the corresponding COSE, MSO, HPKE, `encryptionInfo`, and `dcapiResponse` identifiers. Unsupported or unilateral choices SHALL be rejected; implementations SHALL NOT silently downgrade, ignore labels, or substitute defaults.
 
 ### 8.2 Verifier request construction
 
 Verifier SHALL serialize the §5 SMART request as UTF-8 JSON text and place it at `ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]` as a CBOR text string, not a CBOR map or base64url JSON. Core `ItemsRequest` SHALL have `docType` `org.smarthealthit.checkin.1`, namespace `org.smarthealthit.checkin`, element `smart_health_checkin_response`, and the request carrier. The namespace boolean is mdoc `intentToRetain`; Verifier SHALL default it to `true` and MAY set `false` only for true ephemeral use when policy permits. It does not override Holder choice, Wallet policy, law, privacy, or downstream retention. Verifier SHALL NOT model FHIR profiles, items, questionnaires, media types, status codes, or resources as separate mdoc elements.
+
+**Temporary platform-mediation compatibility carrier.** Some platform-mediated mdoc presentment flows expose requested `docType`, namespaces, and element identifiers to wallet code before response construction, while arbitrary `ItemsRequest.requestInfo` contents may be unavailable at that point. During this compatibility period, Verifier MAY also request a companion element in namespace `org.smarthealthit.checkin` with element identifier `smart_request_b64u.<base64url-without-padding(UTF-8 SMART request JSON)>` and `intentToRetain=false`. The canonical request carrier remains `ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]`. Wallet/Responder SHOULD prefer `requestInfo`, MAY fall back to the companion element only when `requestInfo` is unavailable, and SHALL reject the request if both carriers are present but their SMART request JSON strings differ. This companion element is a duplicate compatibility population, not a long-term replacement for `requestInfo`.
 
 Verifier SHALL CBOR-encode `ItemsRequest` and wrap bytes in CBOR tag 24 before placing in `DocRequest.itemsRequest`. Verifier SHALL construct baseline `DeviceRequest` version `1.0` with a `docRequests` array containing the SMART Health Check-in `DocRequest`. Core v1.0 uses optional per-`DocRequest.readerAuth`; profiles MAY use future ISO-compatible versions such as v1.1 `readerAuthAll` when both parties support the profile and it does not change SMART JSON semantics.
 
@@ -822,6 +824,7 @@ smart-doc-type           = "org.smarthealthit.checkin.1"
 smart-namespace          = "org.smarthealthit.checkin"
 smart-response-element   = "smart_health_checkin_response"
 smart-request-info-key   = "org.smarthealthit.checkin.request"
+smart-request-companion-prefix = "smart_request_b64u."
 dcapi-label              = "dcapi"
 ```
 
@@ -870,7 +873,8 @@ smart-items-request = {
   "docType" => "org.smarthealthit.checkin.1",
   "nameSpaces" => {
     "org.smarthealthit.checkin" => {
-      "smart_health_checkin_response" => bool
+      "smart_health_checkin_response" => bool,
+      ? smart-request-companion-element => false
     }
   },
   "requestInfo" => {
@@ -881,6 +885,7 @@ smart-items-request = {
 }
 
 smart-request-json-text = tstr ; UTF-8 JSON text for SmartHealthCheckinRequest
+smart-request-companion-element = tstr ; "smart_request_b64u." + base64url-without-padding(UTF-8 smart-request-json-text)
 ```
 
 ### A.4 Optional per-`DocRequest.readerAuth`
