@@ -306,6 +306,21 @@ textarea.json {
   color: white;
 }
 
+.checkin-received-notice {
+  width: 100%;
+  margin-top: 20px;
+  border: 2px solid #a9e9c8;
+  border-radius: 8px;
+  background: var(--green-soft);
+  color: var(--green);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+}
+
 .checkin-source-control {
   position: relative;
   display: grid;
@@ -945,7 +960,8 @@ select {
     padding: 18px;
   }
 
-  .checkin-button {
+  .checkin-button,
+  .checkin-received-notice {
     padding: 16px;
   }
 

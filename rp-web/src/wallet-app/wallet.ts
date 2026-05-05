@@ -61,6 +61,7 @@ type WalletState =
       docType: string;
       requestedElement: string;
       requestCarrier: SmartRequestCarrierResolution;
+      readerAuth: ReaderAuthDebug;
       recordsSource: "imported" | "bundled-demo";
       recordsSummary: ImportedHealthRecordsSummary;
       resolutions: RequestItemResolution[];
@@ -80,6 +81,11 @@ type WalletState =
       outcome: "approved" | "declined" | "error";
       message?: string;
     };
+
+type ReaderAuthDebug = {
+  present: boolean;
+  structure: "absent" | "detached-cose-sign1" | "unexpected";
+};
 
 type ImportState =
   | { phase: "loading" }
@@ -226,7 +232,6 @@ function renderWaiting(): string {
 }
 
 function renderReview(review: Extract<WalletState, { phase: "review" }>): string {
-  const readerAuthLabel = "No readerAuth";
   const sourceLabel = review.recordsSource === "imported" ? "Imported Health Skillz records" : "Bundled demo data";
   const purpose = review.smartRequest.purpose
     ? `<p>${escape(review.smartRequest.purpose)}</p>`
@@ -242,14 +247,8 @@ function renderReview(review: Extract<WalletState, { phase: "review" }>): string
       </div>
       <div class="header-copy">
         <h1>Share sample health information</h1>
-        <p>This request did not include readerAuth; the browser-provided origin is shown below. Review what this wallet found before sharing.</p>
+        <p>${escape(readerAuthMessage(review.readerAuth))}</p>
         ${purpose}
-      </div>
-      <div class="chip-row">
-        <span class="chip chip--neutral">${escape(readerAuthLabel)}</span>
-        <span class="chip chip--neutral">${review.smartRequest.items.length} item${review.smartRequest.items.length === 1 ? "" : "s"}</span>
-        <span class="chip ${carrierChipClass(review.requestCarrier)}">request JSON: ${escape(carrierSourceLabel(review.requestCarrier))}</span>
-        <span class="chip ${review.recordsSource === "imported" ? "chip--success" : "chip--warning"}">${escape(sourceLabel)}</span>
       </div>
       <div class="verifier-strip">
         <div class="label">Verifier</div>
@@ -257,11 +256,12 @@ function renderReview(review: Extract<WalletState, { phase: "review" }>): string
       </div>
       <div class="carrier-strip">
         <div class="label">SMART request JSON</div>
-        <div class="carrier-status">${escape(requestCarrierLabel(review.requestCarrier))}</div>
         <div class="carrier-grid">
-          <div><span class="carrier-key">requestInfo</span> ${review.requestCarrier.requestInfoPresent ? "yes" : "no"}</div>
-          <div><span class="carrier-key">fallback element</span> ${escape(fallbackElementPresenceLabel(review.requestCarrier))}</div>
-          <div><span class="carrier-key">same JSON</span> ${escape(carrierJsonMatchLabel(review.requestCarrier))}</div>
+          <div><span class="carrier-key">requestInfo</span> ${review.requestCarrier.requestInfoPresent ? "present" : "absent"}</div>
+          <div><span class="carrier-key">claim</span> ${escape(claimPresenceLabel(review.requestCarrier))}</div>
+          ${review.requestCarrier.requestInfoPresent && review.requestCarrier.companionPresent
+            ? `<div><span class="carrier-key">agreement</span> ${escape(carrierJsonMatchLabel(review.requestCarrier))}</div>`
+            : ""}
         </div>
       </div>
     </section>
@@ -279,8 +279,9 @@ function renderReview(review: Extract<WalletState, { phase: "review" }>): string
         <div class="muted small">docType <code>${escape(review.docType)}</code></div>
         <div class="muted small">element <code>${escape(review.requestedElement)}</code></div>
         <div class="muted small">requestId <code>${escape(review.requestId)}</code></div>
+        <div class="muted small">readerAuth <code>${escape(readerAuthLabel(review.readerAuth))}</code></div>
         <div class="muted small">request JSON <code>${escape(requestCarrierLabel(review.requestCarrier))}</code></div>
-        ${review.requestCarrier.companionElementIdentifier ? `<div class="muted small">fallback element <code>${escape(companionElementLabel(review.requestCarrier.companionElementIdentifier))}</code></div>` : ""}
+        ${review.requestCarrier.companionElementIdentifier ? `<div class="muted small">claim <code>${escape(claimElementLabel(review.requestCarrier.companionElementIdentifier))}</code></div>` : ""}
         <div class="muted small">data source <code>${escape(sourceLabel)}</code></div>
       </div>
     </details>
@@ -295,41 +296,50 @@ function renderReview(review: Extract<WalletState, { phase: "review" }>): string
 function requestCarrierLabel(carrier: SmartRequestCarrierResolution): string {
   const found = [
     carrier.requestInfoPresent ? "requestInfo" : undefined,
-    carrier.companionPresent ? "fallback element" : undefined,
+    carrier.companionPresent ? "claim" : undefined,
   ].filter(Boolean);
   const foundLabel = found.length ? found.join(" + ") : "none";
   const matchLabel = carrier.requestInfoPresent && carrier.companionPresent
-    ? ` · ${carrierJsonMatchLabel(carrier)}`
+    ? ` · agreement ${carrierJsonMatchLabel(carrier)}`
     : "";
   return `${foundLabel}${matchLabel}; using ${carrierSourceLabel(carrier)}`;
-}
-
-function carrierChipClass(carrier: SmartRequestCarrierResolution): string {
-  if (carrier.requestInfoPresent && carrier.companionPresent) return "chip--success";
-  if (carrier.requestInfoPresent || carrier.companionPresent) return "chip--neutral";
-  return "chip--warning";
 }
 
 function carrierJsonMatchLabel(carrier: SmartRequestCarrierResolution): string {
   if (carrier.requestInfoPresent && carrier.companionPresent) {
     return "same JSON";
   }
-  if (carrier.requestInfoPresent || carrier.companionPresent) return "not checked (one copy)";
-  return "not checked (missing)";
+  return "n/a";
 }
 
 function carrierSourceLabel(carrier: SmartRequestCarrierResolution): string {
-  if (carrier.source === "companion") return "fallback element";
+  if (carrier.source === "companion") return "claim";
   return carrier.source;
 }
 
-function fallbackElementPresenceLabel(carrier: SmartRequestCarrierResolution): string {
-  if (!carrier.companionPresent) return "no";
-  return `yes (${companionElementLabel(carrier.companionElementIdentifier ?? "")})`;
+function claimPresenceLabel(carrier: SmartRequestCarrierResolution): string {
+  if (!carrier.companionPresent) return "absent";
+  return `present (${claimElementLabel(carrier.companionElementIdentifier ?? "")})`;
 }
 
-function companionElementLabel(elementIdentifier: string): string {
+function claimElementLabel(elementIdentifier: string): string {
   return elementIdentifier ? `${elementIdentifier.length.toLocaleString()} chars` : "0 chars";
+}
+
+function readerAuthMessage(readerAuth: ReaderAuthDebug): string {
+  if (!readerAuth.present) {
+    return "This request did not include readerAuth; the browser-provided origin is shown below. Review what this wallet found before sharing.";
+  }
+  if (readerAuth.structure === "detached-cose-sign1") {
+    return "This request includes readerAuth. This web wallet shows that it is present, but does not verify the readerAuth signature.";
+  }
+  return "This request includes readerAuth, but it does not look like the expected detached COSE_Sign1 shape. Review carefully before sharing.";
+}
+
+function readerAuthLabel(readerAuth: ReaderAuthDebug): string {
+  if (!readerAuth.present) return "absent";
+  if (readerAuth.structure === "detached-cose-sign1") return "present (detached COSE_Sign1)";
+  return "present (unexpected shape)";
 }
 
 function renderRequestCard(
@@ -1158,6 +1168,7 @@ async function onMessage(ev: MessageEvent): Promise<void> {
       docType: decoded.docType,
       requestedElement: decoded.requestedElement,
       requestCarrier: decoded.requestCarrier,
+      readerAuth: decoded.readerAuth,
       recordsSource: records.source,
       recordsSummary: summarizeImportedRecords(records.records),
       resolutions,
@@ -1195,6 +1206,7 @@ function decodeRequest(input: {
   docType: string;
   requestedElement: string;
   requestCarrier: SmartRequestCarrierResolution;
+  readerAuth: ReaderAuthDebug;
   smartRequest: SmartCheckinRequest | undefined;
 } {
   // Light validation of encryptionInfo up front so a malformed request fails
@@ -1226,6 +1238,7 @@ function decodeRequest(input: {
     throw new Error("itemsRequest is not a tag-24 byte string");
   }
   const itemsRequest = cborDecode(itemsRequestTag.value);
+  const readerAuth = decodeReaderAuth(mapGet(docRequests[0], "readerAuth"));
   const docType = mapGet(itemsRequest, "docType");
   const nameSpaces = mapGet(itemsRequest, "nameSpaces");
   let requestedElement: string | undefined;
@@ -1263,8 +1276,23 @@ function decodeRequest(input: {
     docType: typeof docType === "string" ? docType : "(unknown)",
     requestedElement: requestedElement ?? SMART_RESPONSE_ELEMENT_ID,
     requestCarrier,
+    readerAuth,
     smartRequest,
   };
+}
+
+function decodeReaderAuth(readerAuth: unknown): ReaderAuthDebug {
+  if (readerAuth === undefined) return { present: false, structure: "absent" };
+  if (
+    Array.isArray(readerAuth) &&
+    readerAuth.length === 4 &&
+    readerAuth[0] instanceof Uint8Array &&
+    readerAuth[2] === null &&
+    readerAuth[3] instanceof Uint8Array
+  ) {
+    return { present: true, structure: "detached-cose-sign1" };
+  }
+  return { present: true, structure: "unexpected" };
 }
 
 function mapGet(value: unknown, key: string): unknown {

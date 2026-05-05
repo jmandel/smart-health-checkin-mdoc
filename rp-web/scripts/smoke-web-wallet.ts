@@ -157,7 +157,10 @@ try {
   });
   await configuredPopup.waitForSelector("button#approve", { visible: true, timeout: 10_000 });
   await configuredPopup.waitForFunction(() =>
-    (document.body.textContent ?? "").includes("requestInfo + fallback element · same JSON; using requestInfo"),
+    (document.body.textContent ?? "").includes("This request includes readerAuth") &&
+    (document.body.textContent ?? "").includes("requestInfo present") &&
+    (document.body.textContent ?? "").includes("claim present") &&
+    (document.body.textContent ?? "").includes("agreement same JSON"),
   );
   await configuredPopup.click("button#approve");
   console.log("[smoke] filled intake form and clicked Approve in configured-page wallet popup");

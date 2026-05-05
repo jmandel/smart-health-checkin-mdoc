@@ -43,17 +43,17 @@ data class SmartRequestCarrierDebug(
 ) {
     fun sourceLabel(): String = when (source) {
         "requestInfo" -> "requestInfo"
-        "companion" -> "fallback element"
+        "companion" -> "claim"
         else -> source
     }
 
     fun label(): String {
         val found = listOfNotNull(
             if (requestInfoPresent) "requestInfo" else null,
-            if (companionPresent) "fallback element" else null,
+            if (companionPresent) "claim" else null,
         ).ifEmpty { listOf("none") }.joinToString(" + ")
         val match = if (requestInfoPresent && companionPresent) {
-            if (matchStatus == "matched") " · same JSON" else " · $matchStatus"
+            if (matchStatus == "matched") " · agreement same JSON" else " · agreement $matchStatus"
         } else {
             ""
         }

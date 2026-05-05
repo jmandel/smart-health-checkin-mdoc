@@ -263,9 +263,7 @@ function CredentialSourceButton(props: {
     onMenuOpenChange,
     onStart,
   } = props;
-  const buttonClass = complete
-    ? "checkin-button checkin-button--complete"
-    : "checkin-button";
+  const buttonClass = "checkin-button";
   const primaryText = loading
     ? "Opening wallet..."
     : complete
@@ -273,7 +271,7 @@ function CredentialSourceButton(props: {
       : "Share check-in information";
   const showChoice = sources.filter((source) => source.available).length > 1;
   const sourceHint =
-    primarySource && (showChoice || primarySource.kind === "web-wallet")
+    !complete && primarySource && (showChoice || primarySource.kind === "web-wallet")
       ? primarySource.label
       : undefined;
 
@@ -290,6 +288,14 @@ function CredentialSourceButton(props: {
       </span>
     </>
   );
+
+  if (complete) {
+    return (
+      <div className="checkin-received-notice" role="status" aria-live="polite">
+        {buttonContent}
+      </div>
+    );
+  }
 
   if (!showChoice) {
     return (
