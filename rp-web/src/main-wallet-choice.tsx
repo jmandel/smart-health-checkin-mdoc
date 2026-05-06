@@ -8,7 +8,8 @@ import "./app/styles.css";
 const root = document.getElementById("root");
 if (!root) throw new Error("missing #root");
 
-const demoWalletUrl = new URL("../wallet/", location.href);
+const verifierBaseUrl = new URL("./", document.baseURI);
+const demoWalletUrl = new URL("../wallet/", verifierBaseUrl);
 const webWallets = configureWebWallets({
   wallets: [
     {

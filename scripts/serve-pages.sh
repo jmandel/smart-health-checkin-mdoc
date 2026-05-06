@@ -17,9 +17,9 @@ Local URLs:
   http://localhost:$PORT/kiosk-flow-explainer.html
   http://localhost:$PORT/wire-protocol-explainer.html
   http://localhost:$PORT/verifier/
-  http://localhost:$PORT/verifier/creator.html
-  http://localhost:$PORT/verifier/submit.html
-  http://localhost:$PORT/verifier/wallet-choice.html
+  http://localhost:$PORT/verifier/creator/
+  http://localhost:$PORT/verifier/submit/
+  http://localhost:$PORT/verifier/wallet-choice/
   http://localhost:$PORT/wallet/
   http://localhost:$PORT/web-wallet-protocol.html
 EOF

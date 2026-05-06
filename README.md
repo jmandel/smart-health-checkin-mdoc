@@ -107,9 +107,9 @@ Paths are relative to the deployed Pages base path.
 | --- | --- |
 | `./` | Landing page (`site/index.html`) |
 | `./verifier/` | Same-device verifier |
-| `./verifier/creator.html` | Kiosk handoff demo creator (desktop) |
-| `./verifier/submit.html` | Kiosk handoff demo submitter (phone) |
-| `./verifier/wallet-choice.html` | Verifier demo with configured Platform/Web Wallet choice |
+| `./verifier/creator/` | Kiosk handoff demo creator (desktop) |
+| `./verifier/submit/` | Kiosk handoff demo submitter (phone) |
+| `./verifier/wallet-choice/` | Verifier demo with configured Platform/Web Wallet choice |
 | `./wallet/` | Reference web wallet app used by the web-wallet verifier choice |
 | `./web-wallet-protocol.html` | Rendered web-wallet listen/respond integration sketch |
 | `./smart-model-explainer.html` | SMART Health Check-in model explainer |

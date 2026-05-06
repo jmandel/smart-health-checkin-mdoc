@@ -43,6 +43,19 @@ bun "$ROOT/scripts/generate-llms-txt.mjs" "$SITE_DIR/llms.txt"
 cp -R "$ROOT/fixtures" "$SITE_DIR/fixtures"
 cp -R "$ROOT/rp-web/dist/." "$SITE_DIR/verifier/"
 cp -R "$ROOT/rp-web/dist-wallet/." "$SITE_DIR/wallet/"
+
+clean_verifier_alias() {
+  local name="$1"
+  local source="$SITE_DIR/verifier/$name.html"
+  local target_dir="$SITE_DIR/verifier/$name"
+  mkdir -p "$target_dir"
+  sed -e 's#<head>#<head>\n    <base href="../" />#' "$source" > "$target_dir/index.html"
+}
+
+clean_verifier_alias creator
+clean_verifier_alias submit
+clean_verifier_alias wallet-choice
+
 touch "$SITE_DIR/.nojekyll"
 
 find "$SITE_DIR" -type f -name ".DS_Store" -delete

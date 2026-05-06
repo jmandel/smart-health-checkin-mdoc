@@ -29,7 +29,7 @@ const SITE_BASE_PATH = normalizeBasePath(
 
 if (
   !existsSync(SITE_DIR) ||
-  !existsSync(join(SITE_DIR, "verifier/wallet-choice.html"))
+  !existsSync(join(SITE_DIR, "verifier/wallet-choice/index.html"))
 ) {
   console.log("[smoke] _site/ missing or stale — rebuilding via scripts/build-pages.sh…");
   const result = spawnSync("bash", [join(REPO_ROOT, "scripts/build-pages.sh")], {
@@ -80,7 +80,7 @@ const browser = await puppeteer.launch({
 
 let exitCode = 0;
 try {
-  const configuredUrl = siteUrl("/verifier/wallet-choice.html");
+  const configuredUrl = siteUrl("/verifier/wallet-choice/");
   console.log(`[smoke] opening ${configuredUrl}`);
   const configured = await browser.newPage();
   configured.on("pageerror", (err) => console.error("[configured pageerror]", err));

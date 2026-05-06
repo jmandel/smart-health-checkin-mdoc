@@ -59,12 +59,14 @@ import {
 } from "../sdk/dcapi-verifier.ts";
 import { configureWebWallets } from "../sdk-web-wallet/index.ts";
 
+const verifierBaseUrl = new URL("./", document.baseURI); // use your app's verifier route base
+
 const [demoWallet] = configureWebWallets({
   wallets: [
     {
       id: "smart-demo",
       label: "SMART Demo Web Wallet",
-      walletUrl: new URL("../wallet/", location.href),
+      walletUrl: new URL("../wallet/", verifierBaseUrl),
     },
   ],
 });
@@ -109,7 +111,7 @@ chrome; callers can still opt into popup-style features.
 ## App-level wallet choice
 
 Platform-vs-web choice belongs to the verifier app, not this layer. The demo
-verifier's configured route (`/verifier/wallet-choice.html`) composes:
+verifier's configured route (`/verifier/wallet-choice/`) composes:
 
 - an app-owned Platform Wallet source (`navigator.credentials.get`), and
 - the configured web-wallet handles returned by `configureWebWallets`.

@@ -16,6 +16,7 @@ import { instantKioskProvider } from "./instant-mailbox.ts";
 import "../app/styles.css";
 
 const KIOSK_SMART_REQUEST = (PRESETS.find((preset) => preset.id === "us-core-checkin") ?? PRESETS[0]!).request;
+const VERIFIER_BASE_URL = new URL("./", document.baseURI);
 
 type KioskSession = InitiatedKioskRequest & { qrDataUrl: string };
 
@@ -245,7 +246,7 @@ async function createKioskSession(): Promise<KioskSession> {
   const initiated = await initiateKioskRequest({
     provider: instantKioskProvider,
     cryptoConfig: DEMO_KIOSK_CRYPTO_CONFIG,
-    submitBaseUrl: new URL("./submit.html", location.href),
+    submitBaseUrl: new URL("./submit/", VERIFIER_BASE_URL),
     smartRequest: KIOSK_SMART_REQUEST,
   });
   const qrDataUrl = await QRCode.toDataURL(initiated.submitUrl, {

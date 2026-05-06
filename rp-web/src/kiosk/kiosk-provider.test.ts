@@ -56,11 +56,11 @@ test("kiosk provider workflow stores opaque requests and opens encrypted submiss
   const initiated = await initiateKioskRequest({
     provider,
     cryptoConfig: DEMO_KIOSK_CRYPTO_CONFIG,
-    submitBaseUrl: "https://clinic.example/verifier/submit.html",
+    submitBaseUrl: "https://clinic.example/verifier/submit/",
     smartRequest: SMART_REQUEST,
   });
 
-  expect(initiated.submitUrl).toStartWith("https://clinic.example/verifier/submit.html#r=");
+  expect(initiated.submitUrl).toStartWith("https://clinic.example/verifier/submit/#r=");
   expect(initiated.submitUrl).not.toContain("Migraine");
 
   const stored = await provider.readRequest(initiated.verified.payload.requestId);

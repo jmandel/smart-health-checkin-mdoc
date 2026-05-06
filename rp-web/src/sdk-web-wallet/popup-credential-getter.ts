@@ -91,8 +91,8 @@ export type CreateWebWalletCredentialGetterOptions = {
    * URL of the wallet app. Same-origin in v1.
    *
    * Examples:
-   *   - new URL("../wallet/", location.href)
-   *   - new URL("https://verifier.example/wallet/")
+   *   - new URL("https://clinic.example/wallet/")
+   *   - new URL("./wallet/", appConfiguredBaseUrl)
    */
   walletUrl: URL | string;
   /** Popup window features. Defaults to a centered, modest-sized popup. */
