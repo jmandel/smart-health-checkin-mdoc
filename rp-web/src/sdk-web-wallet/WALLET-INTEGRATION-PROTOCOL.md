@@ -115,7 +115,10 @@ future wallets can support additional Digital Credentials protocols without
 changing the outer message types or the popup/origin handshake.
 
 The reference demo wallet currently supports `protocol: "org-iso-mdoc"`. For
-that request, it decodes `data.deviceRequest`, reads the SMART request from
+this handler, the request options must contain exactly one `org-iso-mdoc`
+request; zero supported requests or multiple `org-iso-mdoc` requests are
+reported as wallet errors. For the selected request, it decodes
+`data.deviceRequest`, reads the SMART request from
 `ItemsRequest.requestInfo["org.smarthealthit.checkin.request"]`, and verifies it
 is asking for the expected mdoc namespace/element. It then renders the request
 items for consent:
@@ -198,16 +201,12 @@ On cancellation or failure, post the same `type` and `requestId` with one of:
 
 The verifier drops messages from the wrong origin or window, drops mismatched
 `requestId` values, validates that the approved credential names a requested
-protocol and has protocol data, and then hands the credential to the normal
-verifier completion path. The wallet should likewise use the stored
-`verifierOrigin` for all declined/error/closed responses after the session is
-established.
-
-Legacy demo builds used SMART-specific outer message types and top-level
-`deviceRequest` / `encryptionInfo` fields. New integrations should use
-`digital-credentials/web-wallet/*` message types and `credentialRequestOptions`.
-The reference wallet may accept the old request shape during transition, but the
-generic envelope is the forward-compatible contract.
+protocol and has a non-null object `data` value, and then hands the credential
+to the normal verifier completion path. The popup transport does not inspect
+protocol-specific response fields such as `data.response`; the selected
+protocol/app layer owns that validation. The wallet should likewise use the
+stored `verifierOrigin` for all declined/error/closed responses after the session
+is established.
 
 
 ## Native/mobile wallet mapping

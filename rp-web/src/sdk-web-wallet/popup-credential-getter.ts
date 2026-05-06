@@ -14,7 +14,7 @@ export const WEB_WALLET_READY_MESSAGE_TYPE = "digital-credentials/web-wallet/rea
 
 export type WebWalletCredential = {
   protocol: string;
-  data: unknown;
+  data: object;
 };
 
 export type WebWalletRequestMessage = {
@@ -264,17 +264,27 @@ export function createWebWalletCredentialGetter(
             if (message.requestId !== requestId) return;
             if (message.outcome === "approved") {
               const cred = message.credential as unknown;
+              if (!cred || typeof cred !== "object") {
+                settle({
+                  kind: "error",
+                  message:
+                    "wallet returned a malformed approved credential (expected { protocol: requested string, data: object })",
+                });
+                return;
+              }
+              const credentialRecord = cred as { protocol?: unknown; data?: unknown };
+              const protocol = credentialRecord.protocol;
+              const data = credentialRecord.data;
               if (
-                !cred ||
-                typeof cred !== "object" ||
-                typeof (cred as { protocol?: unknown }).protocol !== "string" ||
-                !Object.prototype.hasOwnProperty.call(cred, "data") ||
-                !requestedProtocols.includes((cred as { protocol: string }).protocol)
+                typeof protocol !== "string" ||
+                !requestedProtocols.includes(protocol) ||
+                data === null ||
+                typeof data !== "object"
               ) {
                 settle({
                   kind: "error",
                   message:
-                    "wallet returned a malformed approved credential (expected { protocol: string, data: ... } where protocol is one of the requested protocols)",
+                    "wallet returned a malformed approved credential (expected { protocol: requested string, data: object })",
                 });
                 return;
               }

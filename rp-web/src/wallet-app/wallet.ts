@@ -75,7 +75,6 @@ type WalletState =
         deviceRequest: string;
         encryptionInfo: string;
         requestId?: string;
-        responseMessageType: WebWalletResponseMessageType;
       };
       verifierWindow: WindowProxy;
     }
@@ -108,12 +107,6 @@ const opener = window.opener as WindowProxy | null;
 // session and is used for UI display, response targetOrigin, and transcript
 // binding.
 const readyTargetOrigin = "*";
-const LEGACY_WEB_WALLET_READY_MESSAGE_TYPE = "smart-checkin/web-wallet/ready" as const;
-const LEGACY_WEB_WALLET_REQUEST_MESSAGE_TYPE = "smart-checkin/web-wallet/request" as const;
-const LEGACY_WEB_WALLET_RESPONSE_MESSAGE_TYPE = "smart-checkin/web-wallet/response" as const;
-type WebWalletResponseMessageType =
-  | typeof WEB_WALLET_RESPONSE_MESSAGE_TYPE
-  | typeof LEGACY_WEB_WALLET_RESPONSE_MESSAGE_TYPE;
 const bundledRecords = bundledDemoRecords();
 let importedRecords: ImportedHealthRecords | undefined;
 let importState: ImportState = { phase: "loading" };
@@ -1073,7 +1066,7 @@ async function onApprove(reviewing: Extract<WalletState, { phase: "review" }>): 
 
     verifierWindow.postMessage(
       {
-        type: requestPayload.responseMessageType,
+        type: WEB_WALLET_RESPONSE_MESSAGE_TYPE,
         requestId: requestPayload.requestId,
         outcome: "approved",
         credential: built.response,
@@ -1089,7 +1082,7 @@ async function onApprove(reviewing: Extract<WalletState, { phase: "review" }>): 
     const message = err instanceof Error ? err.message : String(err);
     verifierWindow.postMessage(
       {
-        type: requestPayload.responseMessageType,
+        type: WEB_WALLET_RESPONSE_MESSAGE_TYPE,
         requestId: requestPayload.requestId,
         outcome: "error",
         message,
@@ -1104,7 +1097,7 @@ async function onApprove(reviewing: Extract<WalletState, { phase: "review" }>): 
 function onDecline(reviewing: Extract<WalletState, { phase: "review" }>): void {
   reviewing.verifierWindow.postMessage(
     {
-      type: reviewing.requestPayload.responseMessageType,
+      type: WEB_WALLET_RESPONSE_MESSAGE_TYPE,
       requestId: reviewing.requestPayload.requestId,
       outcome: "declined",
     },
@@ -1126,12 +1119,9 @@ async function onMessage(ev: MessageEvent): Promise<void> {
   if (!isBindableOrigin(verifierOrigin)) return;
   const data = ev.data as { type?: unknown };
   if (!data || typeof data !== "object") return;
-  const responseMessageType = mapRequestTypeToResponseType(data.type);
-  if (!responseMessageType) return;
+  if (data.type !== WEB_WALLET_REQUEST_MESSAGE_TYPE) return;
   const payload = data as {
     credentialRequestOptions?: unknown;
-    deviceRequest?: unknown;
-    encryptionInfo?: unknown;
     requestId?: unknown;
   };
   const requestId =
@@ -1141,7 +1131,7 @@ async function onMessage(ev: MessageEvent): Promise<void> {
   if (state.phase !== "waiting") {
     opener.postMessage(
       {
-        type: responseMessageType,
+        type: WEB_WALLET_RESPONSE_MESSAGE_TYPE,
         requestId,
         outcome: "error",
         message: "wallet is busy with another request",
@@ -1183,7 +1173,6 @@ async function onMessage(ev: MessageEvent): Promise<void> {
         deviceRequest: mdocRequest.deviceRequest,
         encryptionInfo: mdocRequest.encryptionInfo,
         requestId,
-        responseMessageType,
       },
       verifierWindow: opener,
     };
@@ -1192,7 +1181,7 @@ async function onMessage(ev: MessageEvent): Promise<void> {
     const message = err instanceof Error ? err.message : String(err);
     opener.postMessage(
       {
-        type: responseMessageType,
+        type: WEB_WALLET_RESPONSE_MESSAGE_TYPE,
         requestId,
         outcome: "error",
         message,
@@ -1204,18 +1193,8 @@ async function onMessage(ev: MessageEvent): Promise<void> {
   }
 }
 
-function mapRequestTypeToResponseType(type: unknown): WebWalletResponseMessageType | undefined {
-  if (type === WEB_WALLET_REQUEST_MESSAGE_TYPE) return WEB_WALLET_RESPONSE_MESSAGE_TYPE;
-  if (type === LEGACY_WEB_WALLET_REQUEST_MESSAGE_TYPE) {
-    return LEGACY_WEB_WALLET_RESPONSE_MESSAGE_TYPE;
-  }
-  return undefined;
-}
-
 function extractOrgIsoMdocRequest(payload: {
   credentialRequestOptions?: unknown;
-  deviceRequest?: unknown;
-  encryptionInfo?: unknown;
 }): {
   deviceRequest: string;
   encryptionInfo: string;
@@ -1234,39 +1213,32 @@ function extractOrgIsoMdocRequest(payload: {
       }
     | undefined;
   const requests = credentialRequestOptions?.digital?.requests;
-  if (Array.isArray(requests)) {
-    const orgIsoMdoc = requests.find((request) => request?.protocol === "org-iso-mdoc");
-    if (!orgIsoMdoc) {
-      const requestedProtocols = requests
-        .map((request) => request?.protocol)
-        .filter((protocol): protocol is string => typeof protocol === "string" && protocol.length > 0);
-      throw new Error(
-        `wallet does not support any requested credential protocol: ${requestedProtocols.join(", ") || "(none)"}`,
-      );
-    }
-    if (
-      typeof orgIsoMdoc.data?.deviceRequest !== "string" ||
-      typeof orgIsoMdoc.data?.encryptionInfo !== "string"
-    ) {
-      throw new Error("org-iso-mdoc request is missing deviceRequest or encryptionInfo");
-    }
-    return {
-      deviceRequest: orgIsoMdoc.data.deviceRequest,
-      encryptionInfo: orgIsoMdoc.data.encryptionInfo,
-    };
+  if (!Array.isArray(requests)) {
+    throw new Error("web wallet request missing credentialRequestOptions.digital.requests");
   }
-
+  const orgIsoMdocRequests = requests.filter((request) => request?.protocol === "org-iso-mdoc");
+  if (orgIsoMdocRequests.length === 0) {
+    const requestedProtocols = requests
+      .map((request) => request?.protocol)
+      .filter((protocol): protocol is string => typeof protocol === "string" && protocol.length > 0);
+    throw new Error(
+      `SMART Health Check-in web wallet only supports org-iso-mdoc; requested: ${requestedProtocols.join(", ") || "(none)"}`,
+    );
+  }
+  if (orgIsoMdocRequests.length > 1) {
+    throw new Error("SMART Health Check-in web wallet supports one org-iso-mdoc request at a time");
+  }
+  const orgIsoMdoc = orgIsoMdocRequests[0];
   if (
-    typeof payload.deviceRequest === "string" &&
-    typeof payload.encryptionInfo === "string"
+    typeof orgIsoMdoc?.data?.deviceRequest !== "string" ||
+    typeof orgIsoMdoc.data?.encryptionInfo !== "string"
   ) {
-    return {
-      deviceRequest: payload.deviceRequest,
-      encryptionInfo: payload.encryptionInfo,
-    };
+    throw new Error("org-iso-mdoc request is missing deviceRequest or encryptionInfo");
   }
-
-  throw new Error("web wallet request missing credentialRequestOptions.digital.requests");
+  return {
+    deviceRequest: orgIsoMdoc.data.deviceRequest,
+    encryptionInfo: orgIsoMdoc.data.encryptionInfo,
+  };
 }
 
 function decodeRequest(input: {
@@ -1385,7 +1357,7 @@ window.addEventListener("beforeunload", () => {
     try {
       opener.postMessage(
         {
-          type: state.requestPayload.responseMessageType,
+          type: WEB_WALLET_RESPONSE_MESSAGE_TYPE,
           requestId: state.requestPayload.requestId,
           outcome: "closed",
         },
@@ -1401,10 +1373,6 @@ if (opener) {
   try {
     opener.postMessage(
       { type: WEB_WALLET_READY_MESSAGE_TYPE },
-      readyTargetOrigin,
-    );
-    opener.postMessage(
-      { type: LEGACY_WEB_WALLET_READY_MESSAGE_TYPE },
       readyTargetOrigin,
     );
   } catch {

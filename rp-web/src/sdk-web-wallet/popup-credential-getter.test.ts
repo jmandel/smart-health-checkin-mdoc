@@ -410,6 +410,64 @@ describe("createWebWalletCredentialGetter", () => {
     expect((err as Error).message).toMatch(/malformed/i);
   });
 
+  test("rejects approved credentials whose data is not a non-null object", async () => {
+    for (const data of [null, undefined, "abc", 123, true]) {
+      const harness = makeHarness();
+      const getCredential = createWebWalletCredentialGetter({
+        walletUrl: "https://wallet.example/wallet/",
+        windowOpen: () => harness.fakePopup as unknown as Window,
+        messageHost: harness.messageHost,
+        timeoutMs: 5000,
+      });
+      const promise = getCredential(makeRequestOptions());
+      harness.fireFromPopup(
+        { type: "digital-credentials/web-wallet/ready" },
+        "https://wallet.example",
+      );
+      const requestId = (harness.postedToPopup[0]!.msg as WebWalletRequestMessage).requestId;
+      harness.fireFromPopup(
+        {
+          type: "digital-credentials/web-wallet/response",
+          requestId,
+          outcome: "approved",
+          credential: { protocol: "org-iso-mdoc", data },
+        },
+        "https://wallet.example",
+      );
+      await expect(promise).rejects.toBeInstanceOf(WebWalletError);
+    }
+  });
+
+  test("does not inspect protocol-specific fields inside credential data", async () => {
+    const harness = makeHarness();
+    const getCredential = createWebWalletCredentialGetter({
+      walletUrl: "https://wallet.example/wallet/",
+      windowOpen: () => harness.fakePopup as unknown as Window,
+      messageHost: harness.messageHost,
+      timeoutMs: 5000,
+    });
+    const promise = getCredential(makeRequestOptions());
+    harness.fireFromPopup(
+      { type: "digital-credentials/web-wallet/ready" },
+      "https://wallet.example",
+    );
+    const requestId = (harness.postedToPopup[0]!.msg as WebWalletRequestMessage).requestId;
+    harness.fireFromPopup(
+      {
+        type: "digital-credentials/web-wallet/response",
+        requestId,
+        outcome: "approved",
+        credential: { protocol: "org-iso-mdoc", data: { notResponse: "abc" } },
+      },
+      "https://wallet.example",
+    );
+
+    await expect(promise).resolves.toEqual({
+      protocol: "org-iso-mdoc",
+      data: { notResponse: "abc" },
+    });
+  });
+
   test("uses a pre-opened popup when one is provided (gesture-preserving path)", async () => {
     const harness = makeHarness();
     let windowOpenCalls = 0;

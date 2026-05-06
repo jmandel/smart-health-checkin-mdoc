@@ -174,7 +174,9 @@ demoable.
 - **Strict requestId match** — wallet replies missing or mismatched
   `requestId` are silently dropped.
 - **Validated approved payload** — approved credentials must name one of the
-  requested protocols and include `data` before resolving.
+  requested protocols and include a non-null object `data` value before
+  resolving. Protocol-specific validation inside `data` remains the app layer's
+  responsibility.
 - **Origin-bound replies** (wallet side) — the wallet treats the inbound
   request's `MessageEvent.origin` as the verifier origin for that one request
   after rejecting opaque/unbindable origins. The consent UI displays that
@@ -193,6 +195,11 @@ existing `openWalletResponse(...)` path opens the mdoc response with no changes.
 The wallet uses browser-stamped `MessageEvent.origin` from the request as the
 verifier origin for both reply `targetOrigin` and mdoc session transcript
 binding.
+
+The popup transport is generic, but the reference wallet app is intentionally
+SMART/mdoc-specific. It selects exactly one `org-iso-mdoc` request from
+`credentialRequestOptions.digital.requests[]` and errors if the request contains
+zero or multiple `org-iso-mdoc` entries.
 
 ## Conformance
 
