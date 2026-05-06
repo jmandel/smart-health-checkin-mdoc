@@ -1126,7 +1126,7 @@ async function onMessage(ev: MessageEvent): Promise<void> {
   if (!isBindableOrigin(verifierOrigin)) return;
   const data = ev.data as { type?: unknown };
   if (!data || typeof data !== "object") return;
-  const responseMessageType = getResponseMessageType(data.type);
+  const responseMessageType = mapRequestTypeToResponseType(data.type);
   if (!responseMessageType) return;
   const payload = data as {
     credentialRequestOptions?: unknown;
@@ -1204,7 +1204,7 @@ async function onMessage(ev: MessageEvent): Promise<void> {
   }
 }
 
-function getResponseMessageType(type: unknown): WebWalletResponseMessageType | undefined {
+function mapRequestTypeToResponseType(type: unknown): WebWalletResponseMessageType | undefined {
   if (type === WEB_WALLET_REQUEST_MESSAGE_TYPE) return WEB_WALLET_RESPONSE_MESSAGE_TYPE;
   if (type === LEGACY_WEB_WALLET_REQUEST_MESSAGE_TYPE) {
     return LEGACY_WEB_WALLET_RESPONSE_MESSAGE_TYPE;
