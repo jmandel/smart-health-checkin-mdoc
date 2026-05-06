@@ -1,6 +1,6 @@
-// Wallet app entry. Listens for {deviceRequest, encryptionInfo} from the
-// verifier, renders an Approve/Decline screen, and posts back a real,
-// verifier-openable mdoc response built from local holder records.
+// Wallet app entry. Listens for credential request options from the verifier,
+// renders an Approve/Decline screen, and posts back a real, verifier-openable
+// mdoc response built from local holder records.
 
 import {
   base64UrlDecodeBytes,
@@ -15,6 +15,9 @@ import {
   SMART_RESPONSE_ELEMENT_ID,
 } from "../protocol/index.ts";
 import {
+  WEB_WALLET_READY_MESSAGE_TYPE,
+  WEB_WALLET_REQUEST_MESSAGE_TYPE,
+  WEB_WALLET_RESPONSE_MESSAGE_TYPE,
   buildWebWalletDcapiResponse,
   type WebWalletDeviceKey,
   type WebWalletIssuerKey,
@@ -1063,7 +1066,7 @@ async function onApprove(reviewing: Extract<WalletState, { phase: "review" }>): 
 
     verifierWindow.postMessage(
       {
-        type: "smart-checkin/web-wallet/response",
+        type: WEB_WALLET_RESPONSE_MESSAGE_TYPE,
         requestId: requestPayload.requestId,
         outcome: "approved",
         credential: built.response,
@@ -1079,7 +1082,7 @@ async function onApprove(reviewing: Extract<WalletState, { phase: "review" }>): 
     const message = err instanceof Error ? err.message : String(err);
     verifierWindow.postMessage(
       {
-        type: "smart-checkin/web-wallet/response",
+        type: WEB_WALLET_RESPONSE_MESSAGE_TYPE,
         requestId: requestPayload.requestId,
         outcome: "error",
         message,
@@ -1094,7 +1097,7 @@ async function onApprove(reviewing: Extract<WalletState, { phase: "review" }>): 
 function onDecline(reviewing: Extract<WalletState, { phase: "review" }>): void {
   reviewing.verifierWindow.postMessage(
     {
-      type: "smart-checkin/web-wallet/response",
+      type: WEB_WALLET_RESPONSE_MESSAGE_TYPE,
       requestId: reviewing.requestPayload.requestId,
       outcome: "declined",
     },
@@ -1116,18 +1119,11 @@ async function onMessage(ev: MessageEvent): Promise<void> {
   if (!isBindableOrigin(verifierOrigin)) return;
   const data = ev.data as { type?: unknown };
   if (!data || typeof data !== "object") return;
-  if (data.type !== "smart-checkin/web-wallet/request") return;
+  if (data.type !== WEB_WALLET_REQUEST_MESSAGE_TYPE) return;
   const payload = data as {
-    deviceRequest?: unknown;
-    encryptionInfo?: unknown;
+    credentialRequestOptions?: unknown;
     requestId?: unknown;
   };
-  if (
-    typeof payload.deviceRequest !== "string" ||
-    typeof payload.encryptionInfo !== "string"
-  ) {
-    return;
-  }
   const requestId =
     typeof payload.requestId === "string" ? payload.requestId : undefined;
   // Busy-safe: only accept a new request when we're idle. Concurrent requests
@@ -1135,7 +1131,7 @@ async function onMessage(ev: MessageEvent): Promise<void> {
   if (state.phase !== "waiting") {
     opener.postMessage(
       {
-        type: "smart-checkin/web-wallet/response",
+        type: WEB_WALLET_RESPONSE_MESSAGE_TYPE,
         requestId,
         outcome: "error",
         message: "wallet is busy with another request",
@@ -1146,10 +1142,8 @@ async function onMessage(ev: MessageEvent): Promise<void> {
   }
   try {
     await recordsLoadPromise;
-    const decoded = decodeRequest({
-      deviceRequest: payload.deviceRequest,
-      encryptionInfo: payload.encryptionInfo,
-    });
+    const mdocRequest = extractOrgIsoMdocRequest(payload);
+    const decoded = decodeRequest(mdocRequest);
     const smartRequest = decoded.smartRequest ?? {
       type: "smart-health-checkin-request",
       version: "1",
@@ -1176,8 +1170,8 @@ async function onMessage(ev: MessageEvent): Promise<void> {
       selectedCandidates: selection.selectedCandidates,
       questionnaireAnswers,
       requestPayload: {
-        deviceRequest: payload.deviceRequest,
-        encryptionInfo: payload.encryptionInfo,
+        deviceRequest: mdocRequest.deviceRequest,
+        encryptionInfo: mdocRequest.encryptionInfo,
         requestId,
       },
       verifierWindow: opener,
@@ -1187,7 +1181,7 @@ async function onMessage(ev: MessageEvent): Promise<void> {
     const message = err instanceof Error ? err.message : String(err);
     opener.postMessage(
       {
-        type: "smart-checkin/web-wallet/response",
+        type: WEB_WALLET_RESPONSE_MESSAGE_TYPE,
         requestId,
         outcome: "error",
         message,
@@ -1197,6 +1191,54 @@ async function onMessage(ev: MessageEvent): Promise<void> {
     state = { phase: "done", outcome: "error", message };
     render();
   }
+}
+
+function extractOrgIsoMdocRequest(payload: {
+  credentialRequestOptions?: unknown;
+}): {
+  deviceRequest: string;
+  encryptionInfo: string;
+} {
+  const credentialRequestOptions = payload.credentialRequestOptions as
+    | {
+        digital?: {
+          requests?: ReadonlyArray<{
+            protocol?: unknown;
+            data?: {
+              deviceRequest?: unknown;
+              encryptionInfo?: unknown;
+            };
+          }>;
+        };
+      }
+    | undefined;
+  const requests = credentialRequestOptions?.digital?.requests;
+  if (!Array.isArray(requests)) {
+    throw new Error("web wallet request missing credentialRequestOptions.digital.requests");
+  }
+  const orgIsoMdocRequests = requests.filter((request) => request?.protocol === "org-iso-mdoc");
+  if (orgIsoMdocRequests.length === 0) {
+    const requestedProtocols = requests
+      .map((request) => request?.protocol)
+      .filter((protocol): protocol is string => typeof protocol === "string" && protocol.length > 0);
+    throw new Error(
+      `SMART Health Check-in web wallet only supports org-iso-mdoc; requested: ${requestedProtocols.join(", ") || "(none)"}`,
+    );
+  }
+  if (orgIsoMdocRequests.length > 1) {
+    throw new Error("SMART Health Check-in web wallet supports one org-iso-mdoc request at a time");
+  }
+  const orgIsoMdoc = orgIsoMdocRequests[0];
+  if (
+    typeof orgIsoMdoc?.data?.deviceRequest !== "string" ||
+    typeof orgIsoMdoc.data?.encryptionInfo !== "string"
+  ) {
+    throw new Error("org-iso-mdoc request is missing deviceRequest or encryptionInfo");
+  }
+  return {
+    deviceRequest: orgIsoMdoc.data.deviceRequest,
+    encryptionInfo: orgIsoMdoc.data.encryptionInfo,
+  };
 }
 
 function decodeRequest(input: {
@@ -1315,7 +1357,7 @@ window.addEventListener("beforeunload", () => {
     try {
       opener.postMessage(
         {
-          type: "smart-checkin/web-wallet/response",
+          type: WEB_WALLET_RESPONSE_MESSAGE_TYPE,
           requestId: state.requestPayload.requestId,
           outcome: "closed",
         },
@@ -1330,7 +1372,7 @@ window.addEventListener("beforeunload", () => {
 if (opener) {
   try {
     opener.postMessage(
-      { type: "smart-checkin/web-wallet/ready" },
+      { type: WEB_WALLET_READY_MESSAGE_TYPE },
       readyTargetOrigin,
     );
   } catch {

@@ -42,20 +42,19 @@ describe("createWebWalletCredentialGetter", () => {
     expect(harness.fakePopup.location.href).toBe("https://wallet.example/wallet/");
 
     harness.fireFromPopup(
-      { type: "smart-checkin/web-wallet/ready" },
+      { type: "digital-credentials/web-wallet/ready" },
       "https://wallet.example",
     );
 
     expect(harness.postedToPopup.length).toBe(1);
     const req = harness.postedToPopup[0]!.msg as WebWalletRequestMessage;
-    expect(req.type).toBe("smart-checkin/web-wallet/request");
-    expect(req.deviceRequest).toBe("ZGV2aWNl");
-    expect(req.encryptionInfo).toBe("ZW5j");
+    expect(req.type).toBe("digital-credentials/web-wallet/request");
+    expect(req.credentialRequestOptions).toEqual(makeRequestOptions());
     expect(typeof req.requestId).toBe("string");
 
     harness.fireFromPopup(
       {
-        type: "smart-checkin/web-wallet/response",
+        type: "digital-credentials/web-wallet/response",
         requestId: req.requestId,
         outcome: "approved",
         credential: { protocol: "org-iso-mdoc", data: { response: "abc" } },
@@ -83,7 +82,7 @@ describe("createWebWalletCredentialGetter", () => {
     const promise = getCredential(makeRequestOptions());
 
     harness.fireFromPopup(
-      { type: "smart-checkin/web-wallet/ready" },
+      { type: "digital-credentials/web-wallet/ready" },
       "https://attacker.example",
     );
     expect(harness.postedToPopup.length).toBe(0);
@@ -100,13 +99,13 @@ describe("createWebWalletCredentialGetter", () => {
     });
     const promise = getCredential(makeRequestOptions());
     harness.fireFromPopup(
-      { type: "smart-checkin/web-wallet/ready" },
+      { type: "digital-credentials/web-wallet/ready" },
       "https://wallet.example",
     );
     const requestId = (harness.postedToPopup[0]!.msg as WebWalletRequestMessage).requestId;
     harness.fireFromPopup(
       {
-        type: "smart-checkin/web-wallet/response",
+        type: "digital-credentials/web-wallet/response",
         requestId,
         outcome: "declined",
       },
@@ -155,7 +154,7 @@ describe("createWebWalletCredentialGetter", () => {
     );
   });
 
-  test("rejects when the request lacks an org-iso-mdoc payload", async () => {
+  test("rejects when the request lacks a Digital Credentials request", async () => {
     const harness = makeHarness();
     const getCredential = createWebWalletCredentialGetter({
       walletUrl: "https://wallet.example/wallet/",
@@ -168,6 +167,75 @@ describe("createWebWalletCredentialGetter", () => {
     ).rejects.toBeInstanceOf(WebWalletError);
   });
 
+  test("forwards a non-mdoc Digital Credentials request unchanged", async () => {
+    const harness = makeHarness();
+    const getCredential = createWebWalletCredentialGetter({
+      walletUrl: "https://wallet.example/wallet/",
+      windowOpen: () => harness.fakePopup as unknown as Window,
+      messageHost: harness.messageHost,
+      timeoutMs: 5000,
+    });
+    const requestOptions = {
+      digital: {
+        requests: [
+          {
+            protocol: "example-vp",
+            data: { query: { type: "VerifiablePresentation" } },
+          },
+        ],
+      },
+    } as unknown as CredentialRequestOptions;
+    const promise = getCredential(requestOptions);
+    harness.fireFromPopup(
+      { type: "digital-credentials/web-wallet/ready" },
+      "https://wallet.example",
+    );
+
+    const req = harness.postedToPopup[0]!.msg as WebWalletRequestMessage;
+    expect(req.credentialRequestOptions).toBe(requestOptions);
+    harness.fireFromPopup(
+      {
+        type: "digital-credentials/web-wallet/response",
+        requestId: req.requestId,
+        outcome: "approved",
+        credential: { protocol: "example-vp", data: { vp_token: "abc" } },
+      },
+      "https://wallet.example",
+    );
+
+    await expect(promise).resolves.toEqual({
+      protocol: "example-vp",
+      data: { vp_token: "abc" },
+    });
+  });
+
+  test("rejects an approved credential whose protocol was not requested", async () => {
+    const harness = makeHarness();
+    const getCredential = createWebWalletCredentialGetter({
+      walletUrl: "https://wallet.example/wallet/",
+      windowOpen: () => harness.fakePopup as unknown as Window,
+      messageHost: harness.messageHost,
+      timeoutMs: 5000,
+    });
+    const promise = getCredential(makeRequestOptions());
+    harness.fireFromPopup(
+      { type: "digital-credentials/web-wallet/ready" },
+      "https://wallet.example",
+    );
+    const requestId = (harness.postedToPopup[0]!.msg as WebWalletRequestMessage).requestId;
+    harness.fireFromPopup(
+      {
+        type: "digital-credentials/web-wallet/response",
+        requestId,
+        outcome: "approved",
+        credential: { protocol: "example-vp", data: { vp_token: "abc" } },
+      },
+      "https://wallet.example",
+    );
+
+    await expect(promise).rejects.toBeInstanceOf(WebWalletError);
+  });
+
   test("propagates an error outcome from the wallet", async () => {
     const harness = makeHarness();
     const getCredential = createWebWalletCredentialGetter({
@@ -178,13 +246,13 @@ describe("createWebWalletCredentialGetter", () => {
     });
     const promise = getCredential(makeRequestOptions());
     harness.fireFromPopup(
-      { type: "smart-checkin/web-wallet/ready" },
+      { type: "digital-credentials/web-wallet/ready" },
       "https://wallet.example",
     );
     const requestId = (harness.postedToPopup[0]!.msg as WebWalletRequestMessage).requestId;
     harness.fireFromPopup(
       {
-        type: "smart-checkin/web-wallet/response",
+        type: "digital-credentials/web-wallet/response",
         requestId,
         outcome: "error",
         message: "boom",
@@ -217,13 +285,13 @@ describe("createWebWalletCredentialGetter", () => {
     // The first call should still be alive — settle it cleanly so we don't
     // leak handles into the next test.
     harness.fireFromPopup(
-      { type: "smart-checkin/web-wallet/ready" },
+      { type: "digital-credentials/web-wallet/ready" },
       "https://wallet.example",
     );
     const requestId = (harness.postedToPopup[0]!.msg as WebWalletRequestMessage).requestId;
     harness.fireFromPopup(
       {
-        type: "smart-checkin/web-wallet/response",
+        type: "digital-credentials/web-wallet/response",
         requestId,
         outcome: "approved",
         credential: { protocol: "org-iso-mdoc", data: { response: "abc" } },
@@ -242,13 +310,13 @@ describe("createWebWalletCredentialGetter", () => {
     });
     const reuse = getCredential2(makeRequestOptions());
     harness2.fireFromPopup(
-      { type: "smart-checkin/web-wallet/ready" },
+      { type: "digital-credentials/web-wallet/ready" },
       "https://wallet.example",
     );
     const reuseRequestId = (harness2.postedToPopup[0]!.msg as WebWalletRequestMessage).requestId;
     harness2.fireFromPopup(
       {
-        type: "smart-checkin/web-wallet/response",
+        type: "digital-credentials/web-wallet/response",
         requestId: reuseRequestId,
         outcome: "approved",
         credential: { protocol: "org-iso-mdoc", data: { response: "ok" } },
@@ -269,13 +337,13 @@ describe("createWebWalletCredentialGetter", () => {
     });
     const promise = getCredential(makeRequestOptions());
     harness.fireFromPopup(
-      { type: "smart-checkin/web-wallet/ready" },
+      { type: "digital-credentials/web-wallet/ready" },
       "https://wallet.example",
     );
     // Reply WITHOUT a requestId — must be ignored, getter should time out.
     harness.fireFromPopup(
       {
-        type: "smart-checkin/web-wallet/response",
+        type: "digital-credentials/web-wallet/response",
         outcome: "approved",
         credential: { protocol: "org-iso-mdoc", data: { response: "abc" } },
       },
@@ -295,12 +363,12 @@ describe("createWebWalletCredentialGetter", () => {
     });
     const promise = getCredential(makeRequestOptions());
     harness.fireFromPopup(
-      { type: "smart-checkin/web-wallet/ready" },
+      { type: "digital-credentials/web-wallet/ready" },
       "https://wallet.example",
     );
     harness.fireFromPopup(
       {
-        type: "smart-checkin/web-wallet/response",
+        type: "digital-credentials/web-wallet/response",
         requestId: "wcr_unknown_zzzzzz",
         outcome: "approved",
         credential: { protocol: "org-iso-mdoc", data: { response: "abc" } },
@@ -320,17 +388,17 @@ describe("createWebWalletCredentialGetter", () => {
     });
     const promise = getCredential(makeRequestOptions());
     harness.fireFromPopup(
-      { type: "smart-checkin/web-wallet/ready" },
+      { type: "digital-credentials/web-wallet/ready" },
       "https://wallet.example",
     );
     const requestId = (harness.postedToPopup[0]!.msg as WebWalletRequestMessage).requestId;
     harness.fireFromPopup(
       {
-        type: "smart-checkin/web-wallet/response",
+        type: "digital-credentials/web-wallet/response",
         requestId,
         outcome: "approved",
-        // Wrong shape: missing `data.response`.
-        credential: { protocol: "org-iso-mdoc", data: {} },
+        // Wrong shape: missing `data`.
+        credential: { protocol: "org-iso-mdoc" },
       },
       "https://wallet.example",
     );
@@ -340,6 +408,64 @@ describe("createWebWalletCredentialGetter", () => {
     );
     expect(err).toBeInstanceOf(WebWalletError);
     expect((err as Error).message).toMatch(/malformed/i);
+  });
+
+  test("rejects approved credentials whose data is not a non-null object", async () => {
+    for (const data of [null, undefined, "abc", 123, true]) {
+      const harness = makeHarness();
+      const getCredential = createWebWalletCredentialGetter({
+        walletUrl: "https://wallet.example/wallet/",
+        windowOpen: () => harness.fakePopup as unknown as Window,
+        messageHost: harness.messageHost,
+        timeoutMs: 5000,
+      });
+      const promise = getCredential(makeRequestOptions());
+      harness.fireFromPopup(
+        { type: "digital-credentials/web-wallet/ready" },
+        "https://wallet.example",
+      );
+      const requestId = (harness.postedToPopup[0]!.msg as WebWalletRequestMessage).requestId;
+      harness.fireFromPopup(
+        {
+          type: "digital-credentials/web-wallet/response",
+          requestId,
+          outcome: "approved",
+          credential: { protocol: "org-iso-mdoc", data },
+        },
+        "https://wallet.example",
+      );
+      await expect(promise).rejects.toBeInstanceOf(WebWalletError);
+    }
+  });
+
+  test("does not inspect protocol-specific fields inside credential data", async () => {
+    const harness = makeHarness();
+    const getCredential = createWebWalletCredentialGetter({
+      walletUrl: "https://wallet.example/wallet/",
+      windowOpen: () => harness.fakePopup as unknown as Window,
+      messageHost: harness.messageHost,
+      timeoutMs: 5000,
+    });
+    const promise = getCredential(makeRequestOptions());
+    harness.fireFromPopup(
+      { type: "digital-credentials/web-wallet/ready" },
+      "https://wallet.example",
+    );
+    const requestId = (harness.postedToPopup[0]!.msg as WebWalletRequestMessage).requestId;
+    harness.fireFromPopup(
+      {
+        type: "digital-credentials/web-wallet/response",
+        requestId,
+        outcome: "approved",
+        credential: { protocol: "org-iso-mdoc", data: { notResponse: "abc" } },
+      },
+      "https://wallet.example",
+    );
+
+    await expect(promise).resolves.toEqual({
+      protocol: "org-iso-mdoc",
+      data: { notResponse: "abc" },
+    });
   });
 
   test("uses a pre-opened popup when one is provided (gesture-preserving path)", async () => {
@@ -359,13 +485,13 @@ describe("createWebWalletCredentialGetter", () => {
     expect(windowOpenCalls).toBe(0);
 
     harness.fireFromPopup(
-      { type: "smart-checkin/web-wallet/ready" },
+      { type: "digital-credentials/web-wallet/ready" },
       "https://wallet.example",
     );
     const requestId = (harness.postedToPopup[0]!.msg as WebWalletRequestMessage).requestId;
     harness.fireFromPopup(
       {
-        type: "smart-checkin/web-wallet/response",
+        type: "digital-credentials/web-wallet/response",
         requestId,
         outcome: "approved",
         credential: { protocol: "org-iso-mdoc", data: { response: "abc" } },
