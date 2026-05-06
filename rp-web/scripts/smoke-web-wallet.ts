@@ -125,6 +125,9 @@ try {
       field.closest(".questionnaire-field")?.textContent?.includes("How have you been feeling"),
     );
     if (!wellbeing) throw new Error("wellbeing field not found");
+    if (!wellbeing.value.includes("Weekly migraine days")) {
+      throw new Error("wellbeing field was not prefilled with the compact headache summary");
+    }
     wellbeing.value = "Feeling better";
     wellbeing.dispatchEvent(new Event("change", { bubbles: true }));
   });

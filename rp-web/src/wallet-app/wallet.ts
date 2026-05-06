@@ -38,6 +38,7 @@ import {
   type RequestItemResolution,
   type WalletCandidate,
 } from "./imported-records.ts";
+import { demoQuestionnairePrefillAnswersForItems } from "./demo-questionnaire-prefill.ts";
 import {
   answerOptionKey,
   answerOptionLabel,
@@ -676,7 +677,8 @@ function renderTextInput(
   step?: string,
 ): string {
   if (inputType === "textarea") {
-    return `<textarea data-question-answer="${escapeAttr(key)}" data-answer-kind="${kind}" rows="3" ${disabled}>${escape(value)}</textarea>`;
+    const rows = Math.min(12, Math.max(3, value.split(/\r\n|\r|\n/).length + 1));
+    return `<textarea data-question-answer="${escapeAttr(key)}" data-answer-kind="${kind}" rows="${rows}" ${disabled}>${escape(value)}</textarea>`;
   }
   return `<input data-question-answer="${escapeAttr(key)}" data-answer-kind="${kind}" type="${escapeAttr(inputType)}" value="${escapeAttr(value)}" placeholder="${escapeAttr(placeholder)}" ${step ? `step="${escapeAttr(step)}"` : ""} ${disabled} />`;
 }
@@ -1162,7 +1164,10 @@ async function onMessage(ev: MessageEvent): Promise<void> {
     const records = activeRecords();
     const resolutions = resolveImportedItems(records.records, smartRequest.items);
     const selection = initialSelection(resolutions);
-    const questionnaireAnswers = seedQuestionnaireAnswersForItems(smartRequest.items);
+    const questionnaireAnswers = {
+      ...seedQuestionnaireAnswersForItems(smartRequest.items),
+      ...demoQuestionnairePrefillAnswersForItems(smartRequest.items),
+    };
     state = {
       phase: "review",
       verifierOrigin,
