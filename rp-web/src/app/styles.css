@@ -1175,6 +1175,34 @@ select {
 .markdown-body ul,
 .markdown-body ol { padding-left: 20px; margin: 6px 0; }
 .markdown-body li { margin: 2px 0; }
+.markdown-body table {
+  width: 100%;
+  margin: 10px 0;
+  border: 1px solid #dbe4ef;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+}
+.markdown-body th,
+.markdown-body td {
+  padding: 7px 9px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  vertical-align: top;
+}
+.markdown-body th {
+  background: #eef6ff;
+  color: #334155;
+  font-weight: 700;
+}
+.markdown-body tr:last-child td { border-bottom: 0; }
+.markdown-body th:nth-child(2),
+.markdown-body td:nth-child(2) {
+  text-align: right;
+  white-space: nowrap;
+}
 .markdown-body img {
   display: block;
   max-width: 100%;

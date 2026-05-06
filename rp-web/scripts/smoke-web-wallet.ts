@@ -128,7 +128,6 @@ try {
     if (!wellbeing.value.includes("Weekly migraine days")) {
       throw new Error("wellbeing field was not prefilled with the compact headache summary");
     }
-    wellbeing.value = "Feeling better";
     wellbeing.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await configuredPopup.evaluate(() => {
@@ -180,6 +179,12 @@ try {
   );
   await configured.waitForFunction(
     () => (document.body.textContent ?? "").includes("QuestionnaireResponse"),
+    { timeout: 15_000 },
+  );
+  await configured.waitForFunction(
+    () =>
+      (document.body.textContent ?? "").includes("Weekly migraine days") &&
+      document.querySelector(".resource-questionnaire .markdown-body table") != null,
     { timeout: 15_000 },
   );
   console.log("[smoke] ✓ configured verifier page completed through web-wallet choice");
