@@ -1237,7 +1237,12 @@ function extractOrgIsoMdocRequest(payload: {
   if (Array.isArray(requests)) {
     const orgIsoMdoc = requests.find((request) => request?.protocol === "org-iso-mdoc");
     if (!orgIsoMdoc) {
-      throw new Error("wallet does not support any requested credential protocol");
+      const requestedProtocols = requests
+        .map((request) => request?.protocol)
+        .filter((protocol): protocol is string => typeof protocol === "string" && protocol.length > 0);
+      throw new Error(
+        `wallet does not support any requested credential protocol: ${requestedProtocols.join(", ") || "(none)"}`,
+      );
     }
     if (
       typeof orgIsoMdoc.data?.deviceRequest !== "string" ||
