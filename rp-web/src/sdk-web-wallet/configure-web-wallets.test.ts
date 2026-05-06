@@ -97,13 +97,15 @@ describe("configureWebWallets", () => {
     expect(harness.fakePopup.location.href).toBe("https://wallet.example/app/");
 
     harness.fireFromPopup(
-      { type: "smart-checkin/web-wallet/ready" },
+      { type: "digital-credentials/web-wallet/ready" },
       "https://wallet.example",
     );
-    const requestId = (harness.postedToPopup[0]!.msg as WebWalletRequestMessage).requestId;
+    const req = harness.postedToPopup[0]!.msg as WebWalletRequestMessage;
+    expect(req.credentialRequestOptions).toEqual(makeRequestOptions());
+    const requestId = req.requestId;
     harness.fireFromPopup(
       {
-        type: "smart-checkin/web-wallet/response",
+        type: "digital-credentials/web-wallet/response",
         requestId,
         outcome: "approved",
         credential: { protocol: "org-iso-mdoc", data: { response: "abc" } },

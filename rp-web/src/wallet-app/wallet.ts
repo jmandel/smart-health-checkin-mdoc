@@ -1,6 +1,6 @@
-// Wallet app entry. Listens for {deviceRequest, encryptionInfo} from the
-// verifier, renders an Approve/Decline screen, and posts back a real,
-// verifier-openable mdoc response built from local holder records.
+// Wallet app entry. Listens for credential request options from the verifier,
+// renders an Approve/Decline screen, and posts back a real, verifier-openable
+// mdoc response built from local holder records.
 
 import {
   base64UrlDecodeBytes,
@@ -15,6 +15,9 @@ import {
   SMART_RESPONSE_ELEMENT_ID,
 } from "../protocol/index.ts";
 import {
+  WEB_WALLET_READY_MESSAGE_TYPE,
+  WEB_WALLET_REQUEST_MESSAGE_TYPE,
+  WEB_WALLET_RESPONSE_MESSAGE_TYPE,
   buildWebWalletDcapiResponse,
   type WebWalletDeviceKey,
   type WebWalletIssuerKey,
@@ -72,6 +75,7 @@ type WalletState =
         deviceRequest: string;
         encryptionInfo: string;
         requestId?: string;
+        responseMessageType: WebWalletResponseMessageType;
       };
       verifierWindow: WindowProxy;
     }
@@ -104,6 +108,12 @@ const opener = window.opener as WindowProxy | null;
 // session and is used for UI display, response targetOrigin, and transcript
 // binding.
 const readyTargetOrigin = "*";
+const LEGACY_WEB_WALLET_READY_MESSAGE_TYPE = "smart-checkin/web-wallet/ready" as const;
+const LEGACY_WEB_WALLET_REQUEST_MESSAGE_TYPE = "smart-checkin/web-wallet/request" as const;
+const LEGACY_WEB_WALLET_RESPONSE_MESSAGE_TYPE = "smart-checkin/web-wallet/response" as const;
+type WebWalletResponseMessageType =
+  | typeof WEB_WALLET_RESPONSE_MESSAGE_TYPE
+  | typeof LEGACY_WEB_WALLET_RESPONSE_MESSAGE_TYPE;
 const bundledRecords = bundledDemoRecords();
 let importedRecords: ImportedHealthRecords | undefined;
 let importState: ImportState = { phase: "loading" };
@@ -1063,7 +1073,7 @@ async function onApprove(reviewing: Extract<WalletState, { phase: "review" }>): 
 
     verifierWindow.postMessage(
       {
-        type: "smart-checkin/web-wallet/response",
+        type: requestPayload.responseMessageType,
         requestId: requestPayload.requestId,
         outcome: "approved",
         credential: built.response,
@@ -1079,7 +1089,7 @@ async function onApprove(reviewing: Extract<WalletState, { phase: "review" }>): 
     const message = err instanceof Error ? err.message : String(err);
     verifierWindow.postMessage(
       {
-        type: "smart-checkin/web-wallet/response",
+        type: requestPayload.responseMessageType,
         requestId: requestPayload.requestId,
         outcome: "error",
         message,
@@ -1094,7 +1104,7 @@ async function onApprove(reviewing: Extract<WalletState, { phase: "review" }>): 
 function onDecline(reviewing: Extract<WalletState, { phase: "review" }>): void {
   reviewing.verifierWindow.postMessage(
     {
-      type: "smart-checkin/web-wallet/response",
+      type: reviewing.requestPayload.responseMessageType,
       requestId: reviewing.requestPayload.requestId,
       outcome: "declined",
     },
@@ -1116,18 +1126,14 @@ async function onMessage(ev: MessageEvent): Promise<void> {
   if (!isBindableOrigin(verifierOrigin)) return;
   const data = ev.data as { type?: unknown };
   if (!data || typeof data !== "object") return;
-  if (data.type !== "smart-checkin/web-wallet/request") return;
+  const responseMessageType = responseTypeForRequestType(data.type);
+  if (!responseMessageType) return;
   const payload = data as {
+    credentialRequestOptions?: unknown;
     deviceRequest?: unknown;
     encryptionInfo?: unknown;
     requestId?: unknown;
   };
-  if (
-    typeof payload.deviceRequest !== "string" ||
-    typeof payload.encryptionInfo !== "string"
-  ) {
-    return;
-  }
   const requestId =
     typeof payload.requestId === "string" ? payload.requestId : undefined;
   // Busy-safe: only accept a new request when we're idle. Concurrent requests
@@ -1135,7 +1141,7 @@ async function onMessage(ev: MessageEvent): Promise<void> {
   if (state.phase !== "waiting") {
     opener.postMessage(
       {
-        type: "smart-checkin/web-wallet/response",
+        type: responseMessageType,
         requestId,
         outcome: "error",
         message: "wallet is busy with another request",
@@ -1146,10 +1152,8 @@ async function onMessage(ev: MessageEvent): Promise<void> {
   }
   try {
     await recordsLoadPromise;
-    const decoded = decodeRequest({
-      deviceRequest: payload.deviceRequest,
-      encryptionInfo: payload.encryptionInfo,
-    });
+    const mdocRequest = selectOrgIsoMdocRequest(payload);
+    const decoded = decodeRequest(mdocRequest);
     const smartRequest = decoded.smartRequest ?? {
       type: "smart-health-checkin-request",
       version: "1",
@@ -1176,9 +1180,10 @@ async function onMessage(ev: MessageEvent): Promise<void> {
       selectedCandidates: selection.selectedCandidates,
       questionnaireAnswers,
       requestPayload: {
-        deviceRequest: payload.deviceRequest,
-        encryptionInfo: payload.encryptionInfo,
+        deviceRequest: mdocRequest.deviceRequest,
+        encryptionInfo: mdocRequest.encryptionInfo,
         requestId,
+        responseMessageType,
       },
       verifierWindow: opener,
     };
@@ -1187,7 +1192,7 @@ async function onMessage(ev: MessageEvent): Promise<void> {
     const message = err instanceof Error ? err.message : String(err);
     opener.postMessage(
       {
-        type: "smart-checkin/web-wallet/response",
+        type: responseMessageType,
         requestId,
         outcome: "error",
         message,
@@ -1197,6 +1202,66 @@ async function onMessage(ev: MessageEvent): Promise<void> {
     state = { phase: "done", outcome: "error", message };
     render();
   }
+}
+
+function responseTypeForRequestType(type: unknown): WebWalletResponseMessageType | undefined {
+  if (type === WEB_WALLET_REQUEST_MESSAGE_TYPE) return WEB_WALLET_RESPONSE_MESSAGE_TYPE;
+  if (type === LEGACY_WEB_WALLET_REQUEST_MESSAGE_TYPE) {
+    return LEGACY_WEB_WALLET_RESPONSE_MESSAGE_TYPE;
+  }
+  return undefined;
+}
+
+function selectOrgIsoMdocRequest(payload: {
+  credentialRequestOptions?: unknown;
+  deviceRequest?: unknown;
+  encryptionInfo?: unknown;
+}): {
+  deviceRequest: string;
+  encryptionInfo: string;
+} {
+  const credentialRequestOptions = payload.credentialRequestOptions as
+    | {
+        digital?: {
+          requests?: ReadonlyArray<{
+            protocol?: unknown;
+            data?: {
+              deviceRequest?: unknown;
+              encryptionInfo?: unknown;
+            };
+          }>;
+        };
+      }
+    | undefined;
+  const requests = credentialRequestOptions?.digital?.requests;
+  if (Array.isArray(requests)) {
+    const orgIsoMdoc = requests.find((request) => request?.protocol === "org-iso-mdoc");
+    if (!orgIsoMdoc) {
+      throw new Error("wallet does not support any requested credential protocol");
+    }
+    if (
+      typeof orgIsoMdoc.data?.deviceRequest !== "string" ||
+      typeof orgIsoMdoc.data?.encryptionInfo !== "string"
+    ) {
+      throw new Error("org-iso-mdoc request is missing deviceRequest or encryptionInfo");
+    }
+    return {
+      deviceRequest: orgIsoMdoc.data.deviceRequest,
+      encryptionInfo: orgIsoMdoc.data.encryptionInfo,
+    };
+  }
+
+  if (
+    typeof payload.deviceRequest === "string" &&
+    typeof payload.encryptionInfo === "string"
+  ) {
+    return {
+      deviceRequest: payload.deviceRequest,
+      encryptionInfo: payload.encryptionInfo,
+    };
+  }
+
+  throw new Error("web wallet request missing credentialRequestOptions.digital.requests");
 }
 
 function decodeRequest(input: {
@@ -1315,7 +1380,7 @@ window.addEventListener("beforeunload", () => {
     try {
       opener.postMessage(
         {
-          type: "smart-checkin/web-wallet/response",
+          type: state.requestPayload.responseMessageType,
           requestId: state.requestPayload.requestId,
           outcome: "closed",
         },
@@ -1330,7 +1395,11 @@ window.addEventListener("beforeunload", () => {
 if (opener) {
   try {
     opener.postMessage(
-      { type: "smart-checkin/web-wallet/ready" },
+      { type: WEB_WALLET_READY_MESSAGE_TYPE },
+      readyTargetOrigin,
+    );
+    opener.postMessage(
+      { type: LEGACY_WEB_WALLET_READY_MESSAGE_TYPE },
       readyTargetOrigin,
     );
   } catch {

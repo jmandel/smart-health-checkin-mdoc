@@ -2,12 +2,13 @@
 
 This is a **side surface**, not part of the rp-web SDK barrel
 (`src/sdk/index.ts`). It is a developer/demo helper that lets a verifier
-mediate an `org-iso-mdoc` SMART Health Check-in credential request through a
-web app instead of the platform W3C Digital Credentials API. The demo happens
-to use a same-origin wallet URL, but the wallet-side session model is not
+mediate a W3C Digital Credentials request through a web app instead of the
+platform `navigator.credentials.get` UI. The reference demo currently handles
+`org-iso-mdoc` SMART Health Check-in requests. The demo happens to use a
+same-origin wallet URL, but the wallet-side session model is not
 same-origin-only: the inbound request's browser-stamped `MessageEvent.origin`
-is displayed to the user and then used for response `targetOrigin` and mdoc
-transcript binding.
+is displayed to the user and then used for response `targetOrigin` and, for
+mdoc, transcript binding.
 See [`WALLET-INTEGRATION-PROTOCOL.md`](WALLET-INTEGRATION-PROTOCOL.md) for the
 short listen/respond contract.
 
@@ -16,14 +17,14 @@ this repo's demos, not part of the v1.0 wire protocol.
 
 ## What it is
 
-Two things, both wire-compatible with the existing verifier:
+Three things:
 
 1. `createWebWalletCredentialGetter({ walletUrl })` — a `CredentialGetter`
    that opens/navigates a script-created wallet tab/window, posts the
-   verifier's `{ deviceRequest, encryptionInfo }` to it, waits for an mdoc
-   response, and returns it as a `{ protocol: "org-iso-mdoc", data: {
-   response } }` shape. Drop it into the existing
-   `requestCredentialWithAuthority({ getCredential })` seam.
+   verifier's credential request options to it, waits for a credential response,
+   and returns that credential object. The transport is protocol-neutral across
+   Digital Credentials protocols; drop it into the existing
+   `requestCredentialWithAuthority({ getCredential })` seam for this demo.
 
 2. `configureWebWallets({ wallets })` — a web-wallet-only configuration helper
    that returns explicit wallet handles. Each handle has
@@ -35,7 +36,8 @@ Two things, both wire-compatible with the existing verifier:
 3. `buildWebWalletDcapiResponse({ ... })` — a wallet-side packager that
    reads the `deviceRequest`/`encryptionInfo` plus a SMART response JSON and
    builds the verifier-openable mdoc response (DeviceResponse + HPKE seal).
-   Used by the popup; usable in tests with synthetic inputs.
+   This helper is intentionally mdoc-specific and is used by the reference
+   wallet's `org-iso-mdoc` handler; it is usable in tests with synthetic inputs.
 
 ## What it is **not**
 
@@ -131,18 +133,18 @@ sequenceDiagram
     Note over V: synchronous inside click handler
     V->>W: window.open("about:blank")
     V->>V: requestCredentialWithAuthority(...)
-    V->>G: getCredential({ deviceRequest, encryptionInfo })
+    V->>G: getCredential(credentialRequestOptions)
     G->>W: navigate tab/window to ../wallet/
     W-->>V: postMessage { type: "ready" } with targetOrigin "*"
     Note over W: no request session yet;<br/>ready carries no sensitive data
     Note over G: origin === walletUrl.origin ✓
-    G->>W: postMessage { type: "request", deviceRequest, encryptionInfo, requestId }
+    G->>W: postMessage { type: "request", credentialRequestOptions, requestId }
     Note over W: verifierOrigin = event.origin<br/>shown to user<br/>state === "waiting" ✓
     W->>U: render review (purpose + items)
     U->>W: click Approve & share
     Note over W: build DeviceResponse,<br/>HPKE-seal to verifier pub key
     W-->>G: postMessage { type: "response", requestId, outcome: "approved", credential }
-    Note over G: requestId match ✓<br/>credential shape ✓
+    Note over G: requestId match ✓<br/>requested protocol ✓<br/>credential data ✓
     G-->>V: { protocol: "org-iso-mdoc", data: { response } }
     V->>V: openWalletResponse(...) → success badges
 ```
@@ -171,8 +173,8 @@ demoable.
    the same `WindowProxy`.
 - **Strict requestId match** — wallet replies missing or mismatched
   `requestId` are silently dropped.
-- **Validated approved payload** — `{ protocol: "org-iso-mdoc", data: {
-  response: string } }` shape is checked before resolving.
+- **Validated approved payload** — approved credentials must name one of the
+  requested protocols and include `data` before resolving.
 - **Origin-bound replies** (wallet side) — the wallet treats the inbound
   request's `MessageEvent.origin` as the verifier origin for that one request
   after rejecting opaque/unbindable origins. The consent UI displays that
@@ -183,12 +185,14 @@ demoable.
 
 ## Wire compatibility
 
-The wallet tab/window transports the unmodified `deviceRequest` and
-`encryptionInfo`
-bytes from the verifier and returns an unmodified mdoc response. The
-existing `openWalletResponse(...)` path opens it with no changes. The wallet
-uses browser-stamped `MessageEvent.origin` from the request as the verifier
-origin for both reply `targetOrigin` and session transcript binding.
+The wallet tab/window transports the unmodified `credentialRequestOptions` from
+the verifier and returns the selected protocol's credential object. For the
+reference `org-iso-mdoc` handler, that means the original `deviceRequest` and
+`encryptionInfo` bytes are preserved inside `digital.requests[]`, and the
+existing `openWalletResponse(...)` path opens the mdoc response with no changes.
+The wallet uses browser-stamped `MessageEvent.origin` from the request as the
+verifier origin for both reply `targetOrigin` and mdoc session transcript
+binding.
 
 ## Conformance
 

@@ -1,51 +1,57 @@
 // Popup-based CredentialGetter for the web-wallet shim.
 //
 // Replaces `navigator.credentials.get` with a window.open + postMessage
-// loop. The verifier passes its `org-iso-mdoc` `{deviceRequest,
-// encryptionInfo}` to a wallet tab/window; the wallet posts back a
-// `{ protocol: "org-iso-mdoc", data: { response } }` (or an error). This
-// is a side surface — it does NOT modify the verifier SDK or the protocol
+// loop. The verifier passes its Digital Credentials request options to a
+// wallet tab/window; the wallet posts back a credential object (or an error).
+// This is a side surface — it does NOT modify the verifier SDK or the protocol
 // module.
 
 import type { CredentialGetter } from "../sdk/dcapi-verifier.ts";
 
+export const WEB_WALLET_REQUEST_MESSAGE_TYPE = "digital-credentials/web-wallet/request" as const;
+export const WEB_WALLET_RESPONSE_MESSAGE_TYPE = "digital-credentials/web-wallet/response" as const;
+export const WEB_WALLET_READY_MESSAGE_TYPE = "digital-credentials/web-wallet/ready" as const;
+
+export type WebWalletCredential = {
+  protocol: string;
+  data: unknown;
+};
+
 export type WebWalletRequestMessage = {
-  type: "smart-checkin/web-wallet/request";
-  /** Verifier-supplied DeviceRequest bytes (base64url). */
-  deviceRequest: string;
-  /** Verifier-supplied EncryptionInfo bytes (base64url). */
-  encryptionInfo: string;
+  type: typeof WEB_WALLET_REQUEST_MESSAGE_TYPE;
+  /** Verifier-supplied navigator.credentials.get options. */
+  credentialRequestOptions: CredentialRequestOptions;
   /** Optional opaque correlation id, echoed in the response. */
   requestId?: string;
 };
 
 export type WebWalletResponseMessage =
   | {
-      type: "smart-checkin/web-wallet/response";
+      type: typeof WEB_WALLET_RESPONSE_MESSAGE_TYPE;
       requestId?: string;
       outcome: "approved";
-      credential: { protocol: "org-iso-mdoc"; data: { response: string } };
+      credential: WebWalletCredential;
     }
   | {
-      type: "smart-checkin/web-wallet/response";
+      type: typeof WEB_WALLET_RESPONSE_MESSAGE_TYPE;
       requestId?: string;
       outcome: "declined" | "closed";
     }
   | {
-      type: "smart-checkin/web-wallet/response";
+      type: typeof WEB_WALLET_RESPONSE_MESSAGE_TYPE;
       requestId?: string;
       outcome: "error";
       message: string;
     };
 
 export type WebWalletReadyMessage = {
-  type: "smart-checkin/web-wallet/ready";
+  type: typeof WEB_WALLET_READY_MESSAGE_TYPE;
 };
 
 export type WebWalletOutcome =
   | {
       kind: "approved";
-      credential: { protocol: "org-iso-mdoc"; data: { response: string } };
+      credential: WebWalletCredential;
     }
   | { kind: "declined" }
   | { kind: "closed" }
@@ -130,8 +136,8 @@ export type CreateWebWalletCredentialGetterOptions = {
 const DEFAULT_FEATURES = "";
 
 /**
- * Build a `CredentialGetter` that mediates an org-iso-mdoc credential
- * request through a web-wallet tab/window.
+  * Build a `CredentialGetter` that mediates a Digital Credentials request
+  * through a web-wallet tab/window.
  *
  * Plug into the existing `requestCredentialWithAuthority({ getCredential })`
  * seam; no SDK changes required.
@@ -180,23 +186,10 @@ export function createWebWalletCredentialGetter(
     if (!messageHost) {
       throw new WebWalletError("web wallet getter requires a message host (window)");
     }
-    const navigatorArg = requestOptions as unknown as {
-      digital?: {
-        requests?: ReadonlyArray<{
-          protocol?: string;
-          data?: { deviceRequest?: string; encryptionInfo?: string };
-        }>;
-      };
-    };
-    const requests = navigatorArg.digital?.requests ?? [];
-    const orgIsoMdoc = requests.find((r) => r?.protocol === "org-iso-mdoc");
-    if (
-      !orgIsoMdoc ||
-      typeof orgIsoMdoc.data?.deviceRequest !== "string" ||
-      typeof orgIsoMdoc.data?.encryptionInfo !== "string"
-    ) {
+    const requestedProtocols = requestedDigitalProtocols(requestOptions);
+    if (requestedProtocols.length === 0) {
       throw new WebWalletError(
-        "web wallet getter requires an org-iso-mdoc request with deviceRequest and encryptionInfo",
+        "web wallet getter requires at least one Digital Credentials request with a string protocol",
       );
     }
 
@@ -223,9 +216,8 @@ export function createWebWalletCredentialGetter(
 
     const requestId = `wcr_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
     const requestPayload: WebWalletRequestMessage = {
-      type: "smart-checkin/web-wallet/request",
-      deviceRequest: orgIsoMdoc.data.deviceRequest,
-      encryptionInfo: orgIsoMdoc.data.encryptionInfo,
+      type: WEB_WALLET_REQUEST_MESSAGE_TYPE,
+      credentialRequestOptions: requestOptions,
       requestId,
     };
 
@@ -252,7 +244,7 @@ export function createWebWalletCredentialGetter(
           const data = ev.data;
           if (!data || typeof data !== "object") return;
           const tag = (data as { type?: unknown }).type;
-          if (tag === "smart-checkin/web-wallet/ready") {
+          if (tag === WEB_WALLET_READY_MESSAGE_TYPE) {
             try {
               popupRef.postMessage(requestPayload, expectedOrigin === "*" ? "*" : expectedOrigin);
             } catch (err) {
@@ -264,7 +256,7 @@ export function createWebWalletCredentialGetter(
             }
             return;
           }
-          if (tag === "smart-checkin/web-wallet/response") {
+          if (tag === WEB_WALLET_RESPONSE_MESSAGE_TYPE) {
             const message = data as WebWalletResponseMessage;
             // Strict requestId match. Every wallet reply must echo the
             // requestId we generated; missing-id replies are ignored to
@@ -275,17 +267,18 @@ export function createWebWalletCredentialGetter(
               if (
                 !cred ||
                 typeof cred !== "object" ||
-                (cred as { protocol?: unknown }).protocol !== "org-iso-mdoc" ||
-                typeof (cred as { data?: { response?: unknown } }).data?.response !== "string"
+                typeof (cred as { protocol?: unknown }).protocol !== "string" ||
+                !Object.prototype.hasOwnProperty.call(cred, "data") ||
+                !requestedProtocols.includes((cred as { protocol: string }).protocol)
               ) {
                 settle({
                   kind: "error",
                   message:
-                    "wallet returned a malformed approved credential (expected { protocol: 'org-iso-mdoc', data: { response: string } })",
+                    "wallet returned a malformed approved credential (expected { protocol: <requested string>, data: ... })",
                 });
                 return;
               }
-              settle({ kind: "approved", credential: message.credential });
+              settle({ kind: "approved", credential: cred as WebWalletCredential });
             } else if (message.outcome === "declined") {
               settle({ kind: "declined" });
             } else if (message.outcome === "closed") {
@@ -343,6 +336,23 @@ export function createWebWalletCredentialGetter(
 
 function errString(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
+}
+
+function requestedDigitalProtocols(
+  requestOptions: CredentialRequestOptions,
+): string[] {
+  const navigatorArg = requestOptions as unknown as {
+    digital?: {
+      requests?: ReadonlyArray<{
+        protocol?: unknown;
+      }>;
+    };
+  };
+  const requests = navigatorArg.digital?.requests;
+  if (!Array.isArray(requests) || requests.length === 0) return [];
+  return requests
+    .map((request) => request?.protocol)
+    .filter((protocol): protocol is string => typeof protocol === "string" && protocol.length > 0);
 }
 
 function navigatePopupToWallet(
