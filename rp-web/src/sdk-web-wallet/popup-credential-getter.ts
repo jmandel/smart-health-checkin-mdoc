@@ -186,7 +186,7 @@ export function createWebWalletCredentialGetter(
     if (!messageHost) {
       throw new WebWalletError("web wallet getter requires a message host (window)");
     }
-    const requestedProtocols = requestedDigitalProtocols(requestOptions);
+    const requestedProtocols = getRequestedProtocols(requestOptions);
     if (requestedProtocols.length === 0) {
       throw new WebWalletError(
         "web wallet getter requires at least one Digital Credentials request with a string protocol",
@@ -274,7 +274,7 @@ export function createWebWalletCredentialGetter(
                 settle({
                   kind: "error",
                   message:
-                    "wallet returned a malformed approved credential (expected { protocol: <requested string>, data: ... })",
+                    "wallet returned a malformed approved credential (expected { protocol: string, data: ... } where protocol is one of the requested protocols)",
                 });
                 return;
               }
@@ -338,7 +338,7 @@ function errString(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
-function requestedDigitalProtocols(
+function getRequestedProtocols(
   requestOptions: CredentialRequestOptions,
 ): string[] {
   const navigatorArg = requestOptions as unknown as {

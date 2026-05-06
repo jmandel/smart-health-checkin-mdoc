@@ -1126,7 +1126,7 @@ async function onMessage(ev: MessageEvent): Promise<void> {
   if (!isBindableOrigin(verifierOrigin)) return;
   const data = ev.data as { type?: unknown };
   if (!data || typeof data !== "object") return;
-  const responseMessageType = responseTypeForRequestType(data.type);
+  const responseMessageType = getResponseMessageType(data.type);
   if (!responseMessageType) return;
   const payload = data as {
     credentialRequestOptions?: unknown;
@@ -1152,7 +1152,7 @@ async function onMessage(ev: MessageEvent): Promise<void> {
   }
   try {
     await recordsLoadPromise;
-    const mdocRequest = selectOrgIsoMdocRequest(payload);
+    const mdocRequest = extractOrgIsoMdocRequest(payload);
     const decoded = decodeRequest(mdocRequest);
     const smartRequest = decoded.smartRequest ?? {
       type: "smart-health-checkin-request",
@@ -1204,7 +1204,7 @@ async function onMessage(ev: MessageEvent): Promise<void> {
   }
 }
 
-function responseTypeForRequestType(type: unknown): WebWalletResponseMessageType | undefined {
+function getResponseMessageType(type: unknown): WebWalletResponseMessageType | undefined {
   if (type === WEB_WALLET_REQUEST_MESSAGE_TYPE) return WEB_WALLET_RESPONSE_MESSAGE_TYPE;
   if (type === LEGACY_WEB_WALLET_REQUEST_MESSAGE_TYPE) {
     return LEGACY_WEB_WALLET_RESPONSE_MESSAGE_TYPE;
@@ -1212,7 +1212,7 @@ function responseTypeForRequestType(type: unknown): WebWalletResponseMessageType
   return undefined;
 }
 
-function selectOrgIsoMdocRequest(payload: {
+function extractOrgIsoMdocRequest(payload: {
   credentialRequestOptions?: unknown;
   deviceRequest?: unknown;
   encryptionInfo?: unknown;
