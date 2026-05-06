@@ -198,7 +198,7 @@ class ImportedFhirWalletStore(
                     candidates = listOf(
                         WalletCandidate(
                             id = "form-${item.id}",
-                            label = "Form answers",
+                            label = questionnaireTitleForRequestItem(item) ?: "Form answers",
                             subtitle = "QuestionnaireResponse built from reviewed answers",
                             resourceType = "QuestionnaireResponse",
                             sourceName = "This wallet",

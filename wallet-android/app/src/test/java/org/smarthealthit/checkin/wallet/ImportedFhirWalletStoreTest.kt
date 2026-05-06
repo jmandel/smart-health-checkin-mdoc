@@ -97,6 +97,31 @@ class ImportedFhirWalletStoreTest {
     }
 
     @Test
+    fun importedStoreLabelsQuestionnaireCandidateFromQuestionnaireTitle() {
+        val store = ImportedFhirWalletStore(
+            ImportedHealthRecords(importedAt = "now", providers = listOf(providerRecords())),
+        )
+        val request = verifiedRequest(
+            item = RequestItem(
+                id = "intake",
+                title = "Questionnaire",
+                subtitle = "Form answers requested by the verifier.",
+                kind = RequestKind.Questionnaire,
+                meta = JSONObject().put(
+                    "questionnaire",
+                    JSONObject()
+                        .put("resourceType", "Questionnaire")
+                        .put("title", "Migraine follow-up"),
+                ),
+            ),
+        )
+
+        val resolution = store.resolveItems(request.items).single()
+
+        assertEquals("Migraine follow-up", resolution.candidates.single().label)
+    }
+
+    @Test
     fun importedStoreBuildsBundleFromSelectedCandidates() {
         val records = ImportedHealthRecords(
             importedAt = "now",

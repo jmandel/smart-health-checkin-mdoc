@@ -1,9 +1,10 @@
 # Headache summary SVGs
 
-Small library of self-contained SVG charts for the "AI-generated patient summary"
-free-text answer in the chronic-migraine demo. Designed to be base64-inlined into
-a Markdown blob and rendered on the verifier (provider) side at sizes ranging
-from a 600 px desktop preview down to roughly 200 px on a phone.
+Small library of self-contained SVG charts used while designing the
+"AI-generated patient summary" free-text answer in the chronic-migraine demo.
+The live wallet fixture now uses a compact Markdown table instead of inlining
+all charts, but these SVGs remain available for previewing or selectively
+embedding a single graphic.
 
 ## Files
 
@@ -15,8 +16,8 @@ from a 600 px desktop preview down to roughly 200 px on a phone.
 | trigger-pareto        | 0 0 600 220    | 2.9 K | 3.8 K  | Horizontal Pareto of top 5 self-logged triggers            |
 | function-donut        | 0 0 600 220    | 2.7 K | 3.6 K  | 71% donut "days fully functional" with breakdown legend    |
 
-Total raw: ~24.4 KB; total base64: ~32.5 KB. Comfortably fits in one Markdown
-field even after inlining.
+Total raw: ~24.4 KB; total base64: ~32.5 KB. That fits in one Markdown field,
+but is intentionally larger than the current compact demo fixture.
 
 ## Palette
 
@@ -53,17 +54,20 @@ visual contrast without leaning corporate or alarmist.
   legibility at small sizes can be eyeballed.
 - `encode.ts` — `bun encode.ts` (or `bun encode.ts <slug>`) prints a Markdown
   image line per SVG using a `data:image/svg+xml;base64,…` URL.
+- `build-sample-summary.ts` — regenerates the compact Markdown free-text sample
+  and a rendered HTML preview.
 
-## Regenerating the encoded forms
+## Regenerating previews
 
 ```bash
 bun encode.ts                 # prints all five
 bun encode.ts function-donut  # prints just one
+bun build-sample-summary.ts   # rewrites sample-summary.md/html
 ```
 
 The script reads each `.svg` in this directory, base64-encodes it, and emits
 `![alt](data:image/svg+xml;base64,…)` lines ready to paste into the AI summary
-Markdown.
+Markdown. The sample-summary builder does not inline the SVGs by default.
 
 ## Data caveat
 

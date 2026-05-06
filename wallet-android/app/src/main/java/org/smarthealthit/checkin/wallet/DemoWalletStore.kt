@@ -137,7 +137,7 @@ internal class DemoWalletStore(
             )
             item.kind == RequestKind.Questionnaire -> WalletCandidate(
                 id = "demo-${item.id}",
-                label = "Form answers",
+                label = questionnaireTitleForRequestItem(item) ?: "Form answers",
                 subtitle = "QuestionnaireResponse built from reviewed answers",
                 resourceType = "QuestionnaireResponse",
                 sourceName = "Bundled demo data",

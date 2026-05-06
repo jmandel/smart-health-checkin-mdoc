@@ -32,6 +32,20 @@ export function questionnaireFromRequestItem(
     : undefined;
 }
 
+export function questionnaireDisplayTitle(
+  questionnaire: QuestionnaireResource | undefined,
+): string | undefined {
+  return typeof questionnaire?.title === "string" && questionnaire.title.trim()
+    ? questionnaire.title.trim()
+    : undefined;
+}
+
+export function questionnaireDisplayTitleForRequestItem(
+  requestItem: SmartCheckinRequestItem,
+): string | undefined {
+  return questionnaireDisplayTitle(questionnaireFromRequestItem(requestItem));
+}
+
 export function questionnaireReferenceForRequestItem(
   requestItem: SmartCheckinRequestItem,
 ): string | undefined {

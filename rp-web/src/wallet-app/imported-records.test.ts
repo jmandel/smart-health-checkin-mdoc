@@ -87,6 +87,7 @@ describe("web wallet imported-records model", () => {
               resourceType: "Questionnaire",
               id: "migraine",
               url: "https://example.org/fhir/Questionnaire/migraine",
+              title: "Migraine follow-up",
               status: "active",
               item: [
                 { linkId: "wellbeing", text: "How are you?", type: "text" },
@@ -126,6 +127,7 @@ describe("web wallet imported-records model", () => {
     });
 
     expect(resolution.matchSummary).toBe("Form can be completed now");
+    expect(resolution.candidates[0]!.label).toBe("Migraine follow-up");
     expect(response.requestStatus[0]!.status).toBe("fulfilled");
     const qr = response.artifacts[0]!.value as {
       resourceType: string;

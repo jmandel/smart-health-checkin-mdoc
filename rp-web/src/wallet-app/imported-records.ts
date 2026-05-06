@@ -12,6 +12,7 @@ import {
 } from "./demo-data.ts";
 import {
   buildQuestionnaireResponse,
+  questionnaireDisplayTitleForRequestItem,
   questionnaireReferenceForRequestItem,
   type QuestionnaireAnswerValue,
 } from "./questionnaire.ts";
@@ -208,13 +209,14 @@ export function resolveImportedItems(
 
     if (item.content.kind === "form.fhir") {
       const reference = questionnaireReferenceForRequestItem(item);
+      const formTitle = questionnaireDisplayTitleForRequestItem(item);
       return {
         itemId: item.id,
         availability: "available",
         candidates: [
           {
             id: `form-${item.id}`,
-            label: "Form answers",
+            label: formTitle ?? "Form answers",
             subtitle: reference
               ? `QuestionnaireResponse for ${reference}`
               : "QuestionnaireResponse built from reviewed answers",

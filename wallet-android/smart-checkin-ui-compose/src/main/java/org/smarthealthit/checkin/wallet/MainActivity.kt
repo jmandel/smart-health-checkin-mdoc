@@ -1509,6 +1509,7 @@ private fun DataRequestCard(
             DataGlyph(item.kind)
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
+                val formTitle = questionnaireTitleForRequestItem(item)
                 Text(
                     text = item.title,
                     style = MaterialTheme.typography.titleMedium,
@@ -1521,6 +1522,14 @@ private fun DataRequestCard(
                     style = MaterialTheme.typography.bodyMedium,
                     color = AppColors.Muted,
                 )
+                if (!formTitle.isNullOrBlank() && formTitle != item.title) {
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        text = "Form: $formTitle",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.Muted,
+                    )
+                }
             }
             Switch(
                 checked = selected,
@@ -2156,7 +2165,7 @@ private fun QuestionnaireCard(
 ) {
     ElevatedPanel {
         Text(
-            text = "Form answers",
+            text = questionnaireTitle(questionnaire) ?: "Form answers",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = AppColors.Ink,

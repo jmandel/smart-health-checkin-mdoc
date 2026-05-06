@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 /**
- * Builds a sample "AI-generated 90-day check-in" markdown summary with the
- * SVG charts embedded as base64 data URLs, then renders it to a self-contained
- * HTML file using `marked` so we can preview in a browser.
+ * Builds a compact sample "AI-generated 90-day check-in" markdown summary,
+ * then renders it to a self-contained HTML file using `marked` so we can
+ * preview in a browser.
  *
  * Outputs:
  *   sample-summary.md     — markdown source (the kind of thing the wallet
@@ -10,79 +10,32 @@
  *   sample-summary.html   — self-contained HTML preview
  */
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { marked } from "marked";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-function dataUrl(slug: string): string {
-  const raw = readFileSync(join(here, `${slug}.svg`));
-  return `data:image/svg+xml;base64,${raw.toString("base64")}`;
-}
-
 const md = `# How I've been since the last visit
 
-**TL;DR.** Slightly better month-over-month. Migraine-day count is still
-elevated but trending down; severity peaks are fewer; acute medication days
-are riding the edge of the 10-day-per-month threshold and need a closer look.
+**TL;DR.** Overall I am a bit better, but the last month still had enough
+migraine and rescue-medication use that I would like to tune the plan.
 
-## Migraine days, last 12 weeks
+| Signal | Last 90 days | What changed |
+| --- | ---: | --- |
+| Migraine days | 24 | Down in the last month |
+| Moderate/severe days | 9 | Fewer big spikes |
+| Acute-med days | 12 in 30 days | Still near the overuse line |
+| Fully functional days | 64 of 90 | Better, but workdays still at risk |
 
-Average **3.4 migraine days/week** over the last 12 weeks, ranging from 1 to
-6. The most recent four weeks averaged **2.8 days/week** — that's the lowest
-4-week stretch in this look-back.
+Weekly migraine days: \`2 3 4 2 5 6 3 4 5 3 2 2\`
 
-![Migraine days per week, last 12 weeks](${dataUrl("migraine-days-bar")})
+Top patterns I noticed: sleep loss, stress, and skipped meals show up before
+many of the bad days. Caffeine changes are less common but still noticeable.
 
-## Daily severity, last 90 days
-
-Most days were mild-to-moderate (severity ≤ 4). Five days crossed into
-**severe** territory (≥ 7) — three of those were clustered around weeks 6–7,
-the rest were isolated.
-
-![Daily headache severity 0-10, last 90 days](${dataUrl("severity-trend")})
-
-## Acute medication use
-
-Took acute headache medicine on **27 of the last 90 days**. The most recent
-30 days included **12 days** of acute meds — above the 10-day-per-month
-threshold for medication overuse, which is worth discussing.
-
-![Acute medication days calendar, last 13 weeks](${dataUrl("acute-meds-heatmap")})
-
-## What seems to set them off
-
-The pattern from my self-logging:
-
-![Top self-logged migraine triggers](${dataUrl("trigger-pareto")})
-
-- **Sleep loss** is the dominant trigger — usually the night before a migraine
-  day.
-- **Stress** and **skipped meals** tie for second.
-- **Caffeine** changes (skipped morning coffee, or extra afternoon coffee)
-  are a smaller but real factor.
-- **Hormonal** is at the bottom but consistently present around the cycle.
-
-## Function
-
-Across the 90 days, **71% of days were fully functional** — no missed work,
-no canceled plans, no significant impairment.
-
-![Percent of days fully functional](${dataUrl("function-donut")})
-
-## What I want to talk about today
-
-1. Whether the acute-med days/month is high enough to change the preventive
-   plan.
-2. Whether the trigger pattern around sleep loss suggests anything we can act
-   on (CBT-i? schedule changes?).
-3. A backup acute plan for the severe spikes — the standard dose isn't always
-   cutting it within two hours.
-
-> *This summary was generated from my self-tracking data. Numbers are
-> rounded. Happy to drill into any of these or share the raw log.*
+**Main thing for today:** help me prevent missed workdays and make the rescue
+plan work reliably within two hours.
 `;
 
 writeFileSync(join(here, "sample-summary.md"), md);
@@ -127,6 +80,10 @@ const html = `<!doctype html>
   p { margin: 8px 0 14px; }
   ul, ol { padding-left: 20px; margin: 8px 0 14px; }
   li { margin: 4px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 14px; }
+  th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; }
+  th { background: #f8fafc; font-weight: 700; }
+  td:nth-child(2), th:nth-child(2) { text-align: right; white-space: nowrap; }
   img { display: block; max-width: 100%; height: auto; margin: 6px 0 14px; }
   blockquote {
     border-left: 3px solid var(--line);
@@ -150,7 +107,7 @@ const html = `<!doctype html>
 <body>
 <main>
 ${bodyHtml}
-<div class="source">Preview rendered from sample-summary.md • ${new Date().toISOString()}</div>
+<div class="source">Preview rendered from sample-summary.md</div>
 </main>
 </body>
 </html>

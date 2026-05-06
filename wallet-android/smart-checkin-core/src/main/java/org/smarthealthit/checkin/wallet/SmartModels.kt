@@ -78,6 +78,18 @@ enum class RequestKind {
     Unknown,
 }
 
+fun questionnaireTitle(questionnaire: JSONObject?): String? {
+    return questionnaire?.optString("title")?.trim()?.ifBlank { null }
+}
+
+fun questionnaireTitleForRequestItem(item: RequestItem): String? {
+    return if (item.kind == RequestKind.Questionnaire) {
+        questionnaireTitle(item.meta.optJSONObject("questionnaire"))
+    } else {
+        null
+    }
+}
+
 enum class RequestItemStatusCode(val wireValue: String) {
     Fulfilled("fulfilled"),
     Partial("partial"),

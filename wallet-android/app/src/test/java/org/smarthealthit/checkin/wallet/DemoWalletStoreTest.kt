@@ -110,6 +110,10 @@ class DemoWalletStoreTest {
         }
         assertEquals("Demo insurance coverage", resolutions.first { it.itemId == "coverage" }.candidates.single().label)
         assertEquals("Demo clinical history", resolutions.first { it.itemId == "clinical" }.candidates.single().label)
+        assertEquals(
+            "Chronic Migraine 3-Month Check-in - Dr. Mandel's Clinic",
+            resolutions.first { it.itemId == "intake" }.candidates.single().label,
+        )
     }
 
     @Test

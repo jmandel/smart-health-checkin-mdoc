@@ -45,6 +45,8 @@ import {
   integerBounds,
   isQuestionnaireItemEnabled,
   questionnaireAnswerKey,
+  questionnaireDisplayTitle,
+  questionnaireDisplayTitleForRequestItem,
   questionnaireFromRequestItem,
   questionnaireItems,
   questionnaireReferenceForRequestItem,
@@ -356,6 +358,12 @@ function renderRequestCard(
   const accept = item.accept.join(", ");
   const candidates = resolution?.candidates ?? [];
   const selectedIds = review.selectedCandidates[item.id] ?? new Set<string>();
+  const formTitle = item.content.kind === "form.fhir"
+    ? questionnaireDisplayTitleForRequestItem(item)
+    : undefined;
+  const formTitleRow = formTitle && formTitle !== item.title
+    ? `<div class="request-card__subtitle">Form: ${escape(formTitle)}</div>`
+    : "";
   const formCard = selected && item.content.kind === "form.fhir"
     ? renderQuestionnaireCard(review, item.id)
     : "";
@@ -369,6 +377,7 @@ function renderRequestCard(
         <div class="request-card__body">
           <div class="request-card__title">${escape(item.title)}</div>
           <div class="request-card__subtitle">${escape(item.summary ?? `${item.content.kind} · accepts ${accept}`)}</div>
+          ${formTitleRow}
         </div>
         <label class="label">
           <input data-item-toggle="${escapeAttr(item.id)}" type="checkbox" ${selected ? "checked" : ""} />
@@ -407,7 +416,7 @@ function renderQuestionnaireCard(
     : "";
   return `
     <div class="questionnaire-card">
-      <h3>${escape(questionnaire.title ?? "Form answers")}</h3>
+      <h3>${escape(questionnaireDisplayTitle(questionnaire) ?? "Form answers")}</h3>
       ${description}
       <div class="questionnaire-items">
         ${renderQuestionnaireItems(item.id, questionnaireItems(questionnaire), review.questionnaireAnswers, 0)}
