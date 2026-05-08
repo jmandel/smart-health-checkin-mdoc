@@ -23,6 +23,7 @@ const MARKDOWN_SOURCES = [
   "rp-web/README.md",
   "rp-web/src/sdk/README.md",
   "rp-web/src/sdk/react.README.md",
+  "rp-web/src/sdk-web-wallet/WALLET-INTEGRATION-PROTOCOL.md",
   "wallet-android/README.md",
   "wallet-android/app/matcher-rs/README.md",
 ];

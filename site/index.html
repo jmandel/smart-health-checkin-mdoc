@@ -298,11 +298,9 @@
     }
     .demo-card.kiosk        .badge { background: var(--success-wash); color: #0F6D5A; }
     .demo-card.experimental .badge { background: var(--warning-wash); color: #8A4F0E; }
-    .demo-card.experimental {
-      grid-column: 1 / -1;
-      border-color: #F1D6A6;
-      background: #FFFDF6;
-    }
+    .demo-card                 { border-top: 3px solid var(--brand); }
+    .demo-card.kiosk           { border-top-color: var(--smart-teal); }
+    .demo-card.experimental    { border-top-color: var(--smart-orange); grid-column: 1 / -1; }
 
     .demo-card .actions {
       display: flex;
@@ -320,7 +318,7 @@
       width: 100%;
       padding: 12px 18px;
       border-radius: var(--radius-sm);
-      background: var(--gray-950);
+      background: var(--brand);
       color: #fff;
       font-weight: 600;
       font-size: var(--fs-sm);
@@ -339,10 +337,6 @@
       content: "→";
       font-weight: 600;
     }
-    .demo-card.kiosk .btn        { background: var(--brand); }
-    .demo-card.kiosk .btn:hover  { background: var(--brand-ink); }
-    .demo-card.experimental .btn { background: #8A4F0E; }
-    .demo-card.experimental .btn:hover { background: #6B3D0A; }
     .demo-card .secondary {
       align-self: center;
       font-size: var(--fs-sm);
