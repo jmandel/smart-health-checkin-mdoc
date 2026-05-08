@@ -4,17 +4,18 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>SMART Health Check-in Kiosk Handoff Demo Explainer</title>
+  <link rel="stylesheet" href="./smart-design.css" />
   <style>
     :root {
-      --ink: #172033;
-      --muted: #5f6f86;
-      --rule: #d9e2ec;
-      --soft: #f7fafc;
-      --blue: #006fb7;
-      --green: #08795b;
-      --amber: #925a00;
-      --code: #111827;
-      --code-fg: #f4f8ff;
+      --ink: var(--fg-1);
+      --muted: var(--fg-2);
+      --rule: var(--border);
+      --soft: var(--bg-alt);
+      --blue: var(--brand);
+      --green: var(--success);
+      --amber: #8A4F0E;
+      --code: var(--gray-950);
+      --code-fg: var(--gray-200);
       --measure: 980px;
     }
 
@@ -28,71 +29,87 @@
 
     body {
       margin: 0;
-      color: var(--ink);
-      background: #fff;
-      font: 17px/1.62 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--fg-1);
+      background: var(--bg);
+      font-family: var(--font-sans);
+      font-size: var(--fs-base);
+      line-height: var(--lh-relaxed);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
     .page {
       max-width: var(--measure);
       margin: 0 auto;
-      padding: 42px 24px 72px;
+      padding: 36px 24px 56px;
     }
 
-    header {
-      padding-bottom: 30px;
-      border-bottom: 1px solid var(--rule);
+    .page > header {
+      padding-bottom: 28px;
+      border-bottom: 1px solid var(--border);
     }
 
     .eyebrow {
-      margin: 0 0 14px;
-      color: #365b82;
-      font-size: 0.82rem;
-      font-weight: 800;
-      letter-spacing: 0.09em;
+      margin: 0 0 var(--space-4);
+      color: var(--brand);
+      font-size: var(--fs-xs);
+      font-weight: 700;
+      letter-spacing: var(--tracking-caps);
       text-transform: uppercase;
     }
 
-    h1,
-    h2,
-    h3 {
+    h1, h2, h3 {
       margin: 0;
-      line-height: 1.13;
-      letter-spacing: -0.025em;
+      color: var(--fg-1);
+      line-height: var(--lh-tight);
+      letter-spacing: var(--tracking-tight);
+      text-wrap: balance;
     }
 
     h1 {
       max-width: 820px;
-      font-size: clamp(2.35rem, 5vw, 4.6rem);
-      letter-spacing: -0.055em;
+      font-size: clamp(2.2rem, 4.6vw, 3.8rem);
+      font-weight: 800;
+      letter-spacing: -0.035em;
     }
 
     h2 {
-      margin-bottom: 14px;
-      font-size: clamp(1.65rem, 3vw, 2.15rem);
+      margin-bottom: var(--space-3);
+      font-size: clamp(1.55rem, 2.8vw, 2rem);
+      font-weight: 700;
+      letter-spacing: var(--tracking-snug);
+      line-height: var(--lh-snug);
     }
 
     h3 {
-      margin: 0 0 8px;
-      font-size: 1.16rem;
+      margin: 0 0 var(--space-2);
+      font-size: var(--fs-lg);
+      font-weight: 600;
+      letter-spacing: 0;
+      line-height: var(--lh-snug);
     }
 
     p {
       max-width: 74ch;
-      margin: 0 0 14px;
+      margin: 0 0 var(--space-4);
+      text-wrap: pretty;
     }
 
     .lede {
-      margin-top: 18px;
-      color: var(--muted);
-      font-size: 1.16rem;
+      margin-top: var(--space-5);
+      color: var(--fg-2);
+      font-size: var(--fs-md);
+      line-height: var(--lh-relaxed);
     }
 
     a {
-      color: var(--blue);
-      font-weight: 750;
-      text-underline-offset: 0.16em;
+      color: var(--brand);
+      font-weight: 600;
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: color var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out);
     }
+    a:hover { color: var(--brand-ink); border-bottom-color: currentColor; }
 
     .actions,
     .toc {
@@ -101,66 +118,62 @@
       gap: 10px 16px;
     }
 
-    .actions {
-      margin-top: 24px;
-    }
+    .actions { margin-top: var(--space-5); }
 
     .toc {
-      padding: 16px 0;
-      border-bottom: 1px solid var(--rule);
+      padding: var(--space-4) 0;
+      border-bottom: 1px solid var(--border);
     }
 
     .toc a {
-      color: #36506e;
-      font-size: 0.95rem;
+      color: var(--fg-2);
+      font-size: var(--fs-sm);
       text-decoration: none;
+      font-weight: 600;
     }
 
     section {
-      padding: 36px 0;
-      border-bottom: 1px solid var(--rule);
+      padding: var(--space-7) 0;
+      border-bottom: 1px solid var(--border);
     }
-
-    section:last-child {
-      border-bottom: 0;
-    }
+    section:last-child { border-bottom: 0; }
 
     .callout {
-      margin: 18px 0;
-      padding: 16px 18px;
-      border-left: 4px solid var(--green);
-      background: #ecfbf5;
+      margin: var(--space-5) 0;
+      padding: 14px 18px;
+      border-left: 3px solid var(--success);
+      background: var(--success-wash);
+      border-radius: var(--radius-md);
+      color: var(--gray-800);
+      font-size: var(--fs-sm);
+      line-height: var(--lh-relaxed);
     }
 
     .callout.warn {
-      border-left-color: var(--amber);
-      background: #fff8ea;
+      border-left-color: var(--warning);
+      background: var(--warning-wash);
     }
 
     .flow-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 22px;
-      margin-top: 22px;
+      gap: var(--space-5);
+      margin-top: var(--space-5);
     }
 
     .flow-card {
-      padding: 20px;
-      border: 1px solid var(--rule);
-      border-radius: 12px;
-      background: var(--soft);
+      padding: 22px 24px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
     }
 
-    .flow-card.kiosk {
-      border-left: 4px solid var(--green);
-    }
-
-    .flow-card.portal {
-      border-left: 4px solid var(--blue);
-    }
+    .flow-card.kiosk  { border-top: 3px solid var(--smart-teal); }
+    .flow-card.portal { border-top: 3px solid var(--brand); }
 
     .steps {
-      margin: 24px 0 0;
+      margin: var(--space-5) 0 0;
       padding: 0;
       list-style: none;
       counter-reset: step;
@@ -171,13 +184,11 @@
       display: grid;
       grid-template-columns: 42px minmax(0, 1fr);
       gap: 14px;
-      padding: 16px 0;
-      border-top: 1px solid var(--rule);
+      padding: var(--space-4) 0;
+      border-top: 1px solid var(--border);
     }
 
-    .steps li:first-child {
-      border-top: 0;
-    }
+    .steps li:first-child { border-top: 0; }
 
     .steps li::before {
       content: counter(step);
@@ -185,60 +196,71 @@
       height: 32px;
       display: grid;
       place-items: center;
-      border: 1px solid var(--rule);
+      border: 1px solid var(--border-strong);
       border-radius: 50%;
-      color: var(--blue);
-      font-weight: 900;
+      color: var(--brand);
+      font-weight: 700;
+      font-size: var(--fs-sm);
+      background: var(--surface);
     }
 
     .steps strong {
       display: block;
-      margin-bottom: 4px;
+      margin-bottom: var(--space-1);
+      color: var(--fg-1);
     }
 
     .compact-flow {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 10px;
-      margin: 20px 0;
+      gap: var(--space-2);
+      margin: var(--space-5) 0;
     }
 
     .compact-step {
       min-width: 0;
       padding: 14px;
-      border: 1px solid var(--rule);
-      border-radius: 10px;
-      background: var(--soft);
-      font-size: 0.92rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      font-size: var(--fs-sm);
+      line-height: var(--lh-snug);
     }
 
     .compact-step strong {
       display: block;
-      margin-bottom: 4px;
+      margin-bottom: var(--space-1);
+      color: var(--brand);
+      font-size: 11px;
+      letter-spacing: var(--tracking-caps);
+      text-transform: uppercase;
+      font-weight: 700;
     }
 
-    code,
-    pre {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-    }
+    code, pre { font-family: var(--font-mono); }
 
     code {
-      padding: 0.08em 0.24em;
-      background: #edf3f8;
-      color: #21334d;
+      padding: 1px 6px;
+      background: var(--gray-50);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--gray-800);
+      font-size: 0.92em;
       overflow-wrap: anywhere;
     }
 
     pre {
-      margin: 16px 0 22px;
-      padding: 18px 20px;
+      margin: var(--space-4) 0 var(--space-5);
+      padding: 16px 18px;
       overflow-x: auto;
-      background: var(--code);
-      color: var(--code-fg);
-      font-size: 0.92rem;
+      background: var(--gray-950);
+      color: var(--gray-200);
+      border-radius: var(--radius-md);
+      font-size: var(--fs-sm);
       line-height: 1.55;
       white-space: pre;
     }
+    pre code { background: transparent; border: 0; padding: 0; color: inherit; }
 
     @media (max-width: 760px) {
       body {
@@ -264,6 +286,8 @@
   </style>
 </head>
 <body>
+  <div data-smart-topbar></div>
+
   <main class="page">
     <header>
       <p class="eyebrow">Clinic check-in handoff</p>
@@ -431,5 +455,8 @@
       </p>
     </section>
   </main>
+
+  <div data-smart-footer></div>
+  <script src="./smart-chrome.js" defer></script>
 </body>
 </html>

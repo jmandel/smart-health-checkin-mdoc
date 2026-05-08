@@ -4,26 +4,34 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>SMART Health Check-in Wire Protocol Explainer</title>
+  <link rel="stylesheet" href="./smart-design.css" />
   <style>
     :root {
       color-scheme: light;
-      --ink: #172033;
-      --muted: #60708a;
-      --line: #d9e2ec;
-      --soft: #f7fafc;
-      --blue: #0072bc;
-      --green: #0b7c58;
-      --amber: #9a5b00;
-      --red: #b42318;
-      --code: #0e1628;
-      --code-fg: #e9f0ff;
+      --ink: var(--fg-1);
+      --muted: var(--fg-2);
+      --line: var(--border);
+      --soft: var(--bg-alt);
+      --blue: var(--brand);
+      --green: var(--success);
+      --amber: #8A4F0E;
+      --red: var(--danger);
+      --code: var(--gray-950);
+      --code-fg: var(--gray-200);
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font: 17px/1.62 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: var(--ink);
-      background: #ffffff;
+      font-family: var(--font-sans);
+      font-size: var(--fs-base);
+      line-height: var(--lh-relaxed);
+      color: var(--fg-1);
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    code, pre, .mono, .byte-offset, .byte-hex, .byte-ascii {
+      font-family: var(--font-mono);
     }
     header {
       background: #ffffff;
@@ -627,6 +635,7 @@
   </style>
 </head>
 <body>
+  <div data-smart-topbar></div>
   <header>
     <div class="wrap hero">
       <a class="back-link" href="./index.html">← SMART Health Check-in</a>
@@ -1260,5 +1269,7 @@ bun run inspect:response \
     </div>
   </main>
 
+  <div data-smart-footer></div>
+  <script src="./smart-chrome.js" defer></script>
 </body>
 </html>

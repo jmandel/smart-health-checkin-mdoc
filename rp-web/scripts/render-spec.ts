@@ -105,61 +105,74 @@ const html = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${escapeHtml(docTitle)}</title>
 <meta name="description" content="${escapeHtml(docDescription)}" />
+<link rel="stylesheet" href="./smart-design.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/styles/github.min.css" />
 <style>
   :root {
     color-scheme: light;
-    --ink: #172033;
-    --muted: #5f6f86;
-    --soft-ink: #2d3e58;
-    --line: #d9e2ec;
-    --soft: #f7fafc;
-    --softer: #fcfdfe;
-    --blue: #006fb7;
-    --blue-soft: #eef6ff;
-    --green: #08795b;
-    --amber: #92590a;
-    --code: #f7fafc;
-    --code-fg: #172033;
-    --rule: #d9e2ec;
+    --ink: var(--fg-1);
+    --muted: var(--fg-2);
+    --soft-ink: var(--gray-800);
+    --line: var(--border);
+    --soft: var(--bg-alt);
+    --softer: var(--gray-0);
+    --blue: var(--brand);
+    --blue-soft: var(--info-wash);
+    --green: var(--success);
+    --amber: #8A4F0E;
+    --code: var(--bg-alt);
+    --code-fg: var(--fg-1);
+    --rule: var(--border);
     --measure: 980px;
   }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; scroll-padding-top: 1rem; }
   body {
     margin: 0;
-    font: 16.5px/1.62 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    color: var(--ink);
-    background: #ffffff;
+    font-family: var(--font-sans);
+    font-size: 16.5px;
+    line-height: 1.62;
+    color: var(--fg-1);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-  a { color: var(--blue); }
-  a:hover { color: #003c66; }
+  a {
+    color: var(--brand);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: color var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out);
+  }
+  a:hover { color: var(--brand-ink); border-bottom-color: currentColor; }
 
+  /* Doc-level topbar (under the global SMART topbar) */
   .topbar {
-    border-bottom: 1px solid var(--line);
-    background: #ffffff;
-    position: sticky;
-    top: 0;
-    z-index: 50;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-alt);
   }
   .topbar-inner {
     max-width: var(--measure);
     margin: 0 auto;
-    padding: 12px 24px;
+    padding: 10px 24px;
     display: flex;
     flex-wrap: wrap;
-    gap: 16px;
+    gap: 14px;
     align-items: baseline;
-    font-size: 0.92rem;
+    font-size: 13px;
   }
   .topbar-title {
     font-weight: 700;
-    color: var(--soft-ink);
-    letter-spacing: -0.01em;
+    color: var(--gray-800);
+    letter-spacing: var(--tracking-snug);
     margin-right: auto;
   }
-  .topbar a { color: var(--soft-ink); text-decoration: none; border-bottom: 1px solid transparent; }
-  .topbar a:hover { color: var(--blue); border-bottom-color: var(--blue); }
+  .topbar a {
+    color: var(--fg-2);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    font-weight: 600;
+  }
+  .topbar a:hover { color: var(--brand-ink); border-bottom-color: var(--brand); }
 
   .layout {
     display: grid;
@@ -177,143 +190,156 @@ const html = `<!doctype html>
   }
 
   .toc {
-    font-size: 0.92rem;
-    color: var(--muted);
-    line-height: 1.45;
+    font-size: 13.5px;
+    color: var(--fg-2);
+    line-height: 1.5;
   }
   @media (min-width: 1100px) {
     .toc {
       position: sticky;
-      top: 64px;
+      top: 12px;
       align-self: start;
-      max-height: calc(100vh - 80px);
+      max-height: calc(100vh - 32px);
       overflow-y: auto;
       padding-top: 28px;
-      border-right: 1px solid var(--line);
+      border-right: 1px solid var(--border);
       padding-right: 16px;
     }
   }
   .toc h2 {
-    font-size: 0.78rem;
+    font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--muted);
-    margin: 0 0 10px;
+    letter-spacing: var(--tracking-caps);
+    color: var(--fg-mark);
+    font-weight: 700;
+    margin: 0 0 var(--space-3);
   }
-  .toc ul { list-style: none; padding: 0; margin: 0 0 18px; }
+  .toc ul { list-style: none; padding: 0; margin: 0 0 var(--space-4); }
   .toc li { margin: 2px 0; }
   .toc a {
-    color: var(--soft-ink);
+    color: var(--fg-2);
     text-decoration: none;
     display: block;
     padding: 2px 0;
     border-left: 2px solid transparent;
     padding-left: 10px;
+    border-bottom: 0;
+    font-weight: 500;
   }
-  .toc a:hover { color: var(--blue); border-left-color: var(--blue); }
-  .toc-l3 { padding-left: 14px; font-size: 0.88rem; color: var(--muted); }
-  .toc-l3 a { color: var(--muted); }
+  .toc a:hover { color: var(--brand-ink); border-left-color: var(--brand); border-bottom-color: transparent; }
+  .toc-l3 { padding-left: 14px; font-size: 12.5px; color: var(--fg-3); }
+  .toc-l3 a { color: var(--fg-3); }
 
   main { min-width: 0; padding-top: 28px; }
   .hero {
-    border-bottom: 1px solid var(--line);
-    padding-bottom: 24px;
-    margin-bottom: 28px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: var(--space-5);
+    margin-bottom: var(--space-6);
   }
   .hero .eyebrow {
-    font-size: 0.82rem;
+    font-size: var(--fs-xs);
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    margin-bottom: 6px;
+    letter-spacing: var(--tracking-caps);
+    color: var(--brand);
+    font-weight: 700;
+    margin-bottom: var(--space-2);
   }
   .hero h1 {
-    font-size: clamp(1.9rem, 3.6vw, 2.8rem);
-    line-height: 1.1;
-    letter-spacing: -0.02em;
-    margin: 0 0 8px;
-    color: var(--ink);
+    font-size: clamp(2rem, 3.8vw, 3rem);
+    line-height: var(--lh-tight);
+    letter-spacing: var(--tracking-tight);
+    margin: 0 0 var(--space-2);
+    color: var(--fg-1);
+    font-weight: 800;
   }
-  .hero p { color: var(--muted); margin: 0; max-width: 680px; }
+  .hero p { color: var(--fg-2); margin: 0; max-width: 680px; font-size: var(--fs-md); line-height: var(--lh-relaxed); }
 
-  h1, h2, h3, h4, h5, h6 { line-height: 1.22; color: var(--ink); }
-  h1 { margin: 0 0 12px; }
+  h1, h2, h3, h4, h5, h6 { line-height: 1.22; color: var(--fg-1); }
+  h1 { margin: 0 0 var(--space-3); font-weight: 800; letter-spacing: var(--tracking-tight); }
   h2 {
-    font-size: 1.55rem;
-    margin: 44px 0 10px;
-    padding-top: 8px;
-    border-top: 1px solid var(--rule);
+    font-size: 1.5rem;
+    margin: var(--space-7) 0 var(--space-3);
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--border);
+    font-weight: 700;
+    letter-spacing: var(--tracking-snug);
   }
-  h3 { font-size: 1.18rem; margin: 28px 0 8px; }
-  h4 { font-size: 1.0rem; margin: 22px 0 6px; color: var(--soft-ink); }
-  h5, h6 { font-size: 0.95rem; margin: 18px 0 6px; color: var(--soft-ink); }
+  h3 { font-size: var(--fs-lg); margin: var(--space-6) 0 var(--space-2); font-weight: 600; }
+  h4 { font-size: var(--fs-md); margin: var(--space-5) 0 var(--space-2); color: var(--gray-800); font-weight: 600; }
+  h5, h6 { font-size: var(--fs-base); margin: var(--space-4) 0 var(--space-2); color: var(--gray-800); font-weight: 600; }
 
   h2 .anchor, h3 .anchor, h4 .anchor {
-    color: var(--rule);
+    color: var(--border-strong);
     text-decoration: none;
     margin-right: 8px;
     font-weight: 400;
     opacity: 0;
     transition: opacity 80ms ease;
+    border-bottom: 0;
   }
   h2:hover .anchor, h3:hover .anchor, h4:hover .anchor { opacity: 1; }
 
-  p { margin: 0 0 12px; }
-  ul, ol { padding-left: 22px; margin: 0 0 12px; }
+  p { margin: 0 0 var(--space-3); }
+  ul, ol { padding-left: 22px; margin: 0 0 var(--space-3); }
   li { margin: 4px 0; }
   li > p { margin: 0 0 6px; }
   blockquote {
-    margin: 0 0 16px;
-    padding: 10px 16px;
-    border-left: 3px solid var(--blue);
-    background: var(--blue-soft);
-    color: var(--soft-ink);
+    margin: 0 0 var(--space-4);
+    padding: 12px 18px;
+    border-left: 3px solid var(--brand);
+    background: var(--info-wash);
+    color: var(--gray-800);
+    border-radius: var(--radius-md);
   }
   blockquote p:last-child { margin-bottom: 0; }
 
   hr {
     border: none;
-    border-top: 1px solid var(--line);
-    margin: 28px 0;
+    border-top: 1px solid var(--border);
+    margin: var(--space-7) 0;
   }
 
   table {
     border-collapse: collapse;
-    margin: 0 0 18px;
+    margin: 0 0 var(--space-5);
     width: 100%;
-    font-size: 0.95rem;
+    font-size: var(--fs-sm);
     overflow: auto;
     display: block;
   }
-  thead { background: var(--soft); }
+  thead { background: var(--bg-alt); }
   th, td {
-    border: 1px solid var(--line);
-    padding: 6px 10px;
+    border: 1px solid var(--border);
+    padding: 8px 12px;
     text-align: left;
     vertical-align: top;
   }
-  th { color: var(--soft-ink); font-weight: 600; }
-
-  code, pre, kbd, samp {
-    font-family: ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  th {
+    color: var(--fg-mark);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
   }
+
+  code, pre, kbd, samp { font-family: var(--font-mono); }
   :not(pre) > code {
-    background: var(--soft);
-    border: 1px solid var(--line);
-    border-radius: 4px;
-    padding: 1px 5px;
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 1px 6px;
     font-size: 0.92em;
-    color: var(--soft-ink);
+    color: var(--gray-800);
   }
   pre {
-    background: var(--code);
-    color: var(--code-fg);
-    border: 1px solid var(--line);
+    background: var(--bg-alt);
+    color: var(--fg-1);
+    border: 1px solid var(--border);
     padding: 14px 16px;
-    border-radius: 6px;
+    border-radius: var(--radius-md);
     overflow-x: auto;
-    margin: 0 0 16px;
-    font-size: 0.88rem;
+    margin: 0 0 var(--space-4);
+    font-size: var(--fs-sm);
     line-height: 1.55;
   }
   pre code {
@@ -328,30 +354,20 @@ const html = `<!doctype html>
   pre code.hljs { background: transparent !important; color: var(--code-fg); }
 
   .mermaid {
-    background: var(--softer);
-    border: 1px solid var(--line);
-    border-radius: 6px;
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
     padding: 16px;
-    margin: 0 0 16px;
+    margin: 0 0 var(--space-4);
     text-align: center;
   }
 
   /* Smooth scrolling without the topbar covering targets. */
-  :target { scroll-margin-top: 76px; }
+  :target { scroll-margin-top: 80px; }
 </style>
 </head>
 <body>
-<div class="topbar">
-  <div class="topbar-inner">
-    <span class="topbar-title">${escapeHtml(docTitle)}</span>
-    <a href="./index.html">Overview</a>
-    <a href="./smart-model-explainer.html">Model explainer</a>
-    <a href="./wire-protocol-explainer.html">Wire protocol</a>
-    <a href="./verifier/">Verifier demo</a>
-    <a href="${escapeHtml(rawHref)}">View raw .md</a>
-    <a href="https://github.com/jmandel/smart-health-checkin-mdoc" target="_blank" rel="noopener">GitHub</a>
-  </div>
-</div>
+<div data-smart-topbar></div>
 
 <div class="layout">
   <aside class="toc" aria-label="Spec contents">
@@ -373,6 +389,9 @@ ${body}
     </article>
   </main>
 </div>
+
+<div data-smart-footer></div>
+<script src="./smart-chrome.js" defer></script>
 
 <script type="module">
   // Syntax highlighting via highlight.js (CDN, ESM build)

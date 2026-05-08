@@ -25,7 +25,9 @@ for page in \
   smart-model-explainer.html \
   kiosk-flow-explainer.html \
   wire-protocol-explainer.html \
-  wire-protocol-inspector.html
+  wire-protocol-inspector.html \
+  smart-design.css \
+  smart-chrome.js
 do
   cp "$ROOT/site/$page" "$SITE_DIR/$page"
 done
