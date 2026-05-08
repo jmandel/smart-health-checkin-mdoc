@@ -4,10 +4,10 @@ import { configureWebWallets } from "../sdk-web-wallet/index.ts";
 import { makeHarness } from "../sdk-web-wallet/test-harness.ts";
 
 describe("createCredentialSources", () => {
-  test("keeps platform wallet as an app-level source, not sdk-web-wallet state", () => {
+  test("builds a single platform source when only platform is requested", () => {
     const sources = createCredentialSources({
+      sources: [{ kind: "platform" }],
       platformAvailable: true,
-      webWallets: [],
     });
 
     expect(sources.map((source) => source.id)).toEqual(["platform"]);
@@ -15,9 +15,9 @@ describe("createCredentialSources", () => {
     expect(sources[0]!.available).toBe(true);
   });
 
-  test("composes platform and explicitly configured web-wallet handles", () => {
+  test("preserves the order the caller passes (web wallet before platform)", () => {
     const harness = makeHarness();
-    const webWallets = configureWebWallets({
+    const [demoWallet] = configureWebWallets({
       wallets: [
         {
           id: "demo",
@@ -29,17 +29,20 @@ describe("createCredentialSources", () => {
     });
 
     const sources = createCredentialSources({
+      sources: [
+        { kind: "web-wallet", wallet: demoWallet! },
+        { kind: "platform" },
+      ],
       platformAvailable: false,
       platformUnavailableReason: "not supported",
-      webWallets,
     });
 
     expect(sources.map((source) => [source.id, source.kind, source.available])).toEqual([
-      ["platform", "platform", false],
       ["web-wallet:demo", "web-wallet", true],
+      ["platform", "platform", false],
     ]);
 
-    const webSource = sources[1]!;
+    const webSource = sources[0]!;
     const activation = webSource.activate();
     expect(typeof activation.getCredential).toBe("function");
     expect(harness.fakePopup.location.href).toBe("about:blank");
@@ -47,11 +50,10 @@ describe("createCredentialSources", () => {
     expect(harness.fakePopup.closed).toBe(true);
   });
 
-  test("can omit platform wallet at the app layer", () => {
+  test("returns no sources when the caller passes an empty list", () => {
     const sources = createCredentialSources({
-      platformWallet: false,
+      sources: [],
       platformAvailable: true,
-      webWallets: [],
     });
 
     expect(sources).toEqual([]);

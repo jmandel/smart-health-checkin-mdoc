@@ -26,8 +26,8 @@ import {
 import {
   createCredentialSources,
   type CredentialSource,
+  type CredentialSourceSpec,
 } from "./app/credential-sources.ts";
-import type { WebWalletHandle } from "./sdk-web-wallet/index.ts";
 
 type TaskView = {
   id: string;
@@ -40,9 +40,15 @@ type TaskView = {
 const SMART_LOGO_URL = "https://smarthealthit.org/wp-content/themes/SMART/images/logo.svg";
 
 export type AppProps = {
-  webWallets?: ReadonlyArray<WebWalletHandle>;
-  platformWallet?: boolean;
+  // Ordered list of credential sources to expose in the picker. Index 0 is
+  // the primary CTA; the rest appear inside the dropdown menu.
+  // Defaults to platform-only.
+  credentialSources?: ReadonlyArray<CredentialSourceSpec>;
 };
+
+const DEFAULT_CREDENTIAL_SOURCES: ReadonlyArray<CredentialSourceSpec> = [
+  { kind: "platform" },
+];
 
 export function App(props: AppProps = {}) {
   const presetId = useStore((s) => s.presetId);
@@ -58,16 +64,16 @@ export function App(props: AppProps = {}) {
   const [sourceMenuOpen, setSourceMenuOpen] = useState(false);
 
   const request = useMemo(() => parseRequest(requestText), [requestText]);
+  const sourceSpecs = props.credentialSources ?? DEFAULT_CREDENTIAL_SOURCES;
   const credentialSources = useMemo(
     () =>
       createCredentialSources({
-        platformWallet: props.platformWallet,
+        sources: sourceSpecs,
         platformAvailable: dcApi.state === "supported",
         platformUnavailableReason:
           dcApi.state === "unsupported" ? dcApi.reason : undefined,
-        webWallets: props.webWallets,
       }),
-    [dcApi, props.platformWallet, props.webWallets],
+    [dcApi, sourceSpecs],
   );
   const availableCredentialSources = credentialSources.filter((s) => s.available);
   const primaryCredentialSource = availableCredentialSources[0];

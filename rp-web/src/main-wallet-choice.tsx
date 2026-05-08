@@ -21,6 +21,13 @@ const webWallets = configureWebWallets({
   ],
 });
 
+// On this page the experimental web wallet is the primary path; the platform
+// wallet is offered as a secondary option in the picker dropdown.
+const credentialSources = [
+  ...webWallets.map((wallet) => ({ kind: "web-wallet" as const, wallet })),
+  { kind: "platform" as const },
+];
+
 emit("BOOT", {
   userAgent: navigator.userAgent,
   href: location.href,
@@ -33,6 +40,6 @@ emit("BOOT", {
 
 createRoot(root).render(
   <StrictMode>
-    <App webWallets={webWallets} />
+    <App credentialSources={credentialSources} />
   </StrictMode>,
 );
