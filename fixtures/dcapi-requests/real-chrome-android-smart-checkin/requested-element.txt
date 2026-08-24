@@ -1,1 +1,0 @@
-org.smarthealthit.checkin/smart_health_checkin_response intentToRetain=true

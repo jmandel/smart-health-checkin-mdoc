@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Moved — SMART Health Check-in</title>
+<script>
+  // This site moved to smart-health-checkin.org. Every page the old site
+  // served is forwarded to its successor — the spec section for the spec,
+  // explainers, and fixtures; the client demos for the retired apps —
+  // keeping the query and the fragment. Anything unrecognized goes to the
+  // new home page.
+  (function () {
+    var site = "https://smart-health-checkin.org";
+    var path = location.pathname.replace(/^\/smart-health-checkin-mdoc(?=\/|$)/, "") || "/";
+    path = path.replace(/\/index\.html$/, "/");
+    var carry = location.search + location.hash;
+
+    var toSpec = function () { return site + "/spec" + path; };
+    var rules = [
+      // The old landing page → the new home page.
+      [/^\/$/, function () { return site + "/"; }],
+      // The rendered spec is the spec section's front page now.
+      [/^\/spec\.html$/, function () { return site + "/spec/"; }],
+      // Spec-section pages kept their names.
+      [/^\/(?:spec\.md|smart-model-explainer\.html|kiosk-flow-explainer\.html|wire-protocol-explainer\.html|wire-protocol-inspector\.html|web-wallet-protocol\.(?:html|md)|llms\.txt)$/, toSpec],
+      [/^\/fixtures(?:\/|$)/, toSpec],
+      // The retired apps live on as the client demos.
+      [/^\/verifier\/creator(?:\/|\.html$|$)/, function () { return site + "/client/demo/kiosk.html"; }],
+      [/^\/verifier\/submit(?:\/|\.html$|$)/, function () { return site + "/client/demo/handoff.html"; }],
+      [/^\/verifier(?:\/|$)/, function () { return site + "/client/demo/"; }],
+      [/^\/wallet(?:\/|$)/, function () { return site + "/client/demo/wallet.html"; }],
+    ];
+    for (var i = 0; i < rules.length; i++) {
+      if (rules[i][0].test(path)) { location.replace(rules[i][1]() + carry); return; }
+    }
+    location.replace(site + "/" + carry);
+  })();
+</script>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    margin: 0; padding: 4rem 1.5rem;
+    background: #fff; color: #1a1a1a;
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { background: #12141a; color: #e6e6e6; }
+    a { color: #6aa8ff; }
+  }
+  main { max-width: 42rem; margin: 0 auto; }
+  h1 { margin: 0 0 0.75rem; font-size: 1.5rem; }
+  p { max-width: 60ch; }
+</style>
+</head>
+<body>
+<main>
+  <h1>This site moved</h1>
+  <p>SMART Health Check-in now lives at
+    <a href="https://smart-health-checkin.org/">smart-health-checkin.org</a> —
+    the <a href="https://smart-health-checkin.org/spec/">specification</a>,
+    the <a href="https://smart-health-checkin.org/client/">JavaScript client</a>,
+    and the <a href="https://smart-health-checkin.org/client/demo/">demos</a>.
+    You are being forwarded to the page that replaced this one.</p>
+</main>
+</body>
+</html>

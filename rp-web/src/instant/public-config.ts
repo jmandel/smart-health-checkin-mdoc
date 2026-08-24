@@ -1,1 +1,0 @@
-export const COMMITTED_INSTANT_APP_ID = "9cc51106-8018-43b8-8a37-fd8f414fdde5";
